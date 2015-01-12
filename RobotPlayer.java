@@ -42,7 +42,7 @@ public class RobotPlayer {
 	static final int squadUnitsBase = squadTargetBase + MAX_SQUADS;
 	
 	/* Next squad channel */
-	static final int nextSquadChan = squadUnitsBase + 1;
+	static final int nextSquadChan = squadUnitsBase + MAX_SQUADS;
 	
 	
 	static int bestMineScoreChan = nextSquadChan + 1;
@@ -55,7 +55,7 @@ public class RobotPlayer {
 	static int numMiners = 40;
 	static int numBarracks = 0;
 	static int numSoldiers = 0;
-
+	static int numHelipads = 12;
 	
 	
 	
@@ -65,13 +65,48 @@ public class RobotPlayer {
 	static int[] senseLocsX = {0,-1,0,0,1,-1,-1,1,1,-2,0,0,2,-2,-2,-1,-1,1,1,2,2,-2,-2,2,2,-3,0,0,3,-3,-3,-1,-1,1,1,3,3,-3,-3,-2,-2,2,2,3,3,-4,0,0,4,-4,-4,-1,-1,1,1,4,4,-3,-3,3,3,-4,-4,-2,-2,2,2,4,4,-5,-4,-4,-3,-3,0,0,3,3,4,4,5,-5,-5,-1,-1,1,1,5,5,-5,-5,-2,-2,2,2,5,5,-4,-4,4,4,-5,-5,-3,-3,3,3,5,5};
 	static int[] senseLocsY = {0,0,-1,1,0,-1,1,-1,1,0,-2,2,0,-1,1,-2,2,-2,2,-1,1,-2,2,-2,2,0,-3,3,0,-1,1,-3,3,-3,3,-1,1,-2,2,-3,3,-3,3,-2,2,0,-4,4,0,-1,1,-4,4,-4,4,-1,1,-3,3,-3,3,-2,2,-4,4,-4,4,-2,2,0,-3,3,-4,4,-5,5,-4,4,-3,3,0,-1,1,-5,5,-5,5,-1,1,-2,2,-5,5,-5,5,-2,2,-4,4,-4,4,-3,3,-5,5,-5,5,-3,3};
 	static int[] senseLocsR = {0,10,10,10,10,14,14,14,14,20,20,20,20,22,22,22,22,22,22,22,22,28,28,28,28,30,30,30,30,31,31,31,31,31,31,31,31,36,36,36,36,36,36,36,36,40,40,40,40,41,41,41,41,41,41,41,41,42,42,42,42,44,44,44,44,44,44,44,44,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,53,53,53,53,53,53,53,53,56,56,56,56,58,58,58,58,58,58,58,58};
+	static float[] sqrt = {0.000000f,1.000000f,1.414214f,1.732051f,2.000000f,2.236068f,2.449490f,2.645751f,2.828427f,3.000000f,3.162278f,3.316625f,3.464102f,3.605551f,3.741657f,3.872983f,4.000000f,4.123106f,4.242641f,4.358899f,4.472136f,4.582576f,4.690416f,4.795832f,4.898979f,5.000000f,5.099020f,5.196152f,5.291503f,5.385165f,5.477226f,5.567764f,5.656854f,5.744563f,5.830952f,5.916080f,6.000000f,6.082763f,6.164414f,6.244998f,6.324555f,6.403124f,6.480741f,6.557439f,6.633250f,6.708204f,6.782330f,6.855655f,6.928203f,7.000000f,7.071068f,7.141428f,7.211103f,7.280110f,7.348469f,7.416198f,7.483315f,7.549834f,7.615773f,7.681146f,7.745967f,7.810250f,7.874008f,7.937254f,8.000000f,8.062258f,8.124038f,8.185353f,8.246211f,8.306624f,8.366600f,8.426150f,8.485281f,8.544004f,8.602325f,8.660254f,8.717798f,8.774964f,8.831761f,8.888194f,8.944272f,9.000000f};
+	static float[] invSqrt = {0.000000f,1.000000f,0.707107f,0.577350f,0.500000f,0.447214f,0.408248f,0.377964f,0.353553f,0.333333f,0.316228f,0.301511f,0.288675f,0.277350f,0.267261f,0.258199f,0.250000f,0.242536f,0.235702f,0.229416f,0.223607f,0.218218f,0.213201f,0.208514f,0.204124f,0.200000f,0.196116f,0.192450f,0.188982f,0.185695f,0.182574f,0.179605f,0.176777f,0.174078f,0.171499f,0.169031f,0.166667f,0.164399f,0.162221f,0.160128f,0.158114f,0.156174f,0.154303f,0.152499f,0.150756f,0.149071f,0.147442f,0.145865f,0.144338f,0.142857f,0.141421f,0.140028f,0.138675f,0.137361f,0.136083f,0.134840f,0.133631f,0.132453f,0.131306f,0.130189f,0.129099f,0.128037f,0.127000f,0.125988f,0.125000f,0.124035f,0.123091f,0.122169f,0.121268f,0.120386f,0.119523f,0.118678f,0.117851f,0.117041f,0.116248f,0.115470f,0.114708f,0.113961f,0.113228f,0.112509f,0.111803f,0.111111f};
 	
 	
 	// HQ-specific
+	static enum SquadCommand
+	{
+		BUILDING,
+		ATTACKING
+	}
+	
+	static SquadCommand[] squadCommand = new SquadCommand[MAX_SQUADS];
 	static int[] squadCounts = new int[MAX_SQUADS];
+	static int lastTowers = 0;
 
 	static double lastOre = 0;
 	static double curOre = 0;
+	
+	
+	static class MapValue implements Comparable<MapValue>
+	{
+		int x;
+		int y;
+		double value;
+		
+		public MapValue(int lx, int ly, double val)
+		{
+			this.x = lx;
+			this.y = ly;
+			this.value = val;
+		}
+		
+		public int compareTo(MapValue mv)
+		{
+			return Double.compare(this.value, mv.value);
+		}
+		
+		public MapLocation offsetFrom(MapLocation ml)
+		{
+			return new MapLocation(x+ml.x,y+ml.y);
+		}
+	}
 	
 
 	public static void run(RobotController robotc)
@@ -112,7 +147,7 @@ public class RobotPlayer {
 				// save the lowest byte
 				mySquad = nextSquad & 255;
 				// and write it back
-				rc.broadcast(nextSquadChan, nextSquad >> 8);
+				//rc.broadcast(nextSquadChan, nextSquad >> 8);
 				break;
 			}
 		} catch (Exception e) {
@@ -121,14 +156,6 @@ public class RobotPlayer {
 		}
 		
 		while(true) {
-			try {
-				rc.setIndicatorString(0, "This is an indicator string.");
-				rc.setIndicatorString(1, "I am a " + rc.getType() + " SQUAD: " + mySquad + " TARGET: " + squadTarget);
-			} catch (Exception e) {
-				System.out.println("Unexpected exception");
-				e.printStackTrace();
-			}
-			
 			curOre = rc.getTeamOre();
 			myLocation = rc.getLocation();
 			
@@ -167,10 +194,14 @@ public class RobotPlayer {
 			}
 			
 			lastOre = curOre;
+			
+			if (Clock.getBytecodesLeft() < 600)
+				rc.yield();
+			
 			try {
 				transferSupplies();
 			} catch (Exception e) {
-				
+				System.out.println("Supply exception");
 			}
 			rc.yield();
 		}
@@ -182,6 +213,7 @@ public class RobotPlayer {
 	{
 		try 
 		{
+			rc.setIndicatorString(1,"Current ore: " + curOre);
 			if (rc.isWeaponReady())
 			{
 				attackSomething();
@@ -189,7 +221,7 @@ public class RobotPlayer {
 
 			int nextSquad = -1;
 			// the number we fill squads to
-			int squadMax = 8;
+			int squadMax = 16;
 			for (int i=0; i<MAX_SQUADS; i++)
 			{
 				int squadcount = rc.readBroadcast(squadUnitsBase + i);
@@ -205,28 +237,40 @@ public class RobotPlayer {
 				{
 					// no units reporting, all are dead
 					squadCounts[i] = 0;
-					if (nextSquad < 0)
+					if (nextSquad == -1)
 						nextSquad = i;
 				}
+				//System.out.println("SquadCounts[" + i + "]:" + squadCounts[i]);
 			}
+			//System.out.println("NextSquad:" + nextSquad);
+			if (nextSquad == -1)
+				nextSquad = 0;
 			rc.broadcast(nextSquadChan, nextSquad);
 			
-			// set the first squad's target to enemy base
+			// set the first squad's target to enemy towers
 			MapLocation[] towers = rc.senseEnemyTowerLocations();
-			for (int i=0; i<towers.length; i++)
-			{
-				int loc = towers[i].y - center.y;
-				loc = (loc << 16) + ((towers[i].x - center.x) & 65535);
-				rc.broadcast(squadTargetBase + i, loc);
-			}
 			MapLocation hq = rc.senseEnemyHQLocation();
-			for (int i=towers.length; i<MAX_SQUADS; i++)
+			
+			if (towers.length != lastTowers)
 			{
-				int loc = hq.y - center.y;
-				loc = (loc << 16) + ((hq.x - center.x) & 65535);
-				rc.broadcast(squadTargetBase + i, loc);
-			}
+				MapValue[] mvs = new MapValue[towers.length];
+				
+				for (int i=0; i<towers.length; i++)
+					mvs[i] = new MapValue(towers[i].x-center.x,towers[i].y-center.y,towers[i].distanceSquaredTo(hq));
 					
+				Arrays.sort(mvs);
+				
+				for (int i=0; i<towers.length; i++)
+				{
+					int loc = ((towers[i].y - center.y) << 16) + ((towers[i].x - center.x) & 65535);
+					rc.broadcast(squadTargetBase + i, loc);
+				}				
+				for (int i=towers.length; i<MAX_SQUADS; i++)
+				{					
+					int loc = ((hq.y - center.y) << 16) + ((hq.x - center.x) & 65535);
+					rc.broadcast(squadTargetBase + i, loc);
+				}
+			}					
 			
 			RobotInfo[] ourTeam = rc.senseNearbyRobots(1000, rc.getTeam());
 			int n = 0; // current number of beavers
@@ -307,19 +351,20 @@ public class RobotPlayer {
 	{
 		try {
 			updateSquadInfo();
-            Direction toDest = rc.getLocation().directionTo(squadTarget);
+            /*Direction toDest = rc.getLocation().directionTo(squadTarget);
         	Direction[] dirs = {toDest,
 		    		toDest.rotateLeft(), toDest.rotateRight(),toDest.rotateLeft().rotateLeft(), toDest.rotateRight().rotateRight()};
         	for (Direction d : dirs) {
                 if (rc.canMove(d) && rc.isCoreReady()) {
                     rc.move(d);
                 }
-            }
+            }*/
 			attackSomething();
 	        
 			//potentialAct(squadTarget,RobotType.DRONE);
 			//attackSomething();
 			calcPotential();
+			rc.setIndicatorString(0, "Drone: squad " + mySquad);
 		} catch (Exception e) {
 			System.out.println("Drone Exception");
 			e.printStackTrace();
@@ -371,14 +416,18 @@ public class RobotPlayer {
 				RobotInfo[] ourTeam = rc.senseNearbyRobots(100000, rc.getTeam());
 				int n = 0; // current number of miner factories
 				int m = 0; // current number of barracks
+				int o = 0;
 				for(RobotInfo ri: ourTeam){ // count up miner factories
 					if(ri.type==RobotType.MINERFACTORY){
 						n++;
 					}else if(ri.type==RobotType.BARRACKS){
 						m++;
+					}else if (ri.type==RobotType.HELIPAD){
+						o++;
 					}
 				}
-				if(n<numMinerFactories) 
+				// only build additional miner factories if we have more than 1
+				if(n < numMinerFactories && (n == o)) 
 				{
 					buildUnit(RobotType.MINERFACTORY);
 				} 
@@ -386,17 +435,13 @@ public class RobotPlayer {
 				{
 					buildUnit(RobotType.BARRACKS);
 				}
+				else if(o<numHelipads)
+				{
+					buildUnit(RobotType.HELIPAD);
+				}
+				attackSomething();
 				mineAndMove();
 			}
-			// build miner factories if income < 25
-			if (curOre - lastOre < 25 && rand.nextInt(500) > Clock.getRoundNum()) {
-				buildUnit(RobotType.MINERFACTORY);
-			}
-			else {
-				buildUnit(RobotType.HELIPAD);
-			}
-			attackSomething();
-			mineAndMove();
 		} catch (Exception e) {
 			System.out.println("Beaver Exception");
 			e.printStackTrace();
@@ -424,23 +469,34 @@ public class RobotPlayer {
 			squadUnits = Clock.getRoundNum() << 16;
 		squadUnits++;
 		rc.broadcast(squadUnitsBase + mySquad, squadUnits);
+		
 		// and update squad targets
 		int st = rc.readBroadcast(squadTargetBase + mySquad);
 		squadTarget = new MapLocation((st & 65535) + center.x, (st >> 16) + center.y);
 		//System.out.println(mySquad + ", " + squadTarget + " " + center + " " + (int)(st & 65535) + " " + ((st >>> 16) - MAP_OFFSET));
+		
+		int squadTask = rc.readBroadcast(squadTaskBase + mySquad);
+		if (Clock.getRoundNum() != (squadTask >> 16))
+			squadTask = (Clock.getRoundNum() << 16) + ((squadTask & 255) << 8);
+		
+		if (myLocation.distanceSquaredTo(squadTarget) < 81)
+			squadTask++;
+		
+		rc.broadcast(squadTaskBase + mySquad, squadTask);
 	}
 	
 	
 	// Supply Transfer Protocol
 	static void transferSupplies() throws GameActionException {
-		RobotInfo[] nearbyAllies = rc.senseNearbyRobots(rc.getLocation(),GameConstants.SUPPLY_TRANSFER_RADIUS_SQUARED,rc.getTeam());
-		double lowestSupply = rc.getSupplyLevel();
+		RobotInfo[] nearbyAllies = rc.senseNearbyRobots(myLocation,GameConstants.SUPPLY_TRANSFER_RADIUS_SQUARED,myTeam);
+		double mySupply = rc.getSupplyLevel();
+		double lowestSupply = mySupply;
 		double transferAmount = 0;
 		MapLocation suppliesToThisLocation = null;
 		for(RobotInfo ri:nearbyAllies){
 			if(ri.supplyLevel<lowestSupply){
 				lowestSupply = ri.supplyLevel;
-				transferAmount = (rc.getSupplyLevel()-ri.supplyLevel)/2;
+				transferAmount = (mySupply-ri.supplyLevel)/2;
 				suppliesToThisLocation = ri.location;
 			}
 		}
@@ -680,73 +736,141 @@ public class RobotPlayer {
 			}
 		}
     }
-	
-	
+
 	// Potential field move
-	static void calcPotential()
+	static void calcPotential() throws GameActionException
 	{
-		double forceX = 0.0;
-		double forceY = 0.0;
+		float forceX = 0.0f;
+		float forceY = 0.0f;
 		
 		// get dem robots
-		RobotInfo[] nearbyRobots = rc.senseNearbyRobots();
+		RobotInfo[] friendlyRobots = rc.senseNearbyRobots(myType.sensorRadiusSquared,myTeam);
+		RobotInfo[] enemyRobots = rc.senseNearbyRobots(myType.sensorRadiusSquared,myTeam.opponent());
 		
 		// attracted to squad target, far away
 		forceX = (squadTarget.x - myLocation.x);
 		forceY = (squadTarget.y - myLocation.y);
-		double f = Math.sqrt(forceX*forceX + forceY*forceY)/0.01;
+		
+		float f = (float)Math.sqrt(forceX*forceX + forceY*forceY);
 		forceX /= f;
 		forceY /= f;
 		
-		// calculate potential field from nearby robots
-		for (RobotInfo bot : nearbyRobots)
+		// forceXY is now normalized distance to squadTarget
+		
+		double friendlyHP = 0;
+		
+		// don't get too close to friendly buildings
+		for (RobotInfo bot : friendlyRobots)
 		{
+			friendlyHP += bot.health;
+			if (bot.type.attackRadiusSquared > 0)
+				continue;
+			
 			int vecx = bot.location.x - myLocation.x;
 			int vecy = bot.location.y - myLocation.y;
 			int d2 = bot.location.distanceSquaredTo(myLocation);
-			double d = Math.sqrt(d2);
-			double falloff = 1.0/d2;
-			double fx = 0.0;
-			double fy = 0.0;
+			float id = invSqrt[d2];
 			
-			final double kRepel = 1.0;
+			float kRepel = 0.1f;
 			
-			if (bot.team == myTeam)
-			{
-				// just repel based on distance, at close range
-				fx += kRepel*falloff*falloff*vecx;
-				fy += kRepel*falloff*falloff*vecy;
-			}
-			else
-			{
-				// attracted to enemies, at longer range
-				fx += -kRepel*falloff*vecx;
-				fy += -kRepel*falloff*vecy;
-			}
+			// just repel based on distance, at close range
+			forceX += -kRepel*id*vecx;
+			forceY += -kRepel*id*vecy;
+		}
+				
+		for (RobotInfo bot : enemyRobots)
+		{
+			// dangerous ones, dealt with below
+			if (bot.type == RobotType.TOWER || bot.type == RobotType.HQ)
+				continue;
+			
+			int vecx = bot.location.x - myLocation.x;
+			int vecy = bot.location.y - myLocation.y;
+			int d2 = bot.location.distanceSquaredTo(myLocation);
+			
+			float id = invSqrt[d2];
+			float fx = 0.0f;
+			float fy = 0.0f;
+			
+			float kRepel = -15.0f;
+			
+			if (bot.type.attackRadiusSquared == 0)
+				kRepel = 5.0f;
+			
 			// within attack range, repel
+			// (difference in distances)
+			float dattack = sqrt[bot.type.attackRadiusSquared] - sqrt[d2] + 1;
+			dattack = 1.0f/(dattack*dattack);
+			if (dattack > 0)
+			{
+				fx += kRepel*dattack*vecx;
+				fy += kRepel*dattack*vecy;
+			}
+
 			forceX += fx;
 			forceY += fy;
 		}
-		// get direction of force
-		/*f = Math.sqrt(forceX*forceX + forceY*forceY);
-		forceX /= f;
-		forceY /= f;*/
-		double[] dots = new double[9];
-		double maxDot = -1e6;
-		int maxDir = 0;
-		for (int i=0; i<9; i++)
-		{
-			dots[i] = forceX*senseLocsX[i] + forceY*senseLocsY[i];
-			if (dots[i] > maxDot)
+		
+		boolean hasSquad = friendlyRobots.length > 5 || ((rc.readBroadcast(squadTaskBase+mySquad) >> 8) & 255) > 5;
+		
+		MapLocation[] towers = rc.senseEnemyTowerLocations();
+		for (MapLocation tower : towers)
+		{			
+			int d2 = tower.distanceSquaredTo(myLocation);
+			// check if it's in range
+			if (d2 > RobotType.TOWER.attackRadiusSquared + 20)
+				continue;
+
+			int vecx = tower.x - myLocation.x;
+			int vecy = tower.y - myLocation.y;
+			
+			float kRepel = -50.0f;
+			
+			if (rc.canSenseLocation(tower))
 			{
-				maxDot = dots[i];
-				maxDir = i;
+				RobotInfo ti = rc.senseRobotAtLocation(tower);
+				if (ti.health < friendlyHP*3)
+					kRepel = 10;
+			}
+			
+			if (hasSquad)
+				kRepel = 10;
+			
+			// within attack range, repel
+			// (difference in distances)
+			float dattack = sqrt[RobotType.TOWER.attackRadiusSquared] - sqrt[d2] + 1;
+			dattack = 1.0f/(dattack*dattack);
+			if (dattack > 0)
+			{
+				forceX += kRepel*dattack*vecx;
+				forceY += kRepel*dattack*vecy;
+			}
+		}
+		// get direction of force
+		MapValue[] mvs = new MapValue[9];
+
+		for (int i=0; i<9; i++)
+			mvs[i] = new MapValue(senseLocsX[i],senseLocsY[i],forceX*senseLocsX[i] + forceY*senseLocsY[i]);
+		
+		rc.setIndicatorLine(myLocation, new MapLocation(myLocation.x + (int)(forceX*10), myLocation.y + (int)(forceY*10)), 0, 255, 255);
+
+		Arrays.sort(mvs);
+		
+		for (int i=8; i>0; i--)
+		{
+			// facing the wrong way, don't move at all
+			if (mvs[i].value < 0)
+				break;
+			Direction newdir = myLocation.directionTo(mvs[i].offsetFrom(myLocation));
+			if(rc.isCoreReady()&&rc.canMove(newdir))
+			{
+				rc.move(newdir);
 			}
 		}
 	}
 	
 	// need to avoid towers bc sight range is same as firing range
-	public static void potentialAct(MapLocation dest, RobotType type) throws GameActionException{
+/*	public static void potentialAct(MapLocation dest, RobotType type) throws GameActionException{
 		double coreDelay = rc.getCoreDelay();
 		int agg = 0;
 		int allyRange = RobotType.DRONE.sensorRadiusSquared;
@@ -805,11 +929,11 @@ public class RobotPlayer {
 			fieldReport = fieldReport + " " + field[i];
 		}
 		
-		/*
+		
 		rc.setIndicatorString(0, "Field =  " + fieldReport);
 		rc.setIndicatorString(1, "total p Field =  " + totalpField);
 		rc.setIndicatorString(2, "core delay =  " + coreDelay);
-		*/
+		
 		
 		testDir = Direction.NORTH; 
 		double diceRoll = totalpField*rand.nextDouble();
@@ -828,7 +952,7 @@ public class RobotPlayer {
 			fieldCount = fieldCount + pField[i];
 		}
 
-		/*
+		
 		attackSomething();
 		
 		
@@ -870,7 +994,7 @@ public class RobotPlayer {
 		
 		
 		rc.setIndicatorString(2, "numAllies" + allyRange + " " + numAllies +"numEnemies" + numEnemies );
-		*/
+		
 	}
 
 
@@ -952,7 +1076,7 @@ public class RobotPlayer {
 						
 		return cumulativeField;	
 	}
-	
+	*/
 	
 
 	// This method will attempt to move in Direction d (or as close to it as possible)
@@ -998,13 +1122,18 @@ public class RobotPlayer {
 	}
 	
 	
-	private static void buildUnit(RobotType type) throws GameActionException {
-		if(rc.getTeamOre()>type.oreCost){
+	static void buildUnit(RobotType type) throws GameActionException {
+		if(rc.getTeamOre()>type.oreCost && rc.isCoreReady()) {
+			
 			Direction buildDir = getRandomDirection();
-
-			if(rc.isCoreReady()&&rc.canBuild(buildDir, type))
+			for (int i=0; i<8; i++)
 			{
-				rc.build(buildDir, type);
+				if(rc.canBuild(buildDir, type))
+				{
+					rc.build(buildDir, type);
+					return;
+				}
+				buildDir = buildDir.rotateLeft();
 			}
 		}
 	}

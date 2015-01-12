@@ -11,9 +11,11 @@ senseLocs = sortrows(senseLocs,3);
 % limit it to sight range 35 (full)
 senseLocs = senseLocs(senseLocs(:,3) < sqrt(35),:);
 
+%{
 scatter(senseLocs(:,1),senseLocs(:,2))
 xlim([-6 6]);
 ylim([-6 6]);
+%}
 
 % now count short and long sensor ranges
 nshort = sum(senseLocs(:,3) < sqrt(24));
@@ -48,4 +50,32 @@ for i=1:size(senseLocs,1)
     end
 end
 fprintf(fid,'};\n');
+
+% now output precomputed inverse square roots
+% (up to max sight range of anything + a bit)
+sqmax = 81;
+sqrts = sqrt(0:sqmax);
+invsqrts = 1./sqrt(0:sqmax);
+invsqrts(1) = 0;
+
+fprintf(fid,'static float[] sqrt = {');
+for i=1:numel(sqrts)
+    fprintf(fid,'%ff',sqrts(i));
+    if i < numel(sqrts)
+        fprintf(fid,',');
+    end
+end
+fprintf(fid,'};\n');
+
+fprintf(fid,'static float[] invSqrt = {');
+for i=1:numel(invsqrts)
+    fprintf(fid,'%ff',invsqrts(i));
+    if i < numel(invsqrts)
+        fprintf(fid,',');
+    end
+end
+fprintf(fid,'};\n');
+
+
 fclose(fid);
+
