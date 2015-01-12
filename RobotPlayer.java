@@ -75,7 +75,6 @@ public class RobotPlayer {
 		BUILDING,
 		ATTACKING
 	}
-	
 	static SquadCommand[] squadCommand = new SquadCommand[MAX_SQUADS];
 	static int[] squadCounts = new int[MAX_SQUADS];
 	static int lastTowers = 0;
@@ -256,13 +255,13 @@ public class RobotPlayer {
 				MapValue[] mvs = new MapValue[towers.length];
 				
 				for (int i=0; i<towers.length; i++)
-					mvs[i] = new MapValue(towers[i].x-center.x,towers[i].y-center.y,towers[i].distanceSquaredTo(hq));
+					mvs[i] = new MapValue(towers[i].x-center.x,towers[i].y-center.y,towers[i].distanceSquaredTo(rc.senseHQLocation()));
 					
 				Arrays.sort(mvs);
 				
 				for (int i=0; i<towers.length; i++)
 				{
-					int loc = ((towers[i].y - center.y) << 16) + ((towers[i].x - center.x) & 65535);
+					int loc = (mvs[i].y << 16) + (mvs[i].x & 65535);
 					rc.broadcast(squadTargetBase + i, loc);
 				}				
 				for (int i=towers.length; i<MAX_SQUADS; i++)
@@ -270,7 +269,9 @@ public class RobotPlayer {
 					int loc = ((hq.y - center.y) << 16) + ((hq.x - center.x) & 65535);
 					rc.broadcast(squadTargetBase + i, loc);
 				}
-			}					
+			}
+			
+			int st = rc.readBroadcast(squadTargetBase);
 			
 			RobotInfo[] ourTeam = rc.senseNearbyRobots(1000, rc.getTeam());
 			int n = 0; // current number of beavers
@@ -364,7 +365,7 @@ public class RobotPlayer {
 			//potentialAct(squadTarget,RobotType.DRONE);
 			//attackSomething();
 			calcPotential();
-			rc.setIndicatorString(0, "Drone: squad " + mySquad);
+			rc.setIndicatorString(0, "Drone: squad " + mySquad + ", target " + squadTarget);
 		} catch (Exception e) {
 			System.out.println("Drone Exception");
 			e.printStackTrace();
@@ -472,7 +473,7 @@ public class RobotPlayer {
 		
 		// and update squad targets
 		int st = rc.readBroadcast(squadTargetBase + mySquad);
-		squadTarget = new MapLocation((st & 65535) + center.x, (st >> 16) + center.y);
+		squadTarget = new MapLocation(((int)(short)st) + center.x, (st >> 16) + center.y);
 		//System.out.println(mySquad + ", " + squadTarget + " " + center + " " + (int)(st & 65535) + " " + ((st >>> 16) - MAP_OFFSET));
 		
 		int squadTask = rc.readBroadcast(squadTaskBase + mySquad);
@@ -759,12 +760,12 @@ public class RobotPlayer {
 		
 		double friendlyHP = 0;
 		
-		// don't get too close to friendly buildings
+		// don't get too close to friendly things
 		for (RobotInfo bot : friendlyRobots)
 		{
 			friendlyHP += bot.health;
-			if (bot.type.attackRadiusSquared > 0)
-				continue;
+			//if (bot.type.attackRadiusSquared > 0)
+			//	continue;
 			
 			int vecx = bot.location.x - myLocation.x;
 			int vecy = bot.location.y - myLocation.y;
@@ -774,8 +775,8 @@ public class RobotPlayer {
 			float kRepel = 0.1f;
 			
 			// just repel based on distance, at close range
-			forceX += -kRepel*id*vecx;
-			forceY += -kRepel*id*vecy;
+			forceX += -kRepel*id*id*vecx;
+			forceY += -kRepel*id*id*vecy;
 		}
 				
 		for (RobotInfo bot : enemyRobots)
@@ -789,62 +790,64 @@ public class RobotPlayer {
 			int d2 = bot.location.distanceSquaredTo(myLocation);
 			
 			float id = invSqrt[d2];
-			float fx = 0.0f;
-			float fy = 0.0f;
 			
-			float kRepel = -15.0f;
+			float kRepel = -8.0f;
 			
+			// attract if it can't fight back
 			if (bot.type.attackRadiusSquared == 0)
 				kRepel = 5.0f;
 			
 			// within attack range, repel
 			// (difference in distances)
-			float dattack = sqrt[bot.type.attackRadiusSquared] - sqrt[d2] + 1;
-			dattack = 1.0f/(dattack*dattack);
+			float dattack = sqrt[bot.type.attackRadiusSquared] - sqrt[d2] + 1.0f;
 			if (dattack > 0)
 			{
-				fx += kRepel*dattack*vecx;
-				fy += kRepel*dattack*vecy;
+				kRepel /= (dattack*dattack);
 			}
 
-			forceX += fx;
-			forceY += fy;
+			forceX += kRepel*id*vecx;
+			forceY += kRepel*id*vecy;
 		}
 		
 		boolean hasSquad = friendlyRobots.length > 5 || ((rc.readBroadcast(squadTaskBase+mySquad) >> 8) & 255) > 5;
 		
 		MapLocation[] towers = rc.senseEnemyTowerLocations();
+		
 		for (MapLocation tower : towers)
-		{			
+		{
 			int d2 = tower.distanceSquaredTo(myLocation);
 			// check if it's in range
 			if (d2 > RobotType.TOWER.attackRadiusSquared + 20)
 				continue;
+			
+			float id = invSqrt[d2];
 
 			int vecx = tower.x - myLocation.x;
 			int vecy = tower.y - myLocation.y;
 			
-			float kRepel = -50.0f;
-			
-			if (rc.canSenseLocation(tower))
+			float kRepel = -2.0f;
+
+			// if we can kill it easily, we attract
+			if (rc.canSenseLocation(tower) && tower.equals(squadTarget))
 			{
 				RobotInfo ti = rc.senseRobotAtLocation(tower);
-				if (ti.health < friendlyHP*3)
-					kRepel = 10;
+				if (ti.health < friendlyHP*10)
+					kRepel = 50;
 			}
 			
-			if (hasSquad)
-				kRepel = 10;
+			// otherwise, only get attracted to target tower, remain repelled from others
+			if (hasSquad && tower.equals(squadTarget))
+				kRepel = 50;
 			
 			// within attack range, repel
 			// (difference in distances)
-			float dattack = sqrt[RobotType.TOWER.attackRadiusSquared] - sqrt[d2] + 1;
-			dattack = 1.0f/(dattack*dattack);
-			if (dattack > 0)
-			{
-				forceX += kRepel*dattack*vecx;
-				forceY += kRepel*dattack*vecy;
-			}
+			float dattack = sqrt[RobotType.TOWER.attackRadiusSquared] - sqrt[d2] + 1.5f;
+			if (kRepel > 0) // this is attractive, actually
+				dattack = kRepel*id;
+			else // and this means we are being repelled
+				dattack = kRepel*id/Math.max(dattack,1);
+			forceX += dattack*vecx;
+			forceY += dattack*vecy;
 		}
 		// get direction of force
 		MapValue[] mvs = new MapValue[9];
