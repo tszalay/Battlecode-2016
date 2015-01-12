@@ -1,6 +1,7 @@
 package bassplayer;
 
 import battlecode.common.*;
+
 import java.util.*;
 
 public class RobotPlayer {
@@ -17,6 +18,7 @@ public class RobotPlayer {
 	static int mySquad;
 	static MapLocation squadTarget;
 	
+	static MapLocation myLocation;
 	static Direction facing;
 	
 	// standard defines
@@ -100,6 +102,7 @@ public class RobotPlayer {
 			case HQ:
 				break;
 			case BEAVER:
+				facing = rc.getLocation().directionTo(myBase).opposite();
 				break;
 			case MINER:
 				break;
@@ -127,6 +130,7 @@ public class RobotPlayer {
 			}
 			
 			curOre = rc.getTeamOre();
+			myLocation = rc.getLocation();
 			
 			switch (myType)
 			{
@@ -163,6 +167,11 @@ public class RobotPlayer {
 			}
 			
 			lastOre = curOre;
+			try {
+				transferSupplies();
+			} catch (Exception e) {
+				
+			}
 			rc.yield();
 		}
 	}
@@ -307,7 +316,10 @@ public class RobotPlayer {
                 }
             }
 			attackSomething();
-	        //potentialAct(squadTarget,RobotType.DRONE);
+	        
+			//potentialAct(squadTarget,RobotType.DRONE);
+			//attackSomething();
+			calcPotential();
 		} catch (Exception e) {
 			System.out.println("Drone Exception");
 			e.printStackTrace();
@@ -350,7 +362,7 @@ public class RobotPlayer {
 	static void doBeaver()
 	{
 		try {
-			if(Clock.getRoundNum() < 10)
+			if(Clock.getRoundNum() < 50)
 			{
 				moveStraight();
 			}
@@ -501,9 +513,15 @@ public class RobotPlayer {
 
 	static void mineAndMove() throws GameActionException {
 		if(rc.senseOre(rc.getLocation())>12){ //there is plenty of ore, so try to mine
-			if(rc.isCoreReady()&&rc.canMine()){
-				rc.mine();
+			if(rand.nextDouble()<0.9){ // mine 90%
+				if(rc.isCoreReady()&&rc.canMine()){
+					rc.mine();
+				}
+			}else{
+				facing = minerPotential();
+				moveStraight();
 			}
+			
 		}else if(rc.senseOre(rc.getLocation())>0.8){ //there is a bit of ore, so maybe try to mine, maybe move on
 			if(rand.nextDouble()<0.2){ // mine
 				if(rc.isCoreReady()&&rc.canMine()){
@@ -582,7 +600,7 @@ public class RobotPlayer {
 		int i=0;
 		float potentialX = 0;
 		float potentialY = 0;
-		float mineScore = -80; // makes it so that a flat region of 10 ore will have a score of 0
+		float mineScore = -1*x.length*10; // makes it so that a flat region of 10 ore will have a score of 0
 		for(MapLocation m: sensingRegion){
 			ore = rc.senseOre(m);
 			ore = (float)ore;
@@ -665,25 +683,84 @@ public class RobotPlayer {
 	
 	
 	// Potential field move
+	static void calcPotential()
+	{
+		double forceX = 0.0;
+		double forceY = 0.0;
+		
+		// get dem robots
+		RobotInfo[] nearbyRobots = rc.senseNearbyRobots();
+		
+		// attracted to squad target, far away
+		forceX = (squadTarget.x - myLocation.x);
+		forceY = (squadTarget.y - myLocation.y);
+		double f = Math.sqrt(forceX*forceX + forceY*forceY)/0.01;
+		forceX /= f;
+		forceY /= f;
+		
+		// calculate potential field from nearby robots
+		for (RobotInfo bot : nearbyRobots)
+		{
+			int vecx = bot.location.x - myLocation.x;
+			int vecy = bot.location.y - myLocation.y;
+			int d2 = bot.location.distanceSquaredTo(myLocation);
+			double d = Math.sqrt(d2);
+			double falloff = 1.0/d2;
+			double fx = 0.0;
+			double fy = 0.0;
+			
+			final double kRepel = 1.0;
+			
+			if (bot.team == myTeam)
+			{
+				// just repel based on distance, at close range
+				fx += kRepel*falloff*falloff*vecx;
+				fy += kRepel*falloff*falloff*vecy;
+			}
+			else
+			{
+				// attracted to enemies, at longer range
+				fx += -kRepel*falloff*vecx;
+				fy += -kRepel*falloff*vecy;
+			}
+			// within attack range, repel
+			forceX += fx;
+			forceY += fy;
+		}
+		// get direction of force
+		/*f = Math.sqrt(forceX*forceX + forceY*forceY);
+		forceX /= f;
+		forceY /= f;*/
+		double[] dots = new double[9];
+		double maxDot = -1e6;
+		int maxDir = 0;
+		for (int i=0; i<9; i++)
+		{
+			dots[i] = forceX*senseLocsX[i] + forceY*senseLocsY[i];
+			if (dots[i] > maxDot)
+			{
+				maxDot = dots[i];
+				maxDir = i;
+			}
+		}
+	}
 	
 	// need to avoid towers bc sight range is same as firing range
 	public static void potentialAct(MapLocation dest, RobotType type) throws GameActionException{
 		double coreDelay = rc.getCoreDelay();
 		int agg = 0;
 		int allyRange = RobotType.DRONE.sensorRadiusSquared;
+		
 		// attack first
 		attackSomething();
 	
-	
-		
-		// sense robots within vision radius (
+		// sense robots within vision radius
 
 		RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(rc.getLocation(),type.sensorRadiusSquared,rc.getTeam().opponent());
 		RobotInfo[] nearbyAllies = rc.senseNearbyRobots(rc.getLocation(),allyRange,rc.getTeam());
 		int numEnemies = nearbyEnemies.length;
 		int numAllies = nearbyAllies.length;
 		
-
 		// potential field
 		MapLocation myLoc = rc.getLocation();
 
@@ -713,7 +790,7 @@ public class RobotPlayer {
 		
 		// calc field for adjacent tiles
 		testDir = Direction.NORTH;
-		for (int i = 1; i < 9; i = i+1){
+		for (int i = 1; i < 9; i++){
 			MapLocation testLoc = rc.getLocation().add(testDir);
 			field[i] = calcField(myLoc,testLoc, dest, nearbyEnemies, nearbyAllies, coreDelay, numAllies);
 			
@@ -744,13 +821,14 @@ public class RobotPlayer {
 			if (diceRoll>fieldCount && diceRoll <fieldCount + pField[i]){
 				if(rc.isCoreReady()&&rc.canMove(testDir)){
 					rc.move(testDir);
+					break;
 				}
 			}
 			testDir = testDir.rotateLeft();
 			fieldCount = fieldCount + pField[i];
 		}
 
-		
+		/*
 		attackSomething();
 		
 		
@@ -792,6 +870,7 @@ public class RobotPlayer {
 		
 		
 		rc.setIndicatorString(2, "numAllies" + allyRange + " " + numAllies +"numEnemies" + numEnemies );
+		*/
 	}
 
 
@@ -800,16 +879,16 @@ public class RobotPlayer {
 
 
 		
-		int fieldBaseline = 10;		
-		int enemyRangePenalty = -200;
-		int enemyTowerRangePenalty = -200;
-		int crashingPenalty = -1000;
-		int bunchingPenalty = -10;
-		int diagWhenCoreDelayPenalty = -40;
-		int restWhenCoreDelayBonus = 100;
-		int destBonus = 90;
-		int numAlliesBonus = 10;
-		int destroyTowerBonus = 340;
+		final int fieldBaseline = 10;		
+		final int enemyRangePenalty = -200;
+		final int enemyTowerRangePenalty = -200;
+		final int crashingPenalty = -1000;
+		final int bunchingPenalty = -10;
+		final int diagWhenCoreDelayPenalty = -40;
+		final int restWhenCoreDelayBonus = 100;
+		final int destBonus = 90;
+		final int numAlliesBonus = 10;
+		final int destroyTowerBonus = 340;
 		
 		int cumulativeField = fieldBaseline;
 		Direction testDir = myLoc.directionTo(testLoc);
