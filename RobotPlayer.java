@@ -1,4 +1,4 @@
-package bassplayer;
+package Jeneception366;
 
 import battlecode.common.*;
 
@@ -56,6 +56,8 @@ public class RobotPlayer {
     static int numBarracks = 0;
     static int numSoldiers = 0;
     static int numHelipads = 15;
+	static int numSupplyDepots = 3;
+	static int numTankFactories = 1;    
 	
 	
 	
@@ -255,9 +257,11 @@ public class RobotPlayer {
 					{
 						if (squadCounts[i] >= targetNum)
 						{
-							// this squad is now live, don't need more units
-							squadStates[i] = (i<HARASS_SQUADS)?SquadState.HARASS:SquadState.ATTACK;
-							doSquadTarget(i);
+							if (((rc.readBroadcast(squadTaskBase+i) >> 8) & 255) >= targetNum) {
+								// this squad is now live, and is all near target, don't need more units
+								squadStates[i] = (i<HARASS_SQUADS)?SquadState.HARASS:SquadState.ATTACK;
+								doSquadTarget(i);
+							}
 						}
 						else
 						{
@@ -420,7 +424,10 @@ public class RobotPlayer {
 		{
 		case RALLY:
 			// go to the friendly tower with the least HP
-			setSquadTarget(squad,getRallyTarget());
+			if (squad < HARASS_SQUADS)
+				setSquadTarget(squad,rc.senseHQLocation());
+			else
+				setSquadTarget(squad,getRallyTarget());
 			break;
 		case HARASS:
 			setSquadTarget(squad,getHarassTarget());
@@ -555,30 +562,47 @@ public class RobotPlayer {
 				RobotInfo[] ourTeam = rc.senseNearbyRobots(100000, rc.getTeam());
 				int n = 0; // current number of miner factories
 				int m = 0; // current number of barracks
-				int o = 0;
+				int o = 0; // current number of helipads
+				int s = 0; // current number of supply depots
+				int tf = 0;
 				for(RobotInfo ri: ourTeam){ // count up miner factories
 					if(ri.type==RobotType.MINERFACTORY){
 						n++;
 					}else if(ri.type==RobotType.BARRACKS){
 						m++;
+					}else if(ri.type==RobotType.TANKFACTORY){
+						tf++;
 					}else if (ri.type==RobotType.HELIPAD){
 						o++;
+					}else if (ri.type==RobotType.SUPPLYDEPOT){
+						s++;
 					}
 				}
 				// only build additional miner factories if we have more than 1
 				// only build additional miner factories if we have more than 1
-                if(n < numMinerFactories && (n <= o)) 
-                {
-                    buildUnit(RobotType.MINERFACTORY);
-                } 
-                else if(m<numBarracks)
-                {
-                    buildUnit(RobotType.BARRACKS);
-                }
-                else if(o<numHelipads)
-                {
-                    buildUnit(RobotType.HELIPAD);
-                }
+				if(s<numSupplyDepots && s < o && s < n)
+				{
+					buildUnit(RobotType.SUPPLYDEPOT);
+				}
+				else if(n < numMinerFactories && (n == o)) 
+				{
+					buildUnit(RobotType.MINERFACTORY);
+				} 
+				else if(m<numBarracks)
+				{
+					buildUnit(RobotType.BARRACKS);
+				}
+				else if(tf<1 && m>0){
+					buildUnit(RobotType.TANKFACTORY);
+				}
+				else if(o<numHelipads)
+				{
+					buildUnit(RobotType.HELIPAD);
+				}
+				else if(tf<numTankFactories  && m>0)
+				{
+					buildUnit(RobotType.TANKFACTORY);
+				}
 				attackSomething();
 				mineAndMove();
 			}
@@ -692,8 +716,12 @@ public class RobotPlayer {
 			return;
 		if (squadTarget != null && rc.canAttackLocation(squadTarget))
 		{
-			rc.attackLocation(squadTarget);
-			return;
+			RobotInfo ri = rc.senseRobotAtLocation(squadTarget);
+			if (ri != null && ri.team == myTeam.opponent())
+			{
+				rc.attackLocation(squadTarget);
+				return;
+			}
 		}
 		
 		RobotInfo[] enemies = rc.senseNearbyRobots(myRange, enemyTeam);
@@ -951,10 +979,18 @@ public class RobotPlayer {
 			
 			// within attack range, repel
 			// (difference in distances)
-			float dattack = sqrt[bot.type.attackRadiusSquared] - sqrt[d2] + 1.0f;
+			float dattack = sqrt[bot.type.attackRadiusSquared] - sqrt[d2] + 2.0f;
 			if (dattack > 0)
 			{
 				kRepel /= (dattack*dattack);
+			}
+			else if (mySquad < HARASS_SQUADS)
+			{
+				// outside of attack range, weakly attrack (if harassing)
+				if (bot.type.attackRadiusSquared < myType.attackRadiusSquared + 5)
+				{
+					kRepel = 5.0f;
+				}
 			}
 
 			forceX += kRepel*id*vecx;
@@ -977,7 +1013,7 @@ public class RobotPlayer {
 			int vecx = tower.x - myLocation.x;
 			int vecy = tower.y - myLocation.y;
 			
-			float kRepel = -2.0f;
+			float kRepel = -20.0f;
 
 			// if we can kill it easily, we attract
 			if (rc.canSenseLocation(tower) && tower.equals(squadTarget))
@@ -997,10 +1033,16 @@ public class RobotPlayer {
 			// steer very clear of towers
 			if (mySquad < HARASS_SQUADS) offset = 5.5f;
 			float dattack = sqrt[RobotType.TOWER.attackRadiusSquared] - sqrt[d2] + offset;
-			if (kRepel > 0) // this is attractive, actually
+			if (kRepel > 0)
+			{// this is attractive, actually
 				dattack = kRepel*id;
+				rc.setIndicatorString(1,"Tower attraction");
+			}
 			else // and this means we are being repelled
+			{
 				dattack = kRepel*id/Math.max(dattack,1);
+				rc.setIndicatorString(1,"Tower repulsion: " + dattack);
+			}
 			forceX += dattack*vecx;
 			forceY += dattack*vecy;
 		}
@@ -1264,21 +1306,6 @@ public class RobotPlayer {
 			rc.spawn(directions[(dirint+offsets[offsetIndex]+8)%8], type);
 		}
 	}
-
-	// This method will attempt to build in the given direction (or as close to it as possible)
-	static void tryBuild(Direction d, RobotType type) throws GameActionException {
-		int offsetIndex = 0;
-		int[] offsets = {0,1,-1,2,-2,3,-3,4};
-		int dirint = directionToInt(d);
-		boolean blocked = false;
-		while (offsetIndex < 8 && !rc.canMove(directions[(dirint+offsets[offsetIndex]+8)%8])) {
-			offsetIndex++;
-		}
-		if (offsetIndex < 8) {
-			rc.build(directions[(dirint+offsets[offsetIndex]+8)%8], type);
-		}
-	}
-	
 	
 	static void buildUnit(RobotType type) throws GameActionException {
 		if(rc.getTeamOre()>type.oreCost && rc.isCoreReady()) {
