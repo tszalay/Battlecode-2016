@@ -1,4 +1,4 @@
-package Jeneception366;
+package team366;
 
 import battlecode.common.*;
 
