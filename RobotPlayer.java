@@ -50,12 +50,12 @@ public class RobotPlayer {
 	static int bestMineYChan = bestMineXChan + 1;
 
 	// Adjustable parameters
-	static int numBeavers = 16;
-	static int numMinerFactories = 4;
-	static int numMiners = 40;
-	static int numBarracks = 0;
-	static int numSoldiers = 0;
-	static int numHelipads = 12;
+    static int numBeavers = 8;
+    static int numMinerFactories = 20;
+    static int numMiners = 100;
+    static int numBarracks = 0;
+    static int numSoldiers = 0;
+    static int numHelipads = 15;
 	
 	
 	
@@ -70,14 +70,23 @@ public class RobotPlayer {
 	
 	
 	// HQ-specific
-	static enum SquadCommand
+	static enum SquadState
 	{
-		BUILDING,
-		ATTACKING
+		RALLY,		// fewer than SQUAD_NUM units, defensive
+		ATTACK,		// target a thing and kill it
+		HARASS		// move around the back of the map and pick off targets
 	}
-	static SquadCommand[] squadCommand = new SquadCommand[MAX_SQUADS];
+	static MapLocation[] squadTargets = new MapLocation[MAX_SQUADS];
+	static SquadState[] squadStates = new SquadState[MAX_SQUADS];
 	static int[] squadCounts = new int[MAX_SQUADS];
 	static int lastTowers = 0;
+	
+	static MapLocation[] enemyBuildings;
+	static double[] enemyHP;
+	
+	static final int SQUAD_UNITS = 16;
+	static final int HARASS_UNITS = 4;
+	static final int HARASS_SQUADS = 2;
 
 	static double lastOre = 0;
 	static double curOre = 0;
@@ -104,6 +113,11 @@ public class RobotPlayer {
 		public MapLocation offsetFrom(MapLocation ml)
 		{
 			return new MapLocation(x+ml.x,y+ml.y);
+		}
+		
+		public boolean equals(MapLocation ml)
+		{
+			return (ml.x == this.x) && (ml.y == this.y);
 		}
 	}
 	
@@ -134,6 +148,11 @@ public class RobotPlayer {
 			switch (myType)
 			{
 			case HQ:
+				Arrays.fill(squadStates, SquadState.RALLY);
+				enemyBuildings = getBuildings(myTeam.opponent());
+				enemyHP = new double[enemyBuildings.length];
+				for (int i=0; i<enemyHP.length; i++)
+					enemyHP[i] = 1200 - 1.0/myBase.distanceSquaredTo(enemyBuildings[i]);
 				break;
 			case BEAVER:
 				facing = rc.getLocation().directionTo(myBase).opposite();
@@ -201,6 +220,7 @@ public class RobotPlayer {
 				transferSupplies();
 			} catch (Exception e) {
 				System.out.println("Supply exception");
+				//e.printStackTrace();
 			}
 			rc.yield();
 		}
@@ -214,64 +234,63 @@ public class RobotPlayer {
 		{
 			rc.setIndicatorString(1,"Current ore: " + curOre);
 			if (rc.isWeaponReady())
-			{
 				attackSomething();
-			}
 
 			int nextSquad = -1;
-			// the number we fill squads to
-			int squadMax = 16;
+			// figure out squad state updates
 			for (int i=0; i<MAX_SQUADS; i++)
 			{
 				int squadcount = rc.readBroadcast(squadUnitsBase + i);
+				
 				if (squadcount >> 16 == Clock.getRoundNum() - 1)
 				{
+					// units alive, get number of units
 					squadcount = squadcount & 255;
 					squadCounts[i] = squadcount;
-					// refill squad with fewest nonzero units
-					if (squadcount < squadMax && nextSquad == -1)
-						nextSquad = i;
+					// if we are rallying and full
+					int targetNum = SQUAD_UNITS;
+					if (i<HARASS_SQUADS) targetNum = HARASS_UNITS;
+					
+					if (squadStates[i] == SquadState.RALLY)
+					{
+						if (squadCounts[i] >= targetNum)
+						{
+							// this squad is now live, don't need more units
+							squadStates[i] = (i<HARASS_SQUADS)?SquadState.HARASS:SquadState.ATTACK;
+							doSquadTarget(i);
+						}
+						else
+						{
+							// it needs more units, target stays, but only if we're rallying
+							if (nextSquad == -1) nextSquad = i;
+						}
+					}
+					else // see if other types reached their target
+					{
+						if (rc.canSenseLocation(squadTargets[i]))
+						{
+							RobotInfo ri = rc.senseRobotAtLocation(squadTargets[i]);
+							if (ri != null && ri.team == myTeam)
+								doSquadTarget(i);
+						}
+					}
 				}
 				else
 				{
 					// no units reporting, all are dead
 					squadCounts[i] = 0;
-					if (nextSquad == -1)
-						nextSquad = i;
+					squadStates[i] = SquadState.RALLY;
+					if (nextSquad == -1) nextSquad = i;
+					doSquadTarget(i);
 				}
-				//System.out.println("SquadCounts[" + i + "]:" + squadCounts[i]);
 			}
-			//System.out.println("NextSquad:" + nextSquad);
+
+			// and send out which squad to build to next
 			if (nextSquad == -1)
 				nextSquad = 0;
 			rc.broadcast(nextSquadChan, nextSquad);
 			
-			// set the first squad's target to enemy towers
-			MapLocation[] towers = rc.senseEnemyTowerLocations();
-			MapLocation hq = rc.senseEnemyHQLocation();
 			
-			if (towers.length != lastTowers)
-			{
-				MapValue[] mvs = new MapValue[towers.length];
-				
-				for (int i=0; i<towers.length; i++)
-					mvs[i] = new MapValue(towers[i].x-center.x,towers[i].y-center.y,towers[i].distanceSquaredTo(rc.senseHQLocation()));
-					
-				Arrays.sort(mvs);
-				
-				for (int i=0; i<towers.length; i++)
-				{
-					int loc = (mvs[i].y << 16) + (mvs[i].x & 65535);
-					rc.broadcast(squadTargetBase + i, loc);
-				}				
-				for (int i=towers.length; i<MAX_SQUADS; i++)
-				{					
-					int loc = ((hq.y - center.y) << 16) + ((hq.x - center.x) & 65535);
-					rc.broadcast(squadTargetBase + i, loc);
-				}
-			}
-			
-			int st = rc.readBroadcast(squadTargetBase);
 			
 			RobotInfo[] ourTeam = rc.senseNearbyRobots(1000, rc.getTeam());
 			int n = 0; // current number of beavers
@@ -290,6 +309,125 @@ public class RobotPlayer {
 		} catch (Exception e) {
 			System.out.println("HQ Exception");
 			e.printStackTrace();
+		}
+	}
+	
+	// get all buildings, including HQ, in a single uniform list
+	static MapLocation[] getBuildings(Team team)
+	{
+		MapLocation[] buildings;
+		if (team == myTeam)
+		{
+			MapLocation[] towers = rc.senseTowerLocations();
+			MapLocation hq = rc.senseHQLocation();
+			buildings = new MapLocation[towers.length+1];
+			System.arraycopy(towers,0,buildings,1,towers.length);
+			buildings[0] = hq;
+		}
+		else
+		{
+			MapLocation[] towers = rc.senseEnemyTowerLocations();
+			MapLocation hq = rc.senseEnemyHQLocation();
+			buildings = new MapLocation[towers.length+1];
+			System.arraycopy(towers,0,buildings,1,towers.length);
+			buildings[0] = hq;
+		}
+		return buildings;
+	}
+	
+	// returns total (differential) HP near a location
+	// (this is too slow, just replacing with building health for now)
+	static double getHPnear(MapLocation loc) throws GameActionException
+	{
+		double HP = 0.0;
+		
+		//RobotInfo[] bots = rc.senseNearbyRobots(loc, 15, null);
+		
+		//for (RobotInfo b: bots)
+		//	HP += (b.team == myTeam)?-b.health:b.health;
+		
+		if (!rc.canSenseLocation(loc))
+			return 0;
+		
+		RobotInfo ri = rc.senseRobotAtLocation(loc);
+		HP = ri.health;
+		if (ri.supplyLevel > ri.type.supplyUpkeep*10)
+			HP *= 2;
+		
+		return HP;
+	}
+	
+	static MapLocation getRallyTarget() throws GameActionException
+	{
+		MapLocation[] buildings = getBuildings(myTeam);
+		MapValue[] mvs = new MapValue[buildings.length];
+		for (int i=0; i<buildings.length; i++)
+			mvs[i] = new MapValue(buildings[i].x,buildings[i].y,getHPnear(buildings[i]));
+		Arrays.sort(mvs);
+		return new MapLocation(mvs[0].x,mvs[0].y);
+	}
+	
+	static MapLocation updateEnemyBuildingHP() throws GameActionException
+	{
+		MapLocation[] buildings = getBuildings(myTeam.opponent());
+		
+		// check if any were destroyed
+		if (buildings.length < enemyBuildings.length)
+		{
+			MapLocation[] oldbldgs = enemyBuildings;
+			enemyBuildings = buildings;
+			double[] newHP = new double[buildings.length];
+			// and find which one(s), and remove it
+			int j = 0;
+			for (int i=0; i<enemyBuildings.length; i++)
+			{
+				if (!buildings[j].equals(enemyBuildings[i]))
+					continue;
+				newHP[j] = enemyHP[i];
+				j++;
+			}
+			enemyHP = newHP;
+		}
+		
+		// now see if we can sense any of them
+		MapValue[] mvs = new MapValue[buildings.length];
+		for (int i=0; i<buildings.length; i++)
+		{
+			//if (rc.canSenseLocation(buildings[i]))
+			//	enemyHP[i] = getHPnear(buildings[i]);
+			mvs[i] = new MapValue(buildings[i].x,buildings[i].y,enemyHP[i]);
+		}
+		Arrays.sort(mvs);
+		
+		return new MapLocation(mvs[0].x,mvs[0].y);
+	}
+	
+	static void setSquadTarget(int squad, MapLocation target) throws GameActionException
+	{
+		int loc = ((target.y-center.y) << 16) + ((target.x-center.x) & 65535);
+		rc.broadcast(squadTargetBase + squad, loc);
+		squadTargets[squad] = target;
+	}
+	
+	static MapLocation getHarassTarget()
+	{
+		return rc.senseEnemyHQLocation();
+	}
+
+	static void doSquadTarget(int squad) throws GameActionException
+	{
+		switch (squadStates[squad])
+		{
+		case RALLY:
+			// go to the friendly tower with the least HP
+			setSquadTarget(squad,getRallyTarget());
+			break;
+		case HARASS:
+			setSquadTarget(squad,getHarassTarget());
+			break;
+		case ATTACK:
+			setSquadTarget(squad,updateEnemyBuildingHP());
+			break;
 		}
 	}
 	
@@ -377,7 +515,7 @@ public class RobotPlayer {
 		try {
 			RobotInfo[] adjacentEnemies = rc.senseNearbyRobots(2, enemyTeam);
 
-			// BASHERs attack automatically, so let's just move around mostly randomly
+		// BASHERs attack automatically, so let's just move around mostly randomly
 		if (rc.isCoreReady()) {
 			int fate = rand.nextInt(1000);
 			if (fate < 800) {
@@ -428,18 +566,19 @@ public class RobotPlayer {
 					}
 				}
 				// only build additional miner factories if we have more than 1
-				if(n < numMinerFactories && (n == o)) 
-				{
-					buildUnit(RobotType.MINERFACTORY);
-				} 
-				else if(m<numBarracks)
-				{
-					buildUnit(RobotType.BARRACKS);
-				}
-				else if(o<numHelipads)
-				{
-					buildUnit(RobotType.HELIPAD);
-				}
+				// only build additional miner factories if we have more than 1
+                if(n < numMinerFactories && (n <= o)) 
+                {
+                    buildUnit(RobotType.MINERFACTORY);
+                } 
+                else if(m<numBarracks)
+                {
+                    buildUnit(RobotType.BARRACKS);
+                }
+                else if(o<numHelipads)
+                {
+                    buildUnit(RobotType.HELIPAD);
+                }
 				attackSomething();
 				mineAndMove();
 			}
@@ -489,7 +628,11 @@ public class RobotPlayer {
 	
 	// Supply Transfer Protocol
 	static void transferSupplies() throws GameActionException {
-		RobotInfo[] nearbyAllies = rc.senseNearbyRobots(myLocation,GameConstants.SUPPLY_TRANSFER_RADIUS_SQUARED,myTeam);
+		
+		if (myType == RobotType.MINERFACTORY || Clock.getBytecodesLeft() < 600)
+			return;
+		
+		RobotInfo[] nearbyAllies = rc.senseNearbyRobots(rc.getLocation(),GameConstants.SUPPLY_TRANSFER_RADIUS_SQUARED,myTeam);
 		double mySupply = rc.getSupplyLevel();
 		double lowestSupply = mySupply;
 		double transferAmount = 0;
@@ -544,6 +687,15 @@ public class RobotPlayer {
 	// This method will attack an enemy in sight, if there is one
 	static void attackSomething() throws GameActionException
 	{
+		// if we can attack squad target (eg. tower), so do
+		if (!rc.isWeaponReady())
+			return;
+		if (squadTarget != null && rc.canAttackLocation(squadTarget))
+		{
+			rc.attackLocation(squadTarget);
+			return;
+		}
+		
 		RobotInfo[] enemies = rc.senseNearbyRobots(myRange, enemyTeam);
 		double minhealth = 1000;
 		
@@ -559,7 +711,7 @@ public class RobotPlayer {
 				minloc = en.location;
 			}
 		}
-		if (rc.canAttackLocation(minloc) && rc.isWeaponReady())
+		if (rc.canAttackLocation(minloc))
 			rc.attackLocation(minloc);
 	}
 	
@@ -809,9 +961,9 @@ public class RobotPlayer {
 			forceY += kRepel*id*vecy;
 		}
 		
-		boolean hasSquad = friendlyRobots.length > 5 || ((rc.readBroadcast(squadTaskBase+mySquad) >> 8) & 255) > 5;
+		boolean hasSquad = friendlyRobots.length > 8 || ((rc.readBroadcast(squadTaskBase+mySquad) >> 8) & 255) > 8;
 		
-		MapLocation[] towers = rc.senseEnemyTowerLocations();
+		MapLocation[] towers = getBuildings(myTeam.opponent());
 		
 		for (MapLocation tower : towers)
 		{
@@ -841,7 +993,10 @@ public class RobotPlayer {
 			
 			// within attack range, repel
 			// (difference in distances)
-			float dattack = sqrt[RobotType.TOWER.attackRadiusSquared] - sqrt[d2] + 1.5f;
+			float offset = 1.5f;
+			// steer very clear of towers
+			if (mySquad < HARASS_SQUADS) offset = 5.5f;
+			float dattack = sqrt[RobotType.TOWER.attackRadiusSquared] - sqrt[d2] + offset;
 			if (kRepel > 0) // this is attractive, actually
 				dattack = kRepel*id;
 			else // and this means we are being repelled
@@ -1142,7 +1297,7 @@ public class RobotPlayer {
 	}
 
 	
-	private static void spawnUnit(RobotType type) throws GameActionException {
+	static void spawnUnit(RobotType type) throws GameActionException {
 		Direction randomDir = getRandomDirection();
 
 		if(rc.isCoreReady() && rc.canSpawn(randomDir, type))
