@@ -30,14 +30,10 @@ public class RobotPlayer {
 	static int myGridInd;
 	static int myGridFriend; 
 	static int myGridEnemy;
-	// borders of my grid
+	// my grid location values
 	static MapLocation myGridUL;
 	static MapLocation myGridBR;
-	// and grid values for adjacent squares
-	static int[] adjacentGridInd = new int[8];
-	static int[] adjacentGridFriend = new int[8];
-	static int[] adjacentGridEnemy = new int[8];
-	static int[] adjacentGridEnemyHash = new int[8];
+	static MapLocation myGridCenter;
 		
 	// standard defines
 	static MapLocation center;
@@ -69,10 +65,13 @@ public class RobotPlayer {
 	
 	// grid, not map
 	// how many map elements per grid element?
-	static final int GRID_SPC = 10;
+	static final int GRID_SPC = 9;
+	// and what is required to sense the whole grid?
+	static final int GRID_SENSE = 32;
 	// max possible extents in one direction
-	static final int GRID_DIM = 260/GRID_SPC;
-	// and how many elements total. 576 last i checked
+	// needs to be at least 240/GRID_SPC
+	static final int GRID_DIM = 252/GRID_SPC;
+	// and how many elements in base grid. 784 total, of which we will use at most 196
 	static final int GRID_NUM = GRID_DIM*GRID_DIM;
 	// offset to get to upper-right corner of grid
 	static final int GRID_OFFSET = GRID_DIM*GRID_SPC/2;
@@ -88,11 +87,21 @@ public class RobotPlayer {
 	static final int mapExtentsChan = curChan++;
 	
 	/* Grid info */
+	// list of grid indices that we have explored
+	static final int gridListCountChan = curChan++;
+	static final int gridListBase = curChan; static {curChan+=GRID_NUM/4;}
+	// map list of basic grid square status
+	static final int gridStatusBase = curChan; static {curChan+=GRID_NUM;}
 	// lower 16 bits are current accumulation round
 	// upper 16 are when the values in the accumulators below were saved
 	static final int gridTickBase = curChan; static {curChan+=GRID_NUM;}
+	// this one is a self-reported accumulator
 	static final int gridFriendBase = curChan; static {curChan+=GRID_NUM;}
+	// this one is not
 	static final int gridEnemyBase = curChan; static {curChan+=GRID_NUM;}
+	// and whatever and stuff
+	static final int gridUpdateChan = curChan++;
+	
 	static final int gridEnemyHashBase = curChan; static {curChan+=GRID_NUM;}
 	static final int gridOreBase = curChan; static {curChan+=GRID_NUM;}
 	
@@ -186,8 +195,6 @@ public class RobotPlayer {
 		}
 	}
 	
-	//static int[] cidFromGameID = new int [GAMEID_NUM];
-	
 
 	public static void run(RobotController robotc)
 	{
@@ -202,6 +209,7 @@ public class RobotPlayer {
 			switch (myType)
 			{
 			case HQ:
+				System.out.println(curChan + " channels in use");
 				analyzeMap();
 				
 				Arrays.fill(squadStates, SquadState.RALLY);
@@ -231,8 +239,13 @@ public class RobotPlayer {
 		
 		while(true) {
 			
-			update();
-						
+			try {
+				update();
+			} catch (Exception e) {
+				System.out.println("General update exception");
+				e.printStackTrace();
+			}
+			
 			switch (myType)
 			{
 			case HQ:
@@ -309,7 +322,7 @@ public class RobotPlayer {
 		rc.broadcast(cidBase+myCID, myGameID);
 	}
 	
-	static void update()
+	static void update() throws GameActionException
 	{
 		MapLocation newloc = rc.getLocation();
 		if (!newloc.equals(myLocation))
@@ -327,16 +340,33 @@ public class RobotPlayer {
 		if (moved)
 		{			
 			// update internal grid coordinate values
-			myGridX = (GRID_OFFSET+myLocation.x-center.x)/GRID_SPC;
-			myGridY = (GRID_OFFSET+myLocation.y-center.y)/GRID_SPC;
+			myGridX = (GRID_OFFSET+myLocation.x-center.x+GRID_SPC/2)/GRID_SPC;
+			myGridY = (GRID_OFFSET+myLocation.y-center.y+GRID_SPC/2)/GRID_SPC;
 			myGridInd = myGridY*GRID_DIM + myGridX;
-			myGridUL = new MapLocation(myGridX*GRID_SPC+center.x-GRID_OFFSET,myGridY*GRID_SPC+center.y-GRID_OFFSET);
-			myGridBR = myGridUL.add(GRID_SPC,GRID_SPC);
-			for (int i=0; i<8; i++)
+			
+			// has this grid cell been entered  yet?
+			if (rc.readBroadcast(gridStatusBase+myGridInd) == 0)
 			{
-				adjacentGridInd[i] = (myGridY+senseLocsY[i+1])*GRID_DIM + myGridX+senseLocsX[i+1];
+				// write that we have entered it
+				rc.broadcast(gridStatusBase+myGridInd, 1);
+				// and add it to global grid list
+				int gridcount = rc.readBroadcast(gridListCountChan);
+				rc.broadcast(gridListBase+gridcount,myGridInd);
+				rc.broadcast(gridListCountChan,gridcount+1);
 			}
-			//rc.setIndicatorDot(new MapLocation(myGridX*GRID_SPC+center.x,myGridY*GRID_SPC+center.y).add(GRID_SPC/2-GRID_OFFSET,GRID_SPC/2-GRID_OFFSET), 255, 0, 0);
+			
+			myGridCenter = gridCenter(myGridInd);
+			// both coords are inclusive
+			myGridUL = myGridCenter.add(-GRID_SPC/2,-GRID_SPC/2);
+			myGridBR = myGridCenter.add(GRID_SPC/2,GRID_SPC/2);
+			
+			// draw grid boundaries?
+			/*
+			rc.setIndicatorLine(myGridUL, myGridUL.add(GRID_SPC-1,0), 0, 255, 255);
+			rc.setIndicatorLine(myGridUL, myGridUL.add(0,GRID_SPC-1), 0, 255, 255);
+			rc.setIndicatorLine(myGridBR, myGridBR.add(0,-GRID_SPC+1), 0, 255, 255);
+			rc.setIndicatorLine(myGridBR, myGridBR.add(-GRID_SPC+1,0), 0, 255, 255);
+			*/
 		}
 	}
 	
@@ -849,9 +879,7 @@ public class RobotPlayer {
 	static void doMiner()
 	{
 		try {
-			int bc = Clock.getBytecodeNum();
 			updateGrid();
-			System.out.println(Clock.getBytecodeNum()-bc);
 			attackSomething();
 			mineAndMove();
 		} catch (Exception e) {
@@ -885,70 +913,93 @@ public class RobotPlayer {
 		
 		rc.broadcast(squadTaskBase + mySquad, squadTask);
 	}
+		
+	static MapLocation gridCenter(int gridX, int gridY)
+	{
+		return new MapLocation(gridX*GRID_SPC+center.x-GRID_OFFSET,gridY*GRID_SPC+center.y-GRID_OFFSET);
+	}
+	
+	static MapLocation gridCenter(int gridInd)
+	{
+		return new MapLocation((gridInd%GRID_DIM)*GRID_SPC+center.x-GRID_OFFSET,(gridInd/GRID_DIM)*GRID_SPC+center.y-GRID_OFFSET);
+	}
 	
 	static void updateGrid() throws GameActionException
 	{
-		// should be positive values
-		// (also, should be post a move() function)
-		int gridTick = rc.readBroadcast(gridTickBase+myGridInd);
-		int gridFriend = rc.readBroadcast(gridFriendBase+myGridInd);
-		int gridEnemy = rc.readBroadcast(gridEnemyBase+myGridInd);
-		int gridHash = rc.readBroadcast(gridEnemyHashBase+myGridInd);
-		
-		/*for (int i=0; i<8; i++)
-		{
-			adjacentGridFriend[i] = rc.readBroadcast(gridFriendBase+adjacentGridInd[i]);
-			adjacentGridEnemy[i] = rc.readBroadcast(gridEnemyBase+adjacentGridInd[i]);
-			adjacentGridEnemyHash[i] = rc.readBroadcast(gridEnemyHashBase+adjacentGridInd[i]);
-		}*/
-		
-		// update last round's values
-		myGridFriend = (gridFriend >>> 16);
-		myGridEnemy = (gridEnemy >>> 16);
+		int bc = Clock.getBytecodeNum();
 
-		if (Clock.getRoundNum() != (65535 & gridTick))
-		{
-			// transfer accumulators
-			rc.broadcast(gridTickBase+myGridInd,(gridTick<<16)|Clock.getRoundNum());
-			gridFriend <<= 16;
-			gridEnemy <<= 16;
-			gridHash = 0; // clear bad guy hash
-		}
+		int ptr = rc.readBroadcast(gridUpdateChan);
+		int gridn = rc.readBroadcast(gridListCountChan);		
+		int gridind = rc.readBroadcast(gridListBase+ptr);
 		
-		int myStrength = getRobotStrength(rc.getHealth(),rc.getSupplyLevel(),myType);
+		MapLocation loc = gridCenter(gridind);
+		MapLocation ul = loc.add(-GRID_SPC/2,-GRID_SPC/2);
+		MapLocation br = loc.add(GRID_SPC/2,GRID_SPC/2);
 		
-		gridFriend += myStrength;
-		// did we modify adjacent cells?
-		boolean enemyInCell[] = new boolean[8];
-		// sense nearby enemies
-		RobotInfo[] bots = rc.senseNearbyRobots(myType.sensorRadiusSquared,myTeam.opponent());
-		// this is balls bytecodes
+		// now sense frienemies in all grid cells
+		RobotInfo[] bots = rc.senseNearbyRobots(loc,GRID_SENSE,null);
+		
+		int gridFriend = 0;
+		int gridEnemy = 0;
+		
 		for (RobotInfo ri : bots)
 		{
-			/*int enemyInd = myGridInd;
-			// figure out which cell the enemy is in, if not this one
-			if (!((ri.location.x >= myGridUL.x && ri.location.x < myGridBR.x) && (ri.location.y >= myGridUL.y && ri.location.y < myGridBR.y)))
-			{
-				int dx = (ri.location.x >= myGridBR.x)?1:((ri.location.x<myGridUL.x)?-1:0);
-				int dy = (ri.location.y >= myGridBR.y)?1:((ri.location.y<myGridUL.y)?-1:0);
-				enemyInd = enemyInd + dx + (dy*GRID_DIM);
-			}*/
-			// compute two simple hash functions to 0...31
-			int hash = 1 << ((ri.ID * 1943152283)&31);
-			hash |= (1 << ((ri.ID * 56557141)&31));
+			// not in this grid cell?
+			if ((ri.location.x < ul.x) || (ri.location.x > br.x) ||
+					(ri.location.y < ul.y) || (ri.location.y > br.y))
+				continue;
 			
-			// now if these hashes are not present, we include the enemy
-			if ((hash & gridHash) == 0)
-			{
-				gridEnemy += getRobotStrength(ri.health,ri.supplyLevel,ri.type);
-				gridHash |= gridEnemy;
-			}
-			// and 
+			int strength = getRobotStrength(ri.health,ri.supplyLevel,ri.type);
+			if (ri.team == myTeam)
+				gridFriend += strength;
+			else
+				gridEnemy += strength;
 		}
 		
-		rc.broadcast(gridFriendBase+myGridInd,gridFriend);
-		rc.broadcast(gridEnemyBase+myGridInd,gridEnemy);
-		rc.broadcast(gridEnemyHashBase+myGridInd,gridHash);
+		rc.broadcast(gridFriendBase+gridind,gridFriend);
+		rc.broadcast(gridEnemyBase+gridind,gridEnemy);
+		rc.broadcast(gridUpdateChan,(ptr+1)%gridn);
+		
+		bc = Clock.getBytecodeNum();
+		gridDiffuse(gridind);
+		System.out.println(Clock.getBytecodeNum()-bc);
+	}
+	
+	static void gridDiffuse(int gridInd) throws GameActionException
+	{
+		int ptr = rc.readBroadcast(gridUpdateChan);
+		int gridn = rc.readBroadcast(gridListCountChan);
+		int gridind = rc.readBroadcast(gridListBase+ptr);
+		
+		int gridX = gridind%GRID_DIM;
+		int gridY = gridind/GRID_DIM;
+		
+		int gridstatus = rc.readBroadcast(gridStatusBase+gridind);
+		
+		int gridval = rc.readBroadcast(gridOreBase+gridind);
+		int newval = 0;
+		
+		if (gridX>0 && ((gridstatus&2)==0))
+			newval += rc.readBroadcast(gridOreBase+gridInd-1);
+		else
+			newval += gridval;
+		
+		if (gridX<GRID_DIM-1 && ((gridstatus&4)==0))
+			newval += rc.readBroadcast(gridOreBase+gridInd+1);
+		else
+			newval += gridval;
+		
+		if (gridY>0 && ((gridstatus&6)==0))
+			newval += rc.readBroadcast(gridOreBase+gridInd-GRID_DIM);
+		else
+			newval += gridval;
+		
+		if (gridY<GRID_DIM-1 && ((gridstatus&8)==0))
+			newval += rc.readBroadcast(gridOreBase+gridInd+GRID_DIM);
+		else
+			newval += gridval;
+		
+		rc.broadcast(gridOreBase+gridind, newval);
 	}
 	
 	static int getRobotStrength(double health, double supply, RobotType type)
@@ -1461,13 +1512,17 @@ public class RobotPlayer {
 			for (int y=0;y<GRID_DIM;y++)
 			{
 				int gridind = y*GRID_DIM+x;
+				
+				if (rc.readBroadcast(gridStatusBase+gridind) == 0)
+					continue;
+				
 				// draw a dot
-				MapLocation loc = center.add(x*GRID_SPC,y*GRID_SPC).add(GRID_SPC/2-GRID_OFFSET,GRID_SPC/2-GRID_OFFSET);
-				int val = (rc.readBroadcast(gridFriendBase+gridind) >>> 16);
+				MapLocation loc = gridCenter(gridind);
+				int val = (rc.readBroadcast(gridFriendBase+gridind));
 				if (val > 255) val = 255;
 				rc.setIndicatorDot(loc,0,0,val);
 				
-				val = (rc.readBroadcast(gridEnemyBase+gridind) >>> 16);
+				val = (rc.readBroadcast(gridEnemyBase+gridind));
 				if (val > 255) val = 255;
 				rc.setIndicatorDot(loc.add(1,0),val,0,0);
 			}
