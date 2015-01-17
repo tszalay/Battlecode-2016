@@ -76,6 +76,14 @@ public class RobotPlayer {
 	// offset to get to upper-right corner of grid
 	static final int GRID_OFFSET = GRID_DIM*GRID_SPC/2;
 	
+	// have we seen a particular grid cell?
+	static final int STATUS_SEEN = (1<<0);
+	// which directions is this cell connected to others?
+	static final int STATUS_NORTH = (1<<1);
+	static final int STATUS_SOUTH = (1<<2);
+	static final int STATUS_EAST = (1<<3);
+	static final int STATUS_WEST = (1<<4);
+	
 	static int curChan = 0;
 	
 	/* Contig ID counting, to use for enemies and friends */
@@ -94,15 +102,19 @@ public class RobotPlayer {
 	static final int gridStatusBase = curChan; static {curChan+=GRID_NUM;}
 	// lower 16 bits are current accumulation round
 	// upper 16 are when the values in the accumulators below were saved
-	static final int gridTickBase = curChan; static {curChan+=GRID_NUM;}
-	// this one is a self-reported accumulator
-	static final int gridFriendBase = curChan; static {curChan+=GRID_NUM;}
-	// this one is not
-	static final int gridEnemyBase = curChan; static {curChan+=GRID_NUM;}
-	// and whatever and stuff
-	static final int gridUpdateChan = curChan++;
+	//static final int gridTickBase = curChan; static {curChan+=GRID_NUM;}
 	
-	static final int gridEnemyHashBase = curChan; static {curChan+=GRID_NUM;}
+	// these are calculated in a distributed fashion 
+	static final int gridFriendBase = curChan; static {curChan+=GRID_NUM;}
+	static final int gridEnemyBase = curChan; static {curChan+=GRID_NUM;}
+	// diffusion values for frienemy potential
+	static final int gridPotentialBase = curChan; static {curChan+=GRID_NUM;}
+
+	// pointer to which grid cells we're calculating the above
+	static final int gridUpdatePtrChan = curChan++;
+	static final int gridPotentialPtrChan = curChan++;
+	
+	
 	static final int gridOreBase = curChan; static {curChan+=GRID_NUM;}
 	
 	/* Squad task defines */
@@ -282,6 +294,16 @@ public class RobotPlayer {
 			
 			lastOre = curOre;
 			
+			try {
+			while (Clock.getBytecodesLeft() > 1500)
+				updateGrid();
+			while (Clock.getBytecodesLeft() > 300)
+				gridDiffuse();
+			} catch (Exception e) {
+				System.out.println("Grid exception");
+				//e.printStackTrace();
+			}
+			
 			if (Clock.getBytecodesLeft() < 600)
 				rc.yield();
 			
@@ -348,7 +370,7 @@ public class RobotPlayer {
 			if (rc.readBroadcast(gridStatusBase+myGridInd) == 0)
 			{
 				// write that we have entered it
-				rc.broadcast(gridStatusBase+myGridInd, 1);
+				rc.broadcast(gridStatusBase+myGridInd, STATUS_SEEN);
 				// and add it to global grid list
 				int gridcount = rc.readBroadcast(gridListCountChan);
 				rc.broadcast(gridListBase+gridcount,myGridInd);
@@ -816,7 +838,6 @@ public class RobotPlayer {
 	static void doBeaver()
 	{
 		try {
-			updateGrid();
 			if(Clock.getRoundNum() < 50)
 			{
 				moveStraight();
@@ -879,7 +900,6 @@ public class RobotPlayer {
 	static void doMiner()
 	{
 		try {
-			updateGrid();
 			attackSomething();
 			mineAndMove();
 		} catch (Exception e) {
@@ -928,7 +948,7 @@ public class RobotPlayer {
 	{
 		int bc = Clock.getBytecodeNum();
 
-		int ptr = rc.readBroadcast(gridUpdateChan);
+		int ptr = rc.readBroadcast(gridUpdatePtrChan);
 		int gridn = rc.readBroadcast(gridListCountChan);		
 		int gridind = rc.readBroadcast(gridListBase+ptr);
 		
@@ -958,16 +978,16 @@ public class RobotPlayer {
 		
 		rc.broadcast(gridFriendBase+gridind,gridFriend);
 		rc.broadcast(gridEnemyBase+gridind,gridEnemy);
-		rc.broadcast(gridUpdateChan,(ptr+1)%gridn);
+		rc.broadcast(gridUpdatePtrChan,(ptr+1)%gridn);
 		
-		bc = Clock.getBytecodeNum();
-		gridDiffuse(gridind);
 		System.out.println(Clock.getBytecodeNum()-bc);
+		if (ptr == 0)
+			System.out.println("Grid update @ " + Clock.getRoundNum());
 	}
 	
-	static void gridDiffuse(int gridInd) throws GameActionException
+	static void gridDiffuse() throws GameActionException
 	{
-		int ptr = rc.readBroadcast(gridUpdateChan);
+		int ptr = rc.readBroadcast(gridPotentialPtrChan);
 		int gridn = rc.readBroadcast(gridListCountChan);
 		int gridind = rc.readBroadcast(gridListBase+ptr);
 		
@@ -976,35 +996,47 @@ public class RobotPlayer {
 		
 		int gridstatus = rc.readBroadcast(gridStatusBase+gridind);
 		
-		int gridval = rc.readBroadcast(gridOreBase+gridind);
-		int newval = 0;
+		// source term for potential is difference between friend and enemy squares
+		int source = rc.readBroadcast(gridFriendBase+gridind);
+		if (source > 0)
+			source = source - 4*rc.readBroadcast(gridEnemyBase+gridind);
+		else
+			source = source - rc.readBroadcast(gridEnemyBase+gridind);
 		
-		if (gridX>0 && ((gridstatus&2)==0))
-			newval += rc.readBroadcast(gridOreBase+gridInd-1);
+		int gridval = rc.readBroadcast(gridPotentialBase+gridind);
+		
+		// new value, computed from average of surrounding squares
+		int newval = source;
+		
+		if (gridX>0 && ((gridstatus&STATUS_WEST)==0))
+			newval += rc.readBroadcast(gridPotentialBase+gridind-1);
 		else
 			newval += gridval;
 		
-		if (gridX<GRID_DIM-1 && ((gridstatus&4)==0))
-			newval += rc.readBroadcast(gridOreBase+gridInd+1);
+		if (gridX<GRID_DIM-1 && ((gridstatus&STATUS_EAST)==0))
+			newval += rc.readBroadcast(gridPotentialBase+gridind+1);
 		else
 			newval += gridval;
 		
-		if (gridY>0 && ((gridstatus&6)==0))
-			newval += rc.readBroadcast(gridOreBase+gridInd-GRID_DIM);
+		if (gridY>0 && ((gridstatus&STATUS_NORTH)==0))
+			newval += rc.readBroadcast(gridPotentialBase+gridind-GRID_DIM);
 		else
 			newval += gridval;
 		
-		if (gridY<GRID_DIM-1 && ((gridstatus&8)==0))
-			newval += rc.readBroadcast(gridOreBase+gridInd+GRID_DIM);
+		if (gridY<GRID_DIM-1 && ((gridstatus&STATUS_SOUTH)==0))
+			newval += rc.readBroadcast(gridPotentialBase+gridind+GRID_DIM);
 		else
 			newval += gridval;
 		
-		rc.broadcast(gridOreBase+gridind, newval);
+		newval = newval / 4;
+		
+		rc.broadcast(gridPotentialBase+gridind, newval);
+		rc.broadcast(gridPotentialPtrChan,(ptr+1)%gridn);
 	}
 	
 	static int getRobotStrength(double health, double supply, RobotType type)
 	{
-		return 2*(int)(type.attackPower + health + ((supply>type.supplyUpkeep*10)?5:0));
+		return 10*(int)(type.attackPower + ((supply>type.supplyUpkeep*10)?5:0));
 	}
 	
 	// Supply Transfer Protocol
@@ -1409,7 +1441,7 @@ public class RobotPlayer {
 		for (int i=0; i<9; i++)
 			mvs[i] = new MapValue(senseLocsX[i],senseLocsY[i],forceX*senseLocsX[i] + forceY*senseLocsY[i]);
 		
-		rc.setIndicatorLine(myLocation, new MapLocation(myLocation.x + (int)(forceX*10), myLocation.y + (int)(forceY*10)), 0, 255, 255);
+		//rc.setIndicatorLine(myLocation, new MapLocation(myLocation.x + (int)(forceX*10), myLocation.y + (int)(forceY*10)), 0, 255, 255);
 
 		Arrays.sort(mvs);
 		
@@ -1513,18 +1545,36 @@ public class RobotPlayer {
 			{
 				int gridind = y*GRID_DIM+x;
 				
+				// not mapped yet
 				if (rc.readBroadcast(gridStatusBase+gridind) == 0)
 					continue;
+
+				MapLocation loc = gridCenter(gridind);
+				int val = (rc.readBroadcast(gridPotentialBase+gridind));
+				if (val > 0)
+				{
+					// friendly-controlled, set blue
+					if (val>255) val = 255;
+					rc.setIndicatorDot(loc,0,0,val);
+				}
+				else
+				{
+					// enemy-controlled, set blue
+					val = -val;
+					if (val>255) val = 255;
+					rc.setIndicatorDot(loc,val,0,0);
+				}
+
 				
 				// draw a dot
-				MapLocation loc = gridCenter(gridind);
+				/*MapLocation loc = gridCenter(gridind);
 				int val = (rc.readBroadcast(gridFriendBase+gridind));
 				if (val > 255) val = 255;
 				rc.setIndicatorDot(loc,0,0,val);
 				
 				val = (rc.readBroadcast(gridEnemyBase+gridind));
 				if (val > 255) val = 255;
-				rc.setIndicatorDot(loc.add(1,0),val,0,0);
+				rc.setIndicatorDot(loc.add(1,0),val,0,0);*/
 			}
 		}
 	}
