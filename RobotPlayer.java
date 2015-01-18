@@ -19,7 +19,7 @@ public class RobotPlayer {
 	static int mySquad;
 	
 	// did we move since last turn?
-	static boolean moved;
+	static boolean justMoved;
 	
 	static MapLocation squadTarget;
 	
@@ -28,8 +28,7 @@ public class RobotPlayer {
 	static int myGridX;
 	static int myGridY;
 	static int myGridInd;
-	static int myGridFriend; 
-	static int myGridEnemy;
+
 	// my grid location values
 	static MapLocation myGridUL;
 	static MapLocation myGridBR;
@@ -51,6 +50,17 @@ public class RobotPlayer {
 	// 6 - diag x = y
 	// 7 - diag x = -y
 	static int mapSymmetry;
+	static int mapMinX;
+	static int mapMinY;
+	static int mapMaxX;
+	static int mapMaxY;
+	// minimum and maximum x/y coords of grid elements
+	static int gridMinX;
+	static int gridMinY;
+	static int gridMaxX;
+	static int gridMaxY;
+	// and the minimum number of grid cells we may potentially have
+	static int gridMinNum;
 	
 	static Random rand;
 	static Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST, Direction.SOUTH_EAST, Direction.SOUTH, Direction.SOUTH_WEST, Direction.WEST, Direction.NORTH_WEST};
@@ -116,6 +126,8 @@ public class RobotPlayer {
 	
 	
 	static final int gridOreBase = curChan; static {curChan+=GRID_NUM;}
+	
+	
 	
 	/* Squad task defines */
 	static final int squadTaskBase = curChan; static {curChan+=MAX_SQUADS;}
@@ -342,6 +354,9 @@ public class RobotPlayer {
 		myCID = rc.readBroadcast(nextCIDChan);
 		rc.broadcast(nextCIDChan,myCID+1);
 		rc.broadcast(cidBase+myCID, myGameID);
+		
+		// load map extents
+		getExtents();
 	}
 	
 	static void update() throws GameActionException
@@ -350,16 +365,16 @@ public class RobotPlayer {
 		if (!newloc.equals(myLocation))
 		{
 			myLocation = newloc;
-			moved = true;
+			justMoved = true;
 		}
 		else
 		{
-			moved = false;
+			justMoved = false;
 		}
 
 		curOre = rc.getTeamOre();
 		
-		if (moved)
+		if (justMoved)
 		{			
 			// update internal grid coordinate values
 			myGridX = (GRID_OFFSET+myLocation.x-center.x+GRID_SPC/2)/GRID_SPC;
@@ -369,12 +384,17 @@ public class RobotPlayer {
 			// has this grid cell been entered  yet?
 			if (rc.readBroadcast(gridStatusBase+myGridInd) == 0)
 			{
-				// write that we have entered it
-				rc.broadcast(gridStatusBase+myGridInd, STATUS_SEEN);
-				// and add it to global grid list
+				// only add it if array has been initialized
+				// no double adding...
 				int gridcount = rc.readBroadcast(gridListCountChan);
-				rc.broadcast(gridListBase+gridcount,myGridInd);
-				rc.broadcast(gridListCountChan,gridcount+1);
+				if (gridcount >= gridMinNum)
+				{
+					// write that we have entered it
+					rc.broadcast(gridStatusBase+myGridInd, STATUS_SEEN);
+					// and add it to global grid list
+					rc.broadcast(gridListBase+gridcount,myGridInd);
+					rc.broadcast(gridListCountChan,gridcount+1);
+				}
 			}
 			
 			myGridCenter = gridCenter(myGridInd);
@@ -402,7 +422,7 @@ public class RobotPlayer {
 	// 5 - v flip
 	// 6 - diag x = y
 	// 7 - diag x = -y
-	static void analyzeMap()
+	static void analyzeMap() throws GameActionException
 	{
 		// get each set of buildings
 		MapLocation[] myblds = getBuildings(myTeam);
@@ -425,6 +445,41 @@ public class RobotPlayer {
 				mapSymmetry = 0; // diagonal/rotational still
 			
 		}
+		
+		// and save it, why not
+		rc.broadcast(mapSymmetryChan, mapSymmetry);
+		
+		// get min and max bounds of visible buildings
+		Arrays.sort(myblds, new Comparator<MapLocation>() {
+		    public int compare(MapLocation ml1, MapLocation ml2) {
+	 	      return Integer.compare(ml1.x,ml2.x);}});
+		Arrays.sort(enblds, new Comparator<MapLocation>() {
+		    public int compare(MapLocation ml1, MapLocation ml2) {
+	 	      return Integer.compare(ml1.x,ml2.x);}});
+		
+		mapMinX = Math.min(myblds[0].x,enblds[0].x);
+		mapMaxX = Math.max(myblds[myblds.length-1].x,enblds[enblds.length-1].x);
+		
+		Arrays.sort(myblds, new Comparator<MapLocation>() {
+		    public int compare(MapLocation ml1, MapLocation ml2) {
+	 	      return Integer.compare(ml1.y,ml2.y);}});
+		Arrays.sort(enblds, new Comparator<MapLocation>() {
+		    public int compare(MapLocation ml1, MapLocation ml2) {
+	 	      return Integer.compare(ml1.y,ml2.y);}});
+
+		mapMinY = Math.min(myblds[0].y,enblds[0].y);
+		mapMaxY = Math.max(myblds[myblds.length-1].y,enblds[enblds.length-1].y);
+
+		// and pack it into map extents broadcast
+		mapMinX -= center.x;
+		mapMaxX -= center.x;
+		mapMinY -= center.y;
+		mapMaxY -= center.y;
+		int mapextents = (mapMinX&255) | ((mapMaxX&255)<<8) | ((mapMinY&255)<<16) | ((mapMaxY&255)<<24);
+		rc.broadcast(mapExtentsChan, mapextents);
+		
+		getExtents();
+		
 		
 		// now check each tower on a case-by-case basis
 		/*
@@ -519,6 +574,29 @@ public class RobotPlayer {
 			break;
 		}
 		*/
+	}
+	
+	static void getExtents() throws GameActionException
+	{
+		// unpack map extents
+		int mapextents = rc.readBroadcast(mapExtentsChan);
+		mapMinX = (int)(byte)((mapextents)&255);
+		mapMaxX = (int)(byte)((mapextents>>8)&255);
+		mapMinY = (int)(byte)((mapextents>>16)&255);
+		mapMaxY = (int)(byte)((mapextents>>24)&255);
+		
+		// grid extents x/y:
+		gridMinX = (mapMinX+GRID_OFFSET+GRID_SPC/2)/GRID_SPC;
+		gridMinY = (mapMinY+GRID_OFFSET+GRID_SPC/2)/GRID_SPC;
+		gridMaxX = (mapMaxX+GRID_OFFSET+GRID_SPC/2)/GRID_SPC;
+		gridMaxY = (mapMaxY+GRID_OFFSET+GRID_SPC/2)/GRID_SPC;
+		// and minimum number in order to populate whole map
+		gridMinNum = (gridMaxX-gridMinX+1)*(gridMaxY-gridMinY+1);
+		System.out.println("Minimum grid size: " + gridMinNum);
+		//System.out.println("Map extents: "+mapMinX+","+mapMaxX+","+mapMinY+","+mapMaxY);
+		
+		// and symmetry
+		mapSymmetry = rc.readBroadcast(mapSymmetryChan);
 	}
 	
 	// get all buildings, including HQ, in a single uniform list
@@ -949,8 +1027,29 @@ public class RobotPlayer {
 		int bc = Clock.getBytecodeNum();
 
 		int ptr = rc.readBroadcast(gridUpdatePtrChan);
-		int gridn = rc.readBroadcast(gridListCountChan);		
+		int gridn = rc.readBroadcast(gridListCountChan);
 		int gridind = rc.readBroadcast(gridListBase+ptr);
+		
+		// check if we've added all of the map-required grid elements yet or not
+		if (gridn < gridMinNum)
+		{
+			// just add one, then carry on
+			// horizontal dimension of minimum grid
+			int gridd = (gridMaxX-gridMinX+1);
+			// get actual x,y coords
+			int gridy = (gridn/gridd)+gridMinY;
+			int gridx = (gridn%gridd)+gridMinX;
+			// and add them
+			gridind = gridx+gridy*GRID_DIM;
+			
+			// write that we have entered it
+			rc.broadcast(gridStatusBase+gridind, STATUS_SEEN);
+			// and add it to global grid list
+			int gridcount = rc.readBroadcast(gridListCountChan);
+			rc.broadcast(gridListBase+gridcount,gridind);
+			rc.broadcast(gridListCountChan,gridcount+1);
+			return;
+		}
 		
 		MapLocation loc = gridCenter(gridind);
 		MapLocation ul = loc.add(-GRID_SPC/2,-GRID_SPC/2);
@@ -980,9 +1079,9 @@ public class RobotPlayer {
 		rc.broadcast(gridEnemyBase+gridind,gridEnemy);
 		rc.broadcast(gridUpdatePtrChan,(ptr+1)%gridn);
 		
-		System.out.println(Clock.getBytecodeNum()-bc);
+		//System.out.println(Clock.getBytecodeNum()-bc);
 		if (ptr == 0)
-			System.out.println("Grid update @ " + Clock.getRoundNum());
+			System.out.println("Grid update @ " + Clock.getRoundNum() + ", Grid Size: " + gridn);
 	}
 	
 	static void gridDiffuse() throws GameActionException
