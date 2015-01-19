@@ -75,7 +75,61 @@ for i=1:numel(invsqrts)
     end
 end
 fprintf(fid,'};\n');
+%
+% now generate our 25 adjacency integers
+adjs = zeros(25,1);
+bitedge = zeros(4,1);
+for y=-2:2
+    for x=-2:2
+        ind = (x+2)+5*(y+2);
+        adj = bitshift(1,ind);
+        for dx=-1:1
+            for dy=-1:1
+                curx = x+dx;
+                cury = y+dy;
+                di = 5*dy+dx;
+                if curx>=-2 && curx <=2 && cury>=-2 && cury<=2
+                    adj = bitor(adj,bitshift(1,ind+di));
+                end
+            end
+        end
+        adjs(ind+1) = adj;
+    end
+end
+for i=1:5
+    bitedge(1) = bitor(bitedge(1),bitshift(1,i-1));
+    bitedge(2) = bitor(bitedge(2),bitshift(1,i-1+20));
+    bitedge(3) = bitor(bitedge(3),bitshift(1,(i-1)*5+4));
+    bitedge(4) = bitor(bitedge(4),bitshift(1,(i-1)*5));
+end
+
+pos = 4;
+for i=1:numel(bitedge)
+    imagesc(reshape(bitget(bitedge(i),1:25),5,5)')
+    %pause
+    bs = find(bitget(pos,1:25));
+    for b=bs
+        pos = bitor(pos,adjs(b));
+    end
+end
+
+fprintf(fid,'static int[] bitAdjacency = {');
+for i=1:numel(adjs)
+    fprintf(fid,'%d',adjs(i));
+    if i < numel(adjs)
+        fprintf(fid,',');
+    end
+end
+fprintf(fid,'};\n');
+
+fprintf(fid,'static int[] bitEdge = {');
+for i=1:numel(bitedge)
+    fprintf(fid,'%d',bitedge(i));
+    if i < numel(bitedge)
+        fprintf(fid,',');
+    end
+end
+fprintf(fid,'};\n');
 
 
 fclose(fid);
-
