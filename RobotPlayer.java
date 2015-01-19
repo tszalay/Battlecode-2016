@@ -200,9 +200,9 @@ public class RobotPlayer {
     static int numBeavers = 8;
     static int numMinerFactories = 20;
     static int numMiners = 100;
-    static int numBarracks = 0;
-    static int numSoldiers = 0;
-    static int numHelipads = 15;
+    static int numBarracks = 10;
+    static int numSoldiers = 80;
+    static int numHelipads = 1;
 	static int numSupplyDepots = 3;
 	static int numTankFactories = 1;    
 	
@@ -384,7 +384,7 @@ public class RobotPlayer {
 	static void spare() throws GameActionException
 	{
 		while (Clock.getBytecodesLeft() > 1500 && gridUpdate());
-		while (Clock.getBytecodesLeft() > 1000 && gridConnectivity2());
+		while (Clock.getBytecodesLeft() > 1000 && gridConnectivity());
 		while (Clock.getBytecodesLeft() > 400 && gridDiffuse());
 	}
 	
@@ -986,7 +986,18 @@ public class RobotPlayer {
 		try {
 			attackSomething();
 			if (rc.isCoreReady()) {
-				aggMove();
+				MapValue dest = gridGradient(myGridInd);
+				MapLocation m = new MapLocation(dest.x+myGridCenter.x,dest.y+myGridCenter.y);
+		        facing = rc.getLocation().directionTo(m);
+		        
+		        while (!rc.canMove(facing))
+		        {
+		        	if(rand.nextDouble()<0.5)
+			        	facing = facing.rotateLeft();
+		        	else
+		        		facing = facing.rotateRight();
+		        }
+		        rc.move(facing);
 			}
 		} catch (Exception e) {
 			System.out.println("Soldier Exception");
@@ -1414,161 +1425,6 @@ public class RobotPlayer {
 			return true;
 		}
 		
-		int gridX = gridind%GRID_DIM;
-		int gridY = gridind/GRID_DIM;
-		
-		MapLocation loc = gridCenter(gridind);
-		// go through and check each ordinal direction and if we have sensed them
-		int dir = rand.nextInt(4);
-		// pick one we haven't figured out yet
-		while ((gridstatus&(STATUS_KNOW_NORTH<<dir))>0)
-			dir = rand.nextInt(4);
-
-		int notconn = 0;
-		boolean connected = false;
-
-		switch (dir)
-		{
-		case STATUS_NORTH:
-			// north
-			for (int i=-GRID_SPC/2; i<=GRID_SPC/2; i++)
-			{
-				TerrainTile a = rc.senseTerrainTile(loc.add(i,-GRID_SPC/2));
-				TerrainTile b = rc.senseTerrainTile(loc.add(i,-GRID_SPC/2-1));
-				if (a == TerrainTile.NORMAL && b == TerrainTile.NORMAL)
-				{
-					// definitely connected
-					connected = true;
-					break;
-				}
-				if(a == TerrainTile.VOID || a == TerrainTile.OFF_MAP || b == TerrainTile.VOID || b == TerrainTile.OFF_MAP)
-				{
-					notconn++;
-				}
-			}
-			if (connected==true || notconn==GRID_SPC)
-			{
-				setConnectivity(gridind,STATUS_NORTH,connected);
-				if (gridY>0)
-					setConnectivity(gridind-GRID_DIM,STATUS_SOUTH,connected);
-			}
-			break;
-		case STATUS_SOUTH:
-			// south
-			for (int i=-GRID_SPC/2; i<=GRID_SPC/2; i++)
-			{
-				TerrainTile a = rc.senseTerrainTile(loc.add(i,GRID_SPC/2));
-				TerrainTile b = rc.senseTerrainTile(loc.add(i,GRID_SPC/2+1));
-				if (a == TerrainTile.NORMAL && b == TerrainTile.NORMAL)
-				{
-					// definitely connected
-					connected = true;
-					break;
-				}
-				if(a == TerrainTile.VOID || a == TerrainTile.OFF_MAP || b == TerrainTile.VOID || b == TerrainTile.OFF_MAP)
-				{
-					notconn++;
-				}
-			}
-			if (connected==true || notconn==GRID_SPC)
-			{
-				setConnectivity(gridind,STATUS_SOUTH,connected);
-				if (gridY<GRID_DIM-1)
-					setConnectivity(gridind+GRID_DIM,STATUS_NORTH,connected);
-			}
-			break;
-		case STATUS_EAST:
-			// east
-			for (int i=-GRID_SPC/2; i<=GRID_SPC/2; i++)
-			{
-				TerrainTile a = rc.senseTerrainTile(loc.add(GRID_SPC/2,i));
-				TerrainTile b = rc.senseTerrainTile(loc.add(GRID_SPC/2+1,i));
-				if (a == TerrainTile.NORMAL && b == TerrainTile.NORMAL)
-				{
-					// definitely connected
-					connected = true;
-					break;
-				}
-				if(a == TerrainTile.VOID || a == TerrainTile.OFF_MAP || b == TerrainTile.VOID || b == TerrainTile.OFF_MAP)
-				{
-					notconn++;
-				}
-			}
-			if (connected==true || notconn==GRID_SPC)
-			{
-				setConnectivity(gridind,STATUS_EAST,connected);
-				if (gridX<GRID_DIM-1)
-					setConnectivity(gridind+1,STATUS_WEST,connected);
-			}
-			break;
-		case STATUS_WEST:
-			// west
-			for (int i=-GRID_SPC/2; i<=GRID_SPC/2; i++)
-			{
-				TerrainTile a = rc.senseTerrainTile(loc.add(-GRID_SPC/2,i));
-				TerrainTile b = rc.senseTerrainTile(loc.add(-GRID_SPC/2+1,i));
-				if (a == TerrainTile.NORMAL && b == TerrainTile.NORMAL)
-				{
-					// definitely connected
-					connected = true;
-					break;
-				}
-				if(a == TerrainTile.VOID || a == TerrainTile.OFF_MAP || b == TerrainTile.VOID || b == TerrainTile.OFF_MAP)
-				{
-					notconn++;
-				}
-			}
-			if (connected==true || notconn==GRID_SPC)
-			{
-				setConnectivity(gridind,STATUS_WEST,connected);
-				if (gridX>0)
-					setConnectivity(gridind-1,STATUS_EAST,connected);
-			}
-			break;
-		}
-		
-		rc.broadcast(gridConnectivityPtrChan,(ptr+1)%gridn);
-		
-		return true;
-		//System.out.println("Connectivity time: " + (Clock.getBytecodeNum()-bc));
-	}
-	
-	static boolean gridConnectivity2() throws GameActionException
-	{
-		int bc = Clock.getBytecodeNum();
-		
-		int ptr = rc.readBroadcast(gridConnectivityPtrChan);
-		int gridn = rc.readBroadcast(gridListCountChan);
-		int gridind = rc.readBroadcast(gridListBase+ptr);
-		int gridstatus = rc.readBroadcast(gridStatusBase+gridind);
-		
-		if (gridn == 0)
-			return false;
-		
-		
-		if (ptr == 0)
-		{
-			int curround = Clock.getRoundNum();
-			int lastup = rc.readBroadcast(gridLastConnectivityChan);
-			// recently updated, don't run again
-			if (curround - lastup < 3)
-				return false;
-
-			rc.broadcast(gridLastConnectivityChan,curround);
-			System.out.println("Connectivity update @ " + curround);
-		}
-		
-		// have we visited? if not, don't bother
-		if ((gridstatus&STATUS_SEEN) == 0 || (gridstatus&STATUS_KNOW_ALL) == STATUS_KNOW_ALL)
-		{
-			// move on to the next one
-			rc.broadcast(gridConnectivityPtrChan,(ptr+1)%gridn);
-			return true;
-		}
-		
-		int gridX = gridind%GRID_DIM;
-		int gridY = gridind/GRID_DIM;
-		
 		MapLocation loc = gridCenter(gridind);
 		
 		final int GRID_N = GRID_SPC*GRID_SPC;
@@ -1633,6 +1489,9 @@ public class RobotPlayer {
 		
 		// now, do the flood fill
 		int pathable = rc.readBroadcast(gridConnectivityPathableBase+gridind);
+		// if pathable is on a void, just start at first non-void
+		if ((pathable&voids) > 0)
+			pathable = Integer.lowestOneBit(norms);
 		// but only if we have new information, or we haven't pathed yet
 		if ((oldknown!=known) || (pathable&PATHABLE_DONE)==0)
 		{
@@ -1661,90 +1520,183 @@ public class RobotPlayer {
 			// save the path we found
 			rc.broadcast(gridConnectivityPathableBase+gridind,pathable|PATHABLE_DONE);
 			
-			// do we know all the edges?
-			int unknown = GRID_MASK&(~known);
-			// unknown should need to be relaxed only once
-			int unknownpath = unknown;
-			while (unknown > 0)
-			{
-				int lbit = Integer.numberOfTrailingZeros(unknown);
-				// add the lowest bit to the growing path
-				unknownpath |= (bitAdjacency[lbit] & norms);
-				// and unset lowest bit
-				unknown &= (unknown-1);
-			}
-			// do unknown squares lead to any edges?
-			boolean unknown_conn = (unknownpath & pathable)>0;
-			
-			// now go through and check each edge for known-ness
-			int[] edges = new int[4];
-			int edge = 0;
-	
-			for (int i=0; i<5; i++)
-			{
-				// north edge is just i=0...4
-				edges[0] |= pathable&(1<<i);
-				// south edge is just i=20...24
-				edges[1] |= (pathable&(1<<(i+20)))>>20;
-				// east edge is 4,9,...
-				edges[2] |= (pathable&(1<<(i*5+4)))>>(i*4+4);
-				// west edge is 0,5,...
-				edges[3] |= (pathable&(1<<(i*5)))>>(i*4);
-			}
-			
-			for (int i=0; i<4; i++)
-			{
-				edge |= edges[i]<<(i*5);
-				// if the unknown region connects to pathable
-				// *and* to the edge, flag it as such
-				if (unknown_conn && (bitEdge[i]&unknownpath)>0)
-					edge |= UNKNOWN_NORTH<<i;
-			}
-			
-			rc.broadcast(gridConnectivityEdgesBase+gridind, edge);
-			
-			//for (int i=0; i<4; i++)
-//				System.out.println("Edge " + i + ": " + Integer.toBinaryString(edges[i]));
-			//System.out.println("Connectivity path: " + Integer.toBinaryString(pathable));
 			System.out.println("Connectivity path time: " + (Clock.getBytecodeNum()-bc));
 			
 			// we did our day's work for now
 			return true;
 		}
 		
-		// otherwise, just do some shit
-		for (int i=0; i<4; i++)
+		// if we got to here, it means we have an up-to-date path
+		
+		// first, try to connect unknown path with pathable
+		int unknown = GRID_MASK&(~known);
+		// unknown should need to be relaxed only once
+		int unknownpath = unknown;
+		while (unknown > 0)
+		{
+			int lbit = Integer.numberOfTrailingZeros(unknown);
+			// add the lowest bit to the growing path
+			unknownpath |= (bitAdjacency[lbit] & norms);
+			// and unset lowest bit
+			unknown &= (unknown-1);
+		}
+		
+		int maybe = pathable;
+		// if unknowns are connected with main connected region
+		if ((unknownpath&pathable)>0)
+			maybe |= unknownpath;
+		
+		// how many did we add this loop cycle?
+		int edgeadded = 0;
+		
+		// now, test each edge
+		for (int dir=0; dir<4; dir++)
 		{
 			// if we know this one, keep going
-			if ((gridstatus&(STATUS_KNOW_NORTH<<i))>0)
+			if ((gridstatus&(STATUS_KNOW_NORTH<<dir))>0)
 				continue;
-			int edge = rc.readBroadcast(gridConnectivityEdgesBase+gridind);
-			// if it isn't unknown and isn't connected, set it to false
-			if (((edge >> (5*i)) & EDGE_MASK) == 0 && ((edge & (UNKNOWN_NORTH<<i))) == 0)
+			
+			// create grid for pathable to outside edge
+			int adjpath=0;
+			int adjmaybe=0;
+			
+			// loop through adjacent squares
+			switch (dir)
 			{
-				switch (i)
+			case STATUS_NORTH:
+				for (int i=0; i<5; i++)
 				{
-				case 0:
-					setConnectivity(gridind,i,false);
-					if (gridX)
-						setConnectivity(gridind,i,false);
+					switch (rc.senseTerrainTile(loc.add(i-2,-(GRID_SPC+1)/2)))
+					{
+					case NORMAL:
+						adjpath |= bitAdjacency[i];
+						break;
+					case UNKNOWN:
+						adjmaybe |= bitAdjacency[i];
+						break;
+					case VOID:
+					case OFF_MAP:
+						break;
+					}
 				}
+				break;
+			case STATUS_SOUTH:
+				for (int i=0; i<5; i++)
+				{
+					switch (rc.senseTerrainTile(loc.add(i-2,(GRID_SPC+1)/2)))
+					{
+					case NORMAL:
+						adjpath |= bitAdjacency[i+20];
+						break;
+					case UNKNOWN:
+						adjmaybe |= bitAdjacency[i+20];
+						break;
+					case VOID:
+					case OFF_MAP:
+						break;
+					}
+				}
+				break;
+			case STATUS_EAST:
+				for (int i=0; i<5; i++)
+				{
+					switch (rc.senseTerrainTile(loc.add((GRID_SPC+1)/2,i-2)))
+					{
+					case NORMAL:
+						adjpath |= bitAdjacency[i*5+4];
+						break;
+					case UNKNOWN:
+						adjmaybe |= bitAdjacency[i*5+4];
+						break;
+					case VOID:
+					case OFF_MAP:
+						break;
+					}
+				}
+				break;
+			case STATUS_WEST:
+				for (int i=0; i<5; i++)
+				{
+					switch (rc.senseTerrainTile(loc.add(-(GRID_SPC+1)/2,i-2)))
+					{
+					case NORMAL:
+						adjpath |= bitAdjacency[i*5];
+						break;
+					case UNKNOWN:
+						adjmaybe |= bitAdjacency[i*5];
+						break;
+					case VOID:
+					case OFF_MAP:
+						break;
+					}
+				}
+				break;
 			}
+			adjpath &= bitEdge[dir];
+			adjmaybe &= bitEdge[dir];
+			adjmaybe |= adjpath;			
+			// so now adjpath contains definitive connections
+			// and adjunknown contains that and possible connections
+			
+			// check for definitely connected
+			if ((adjpath&pathable)>0)
+			{
+				setConnectivities(gridind,dir,true);
+			}
+			// or definitely unconnected
+			// means, no connections, and no connections through unknowns either
+			else if ((adjmaybe&maybe)==0)
+			{
+				setConnectivities(gridind,dir,false);
+			}
+			
+			edgeadded++;
+			
+			if (edgeadded >= 2)
+				break;
 		}
 		
 		
-		System.out.println("Connectivity nonpath time: " + (Clock.getBytecodeNum()-bc));
+		System.out.println("Connectivity edge time: " + (Clock.getBytecodeNum()-bc));
 		
+		/*
 		for (int i=0; i<GRID_N; i++)
 			if ((pathable&(1<<i))>0)
 				rc.setIndicatorDot(loc.add(gridOffX[i],gridOffY[i]), 255, 255, 255);
-
+				*/
 		
 		rc.broadcast(gridConnectivityPtrChan,(ptr+1)%gridn);
-		
-		System.out.println("Connectivity nonpath time: " + (Clock.getBytecodeNum()-bc));
 
 		return true;
+	}
+	
+	static void setConnectivities(int gridind, int dir, boolean connected) throws GameActionException
+	{
+		int gridX = gridind%GRID_DIM;
+		int gridY = gridind/GRID_DIM;
+		
+		setConnectivity(gridind,dir,connected);
+		
+		// and now adjacent square, if it exists
+		switch (dir)
+		{
+		case STATUS_NORTH:
+			if (gridY>0)
+				setConnectivity(gridind-GRID_DIM,STATUS_SOUTH,connected);
+			break;
+		case STATUS_SOUTH:
+			if (gridY<GRID_DIM-1)
+				setConnectivity(gridind+GRID_DIM,STATUS_NORTH,connected);
+			break;
+		case STATUS_EAST:
+			if (gridX>0)
+				setConnectivity(gridind+1,STATUS_WEST,connected);
+			break;
+		case STATUS_WEST:
+			if (gridX<GRID_DIM-1)
+				setConnectivity(gridind-1,STATUS_EAST,connected);
+			break;
+		}
 	}
 
 	// update connectivity of single square
