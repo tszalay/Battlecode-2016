@@ -3,6 +3,7 @@ package grid366;
 import battlecode.common.*;
 
 import java.util.*;
+import java.lang.*;
 
 /* Sensing location defines etc */
 class RobotConsts
@@ -53,6 +54,8 @@ public class RobotPlayer {
 	static MapLocation myHQ;
 	static MapLocation enemyHQ;
 	
+	static int enemyHQgrid;
+	
 	// map symmetry
 	// 0 - rotation/diag
 	// 1 - rotation/horiz flip
@@ -88,9 +91,9 @@ public class RobotPlayer {
 	
 	// grid, not map
 	// how many map elements per grid element?
-	static final int GRID_SPC = 9;
+	static final int GRID_SPC = 5;
 	// and what is required to sense the whole grid?
-	static final int GRID_SENSE = 32;
+	static final int GRID_SENSE = 2*(GRID_SPC/2)*(GRID_SPC/2);
 	// max possible extents in one direction
 	// needs to be at least 240/GRID_SPC
 	static final int GRID_DIM = 252/GRID_SPC;
@@ -98,21 +101,31 @@ public class RobotPlayer {
 	static final int GRID_NUM = GRID_DIM*GRID_DIM;
 	// offset to get to upper-right corner of grid
 	static final int GRID_OFFSET = GRID_DIM*GRID_SPC/2;
+	// mask for first 25 bits
+	static final int GRID_MASK = (1<<25)-1;
+	static final int EDGE_MASK = (1<<5)-1;
 	
 	// is this in the grid list?
 	static final int STATUS_USING = (1<<0);
 	// have we been there?
 	static final int STATUS_SEEN = (1<<9);
 	// which directions is this cell connected to others?
-	static final int STATUS_UNCONN_NORTH = (1<<1);
-	static final int STATUS_UNCONN_SOUTH = (1<<2);
-	static final int STATUS_UNCONN_EAST = (1<<3);
-	static final int STATUS_UNCONN_WEST = (1<<4);
+	static final int STATUS_CONN_NORTH = (1<<1);
+	static final int STATUS_CONN_SOUTH = (1<<2);
+	static final int STATUS_CONN_EAST = (1<<3);
+	static final int STATUS_CONN_WEST = (1<<4);
 	static final int STATUS_KNOW_NORTH = (1<<5);
 	static final int STATUS_KNOW_SOUTH = (1<<6);
 	static final int STATUS_KNOW_EAST = (1<<7);
 	static final int STATUS_KNOW_WEST = (1<<8);
 	static final int STATUS_KNOW_ALL = STATUS_KNOW_NORTH|STATUS_KNOW_SOUTH|STATUS_KNOW_EAST|STATUS_KNOW_WEST;
+	static final int STATUS_NORTH=0;
+	static final int STATUS_SOUTH=1;
+	static final int STATUS_EAST=2;
+	static final int STATUS_WEST=3;
+	
+	static final int PATHABLE_DONE=(1<<26);
+	static final int UNKNOWN_NORTH=(1<<21);
 	
 	static int curChan = 0;
 	
@@ -125,14 +138,23 @@ public class RobotPlayer {
 	static final int mapExtentsChan = curChan++;
 	
 	/* Grid info */
+	// times that things were last fully computed
+	static final int gridLastPotentialChan = curChan++;
+	static final int gridLastDiffusionChan = curChan++;
+	static final int gridLastConnectivityChan = curChan++;
+
+	// pointer to which grid cells we're calculating the above
+	static final int gridUpdatePtrChan = curChan++;
+	static final int gridPotentialPtrChan = curChan++;
+	static final int gridConnectivityPtrChan = curChan++;
+
 	// list of grid indices that we have explored
 	static final int gridListCountChan = curChan++;
 	static final int gridListBase = curChan; static {curChan+=GRID_NUM/4;}
 	// map list of basic grid square status
 	static final int gridStatusBase = curChan; static {curChan+=GRID_NUM;}
-	// lower 16 bits are current accumulation round
-	// upper 16 are when the values in the accumulators below were saved
-	//static final int gridTickBase = curChan; static {curChan+=GRID_NUM;}
+	// map list of "seed positions" in grid squares
+	static final int gridPositionBase = curChan; static {curChan+=GRID_NUM;}
 	
 	// these are calculated in a distributed fashion 
 	static final int gridFriendBase = curChan; static {curChan+=GRID_NUM;}
@@ -140,11 +162,16 @@ public class RobotPlayer {
 	// diffusion values for frienemy potential
 	// upper bits are "distance from friendly unit"
 	static final int gridPotentialBase = curChan; static {curChan+=GRID_NUM;}
+	
+	
+	// connectivity values
+	static final int gridConnectivityNormalBase = curChan; static {curChan+=GRID_NUM;}
+	static final int gridConnectivityKnownBase = curChan; static {curChan+=GRID_NUM;}
+	static final int gridConnectivityVoidBase = curChan; static {curChan+=GRID_NUM;}
+	static final int gridConnectivityPathableBase = curChan; static {curChan+=GRID_NUM;}
+	static final int gridConnectivityEdgesBase = curChan; static {curChan+=GRID_NUM;}
 
-	// pointer to which grid cells we're calculating the above
-	static final int gridUpdatePtrChan = curChan++;
-	static final int gridPotentialPtrChan = curChan++;
-	static final int gridConnectivityPtrChan = curChan++;
+
 	
 	
 	static final int gridOreBase = curChan; static {curChan+=GRID_NUM;}
@@ -203,6 +230,12 @@ public class RobotPlayer {
 
 	static double lastOre = 0;
 	static double curOre = 0;
+	
+	
+	static final int[] gridOffX = {-2,-1,0,1,2,-2,-1,0,1,2,-2,-1,0,1,2,-2,-1,0,1,2,-2,-1,0,1,2};
+	static final int[] gridOffY = {-2,-2,-2,-2,-2,-1,-1,-1,-1,-1,0,0,0,0,0,1,1,1,1,1,2,2,2,2,2};
+	static int[] bitAdjacency = {99,231,462,924,792,3171,7399,14798,29596,25368,101472,236768,473536,947072,811776,3247104,7576576,15153152,30306304,25976832,3244032,7569408,15138816,30277632,25952256};
+	static int[] bitEdge = {31,32505856,17318416,1082401};
 	
 	
 	static class MapValue implements Comparable<MapValue>
@@ -324,22 +357,7 @@ public class RobotPlayer {
 			lastOre = curOre;
 			
 			try {
-				int clockcyc = Clock.getRoundNum() % 3;
-				switch (clockcyc)
-				{
-				case 0:
-					while (Clock.getBytecodesLeft() > 1500)
-						gridUpdate();
-					break;
-				case 1:
-					while (Clock.getBytecodesLeft() > 1000)
-						gridConnectivity();
-					break;
-				case 2:
-					while (Clock.getBytecodesLeft() > 400)
-						gridDiffuse();
-					break;
-				}
+				spare();
 			} catch (Exception e) {
 				System.out.println("Grid exception");
 				e.printStackTrace();
@@ -362,6 +380,14 @@ public class RobotPlayer {
 		}
 	}
 	
+	// what to do in extra cycles
+	static void spare() throws GameActionException
+	{
+		while (Clock.getBytecodesLeft() > 1500 && gridUpdate());
+		while (Clock.getBytecodesLeft() > 1000 && gridConnectivity2());
+		while (Clock.getBytecodesLeft() > 400 && gridDiffuse());
+	}
+	
 	// general initialization, for everyone
 	static void init() throws GameActionException
 	{
@@ -375,6 +401,10 @@ public class RobotPlayer {
 		enemyHQ = rc.senseEnemyHQLocation();
 		
 		center = new MapLocation((myHQ.x+enemyHQ.x)/2,(myHQ.y+enemyHQ.y)/2);
+
+		int hqx = (GRID_OFFSET+enemyHQ.x-center.x+GRID_SPC/2)/GRID_SPC;
+		int hqy = (GRID_OFFSET+enemyHQ.y-center.y+GRID_SPC/2)/GRID_SPC;
+		enemyHQgrid = hqy*GRID_DIM+hqx;
 		
 		facing = getRandomDirection();
 		
@@ -416,10 +446,14 @@ public class RobotPlayer {
 			
 			if (myGridInd != lastGridInd)
 			{
-			
+				myGridCenter = gridCenter(myGridInd);
+				// both coords are inclusive
+				myGridUL = myGridCenter.add(-GRID_SPC/2,-GRID_SPC/2);
+				myGridBR = myGridCenter.add(GRID_SPC/2,GRID_SPC/2);
+
 				int gridstatus = rc.readBroadcast(gridStatusBase+myGridInd);
 				// has this grid cell been added yet?
-				if (gridstatus == 0)
+				if ((gridstatus&STATUS_USING) == 0)
 				{
 					// only add it if array has been initialized
 					// no double adding...
@@ -432,21 +466,23 @@ public class RobotPlayer {
 						// and add it to global grid list
 						rc.broadcast(gridListBase+gridcount,myGridInd);
 						rc.broadcast(gridListCountChan,gridcount+1);
+						int pathind = (myLocation.x-myGridCenter.x+2)+5*(myLocation.y-myGridCenter.y+2);
+						rc.broadcast(gridConnectivityPathableBase+myGridInd, (1<<pathind));
 					}
 				}
+				
 				// or we just haven't been here yet
 				if ((gridstatus&STATUS_SEEN) == 0)
 				{
 					rc.broadcast(gridStatusBase+myGridInd, gridstatus|STATUS_SEEN);
+					// and add our pathable index
+					int pathind = (myLocation.x-myGridCenter.x+2)+5*(myLocation.y-myGridCenter.y+2);
+					rc.broadcast(gridConnectivityPathableBase+myGridInd, (1<<pathind));
 				}
-				
-				myGridCenter = gridCenter(myGridInd);
-				// both coords are inclusive
-				myGridUL = myGridCenter.add(-GRID_SPC/2,-GRID_SPC/2);
-				myGridBR = myGridCenter.add(GRID_SPC/2,GRID_SPC/2);
+
 				
 				lastGridInd = myGridInd;
-			}			
+			}
 			// draw grid boundaries?
 			/*
 			rc.setIndicatorLine(myGridUL, myGridUL.add(GRID_SPC-1,0), 0, 255, 255);
@@ -1067,10 +1103,58 @@ public class RobotPlayer {
 		return new MapLocation((gridInd%GRID_DIM)*GRID_SPC+center.x-GRID_OFFSET,(gridInd/GRID_DIM)*GRID_SPC+center.y-GRID_OFFSET);
 	}
 	
-	static void gridUpdate() throws GameActionException
+	static MapValue gridGradient(int gridind) throws GameActionException
+	{
+		int bc = Clock.getBytecodeNum();
+		
+		int gridX = gridind%GRID_DIM;
+		int gridY = gridind/GRID_DIM;
+		// contains connectivity information
+		int gridstatus = rc.readBroadcast(gridStatusBase+gridind);
+		// my current value
+		int gridval = rc.readBroadcast(gridPotentialBase+gridind);
+		
+		MapValue gradient = new MapValue(0,0,0);
+		
+		if (gridX>0)
+		{
+			int val = rc.readBroadcast(gridPotentialBase+gridind-1);
+			if ((gridstatus&STATUS_CONN_WEST)>0)
+				gradient.x += (val-gridval);
+		}
+		
+		if (gridX<GRID_DIM-1)
+		{
+			int val = rc.readBroadcast(gridPotentialBase+gridind+1);
+			if ((gridstatus&STATUS_CONN_EAST)>0)
+				gradient.x -= (val-gridval);
+		}
+		
+		if (gridY>0)
+		{
+			int val = rc.readBroadcast(gridPotentialBase+gridind-GRID_DIM);
+			if ((gridstatus&STATUS_CONN_NORTH)>0)
+				gradient.y += (val-gridval);
+		}
+		
+		if (gridY<GRID_DIM-1)
+		{
+			int val = rc.readBroadcast(gridPotentialBase+gridind+GRID_DIM);
+			if ((gridstatus&STATUS_CONN_SOUTH)>0)
+				gradient.y -= (val-gridval);
+		}
+		
+		gradient.value = Math.sqrt(gradient.x*gradient.x+gradient.y*gradient.y);
+		
+		//System.out.println("Gradient time: " + (Clock.getBytecodeNum()-bc));
+		return gradient;
+	}
+	
+	static boolean gridUpdate() throws GameActionException
 	{
 		// 100 bytecodes for preamble
 		// 100 bytecodes for senseRobots
+		// ~100 bytecodes/robot
 		// 100 bytecodes for broadcasts
 		
 		int bc = Clock.getBytecodeNum();
@@ -1079,8 +1163,18 @@ public class RobotPlayer {
 		int gridn = rc.readBroadcast(gridListCountChan);
 		int gridind = rc.readBroadcast(gridListBase+ptr);
 		
+		// do we start a new cycle?
 		if (ptr == 0)
-			System.out.println("Grid update @ " + Clock.getRoundNum() + ", Grid Size: " + gridn);
+		{
+			int curround = Clock.getRoundNum();
+			int lastup = rc.readBroadcast(gridLastPotentialChan);
+			// recently updated, don't run again
+			if (curround - lastup < 2)
+				return false;
+
+			rc.broadcast(gridLastPotentialChan,curround);
+			System.out.println("Grid update @ " + curround + ", Grid Size: " + gridn);
+		}
 		
 		// check if we've added all of the map-required grid elements yet or not
 		// if not, only do that, and nothing else
@@ -1097,12 +1191,23 @@ public class RobotPlayer {
 			
 			// write that we are using it
 			int gridstatus = rc.readBroadcast(gridStatusBase+gridind); 
+			// and add proper connectivity values
+			if (gridx>gridMinX)
+				gridstatus |= STATUS_CONN_WEST;
+			if (gridx<gridMaxX)
+				gridstatus |= STATUS_CONN_EAST;
+			if (gridy>gridMinY)
+				gridstatus |= STATUS_CONN_NORTH;
+			if (gridy<gridMaxY)
+				gridstatus |= STATUS_CONN_SOUTH;
+			
 			rc.broadcast(gridStatusBase+gridind, gridstatus|STATUS_USING);
 			// and add it to global grid list
 			int gridcount = rc.readBroadcast(gridListCountChan);
 			rc.broadcast(gridListBase+gridcount,gridind);
 			rc.broadcast(gridListCountChan,gridcount+1);
-			return;
+			rc.broadcast(gridUpdatePtrChan,gridcount);
+			return true;
 		}
 		
 		MapLocation loc = gridCenter(gridind);
@@ -1132,6 +1237,10 @@ public class RobotPlayer {
 				gridEnemy += strength;
 		}
 		
+		// and HQ check
+		if (gridind == enemyHQgrid)
+			gridEnemy += 100;
+		
 		// decay enemy, if new sighting is lower
 		if (prevEnemy > gridEnemy)
 			gridEnemy = Math.max(0, prevEnemy-1);
@@ -1143,10 +1252,12 @@ public class RobotPlayer {
 		
 		rc.broadcast(gridUpdatePtrChan,(ptr+1)%gridn);
 		
+		return true;
+		
 		//System.out.println("Update time (" + bots.length + "): " + (Clock.getBytecodeNum()-bc));
 	}
 	
-	static void gridDiffuse() throws GameActionException
+	static boolean gridDiffuse() throws GameActionException
 	{
 		int bc = Clock.getBytecodeNum();
 		int ptr = rc.readBroadcast(gridPotentialPtrChan);
@@ -1154,10 +1265,19 @@ public class RobotPlayer {
 		int gridind = rc.readBroadcast(gridListBase+ptr);
 		
 		if (gridn == 0)
-			return;
+			return false;
 		
 		if (ptr == 0)
-			System.out.println("Diffuse update @ " + Clock.getRoundNum());
+		{
+			int curround = Clock.getRoundNum();
+			int lastup = rc.readBroadcast(gridLastDiffusionChan);
+			// recently updated, don't run again
+			if (curround - lastup < 1)
+				return false;
+
+			rc.broadcast(gridLastDiffusionChan,curround);
+			System.out.println("Diffuse update @ " + curround);
+		}
 		
 		int gridX = gridind%GRID_DIM;
 		int gridY = gridind/GRID_DIM;
@@ -1167,19 +1287,19 @@ public class RobotPlayer {
 		
 		
 		// # of grid squares to closest friendly unit
-		int frienddist;
+		//int frienddist;
 		
 		// source term for potential is difference between friend and enemy squares
 		int source = rc.readBroadcast(gridFriendBase+gridind);
 		if (source > 0)
 		{
-			frienddist = -1;
+			//frienddist = -1;
 			// there are friendly units, we need lots of guys here
 			source = source - 4*rc.readBroadcast(gridEnemyBase+gridind);
 		}
 		else
 		{
-			frienddist = 1000;
+			//frienddist = 1000;
 			// no friendly units
 			source = source - rc.readBroadcast(gridEnemyBase+gridind);
 		}
@@ -1193,7 +1313,7 @@ public class RobotPlayer {
 		{
 			int val = rc.readBroadcast(gridPotentialBase+gridind-1);
 //			frienddist = Math.min(frienddist, val >>> 16);
-			if ((gridstatus&STATUS_UNCONN_WEST)==0)
+			if ((gridstatus&STATUS_CONN_WEST)>0)
 				newval += val;
 			else
 				newval += gridval;
@@ -1207,7 +1327,7 @@ public class RobotPlayer {
 		{
 			int val = rc.readBroadcast(gridPotentialBase+gridind+1);
 //			frienddist = Math.min(frienddist, val >>> 16);
-			if ((gridstatus&STATUS_UNCONN_EAST)==0)
+			if ((gridstatus&STATUS_CONN_EAST)>0)
 				newval += val;
 			else
 				newval += gridval;
@@ -1221,7 +1341,7 @@ public class RobotPlayer {
 		{
 			int val = rc.readBroadcast(gridPotentialBase+gridind-GRID_DIM);
 //			frienddist = Math.min(frienddist, val >>> 16);
-			if ((gridstatus&STATUS_UNCONN_NORTH)==0)
+			if ((gridstatus&STATUS_CONN_NORTH)>0)
 				newval += val;
 			else
 				newval += gridval;
@@ -1235,7 +1355,7 @@ public class RobotPlayer {
 		{
 			int val = rc.readBroadcast(gridPotentialBase+gridind+GRID_DIM);
 //			frienddist = Math.min(frienddist, val >>> 16);
-			if ((gridstatus&STATUS_UNCONN_SOUTH)==0)
+			if ((gridstatus&STATUS_CONN_SOUTH)>0)
 				newval += val;
 			else
 				newval += gridval;
@@ -1250,13 +1370,18 @@ public class RobotPlayer {
 		// increment this to denote our increased distance (or goes to 0 if we have friendlies)
 //		frienddist++;
 		
+		if (gridind == enemyHQgrid)
+			newval = -600;
+		
 //		rc.broadcast(gridPotentialBase+gridind, newval | (frienddist<<16));
 		rc.broadcast(gridPotentialBase+gridind, newval);
 		rc.broadcast(gridPotentialPtrChan,(ptr+1)%gridn);
 		//System.out.println("Diffuse time: " + (Clock.getBytecodeNum()-bc));
+		
+		return true;
 	}
 	
-	static void gridConnectivity() throws GameActionException
+	static boolean gridConnectivity() throws GameActionException
 	{
 		int bc = Clock.getBytecodeNum();
 		
@@ -1266,17 +1391,27 @@ public class RobotPlayer {
 		int gridstatus = rc.readBroadcast(gridStatusBase+gridind);
 		
 		if (gridn == 0)
-			return;
+			return false;
+		
 		
 		if (ptr == 0)
-			System.out.println("Connectivity update @ " + Clock.getRoundNum());
+		{
+			int curround = Clock.getRoundNum();
+			int lastup = rc.readBroadcast(gridLastConnectivityChan);
+			// recently updated, don't run again
+			if (curround - lastup < 3)
+				return false;
+
+			rc.broadcast(gridLastConnectivityChan,curround);
+			System.out.println("Connectivity update @ " + curround);
+		}
 		
 		// have we visited? if not, don't bother
 		if ((gridstatus&STATUS_SEEN) == 0 || (gridstatus&STATUS_KNOW_ALL) == STATUS_KNOW_ALL)
 		{
 			// move on to the next one
 			rc.broadcast(gridConnectivityPtrChan,(ptr+1)%gridn);
-			return;
+			return true;
 		}
 		
 		int gridX = gridind%GRID_DIM;
@@ -1294,7 +1429,7 @@ public class RobotPlayer {
 
 		switch (dir)
 		{
-		case 0:
+		case STATUS_NORTH:
 			// north
 			for (int i=-GRID_SPC/2; i<=GRID_SPC/2; i++)
 			{
@@ -1311,17 +1446,14 @@ public class RobotPlayer {
 					notconn++;
 				}
 			}
-			// we decided whether it's connected one way or another
 			if (connected==true || notconn==GRID_SPC)
 			{
-				rc.broadcast(gridStatusBase+gridind,gridstatus|STATUS_KNOW_NORTH|(connected?0:STATUS_UNCONN_NORTH));
-				// and update the partner's link
+				setConnectivity(gridind,STATUS_NORTH,connected);
 				if (gridY>0)
-					rc.broadcast(gridStatusBase+gridind-GRID_DIM,
-							rc.readBroadcast(gridStatusBase+gridind-GRID_DIM)|STATUS_KNOW_SOUTH|(connected?0:STATUS_UNCONN_SOUTH));
+					setConnectivity(gridind-GRID_DIM,STATUS_SOUTH,connected);
 			}
 			break;
-		case 1:
+		case STATUS_SOUTH:
 			// south
 			for (int i=-GRID_SPC/2; i<=GRID_SPC/2; i++)
 			{
@@ -1338,17 +1470,14 @@ public class RobotPlayer {
 					notconn++;
 				}
 			}
-			// we decided whether it's connected one way or another
 			if (connected==true || notconn==GRID_SPC)
 			{
-				rc.broadcast(gridStatusBase+gridind,gridstatus|STATUS_KNOW_SOUTH|(connected?0:STATUS_UNCONN_SOUTH));
-				// and update the partner's link
+				setConnectivity(gridind,STATUS_SOUTH,connected);
 				if (gridY<GRID_DIM-1)
-					rc.broadcast(gridStatusBase+gridind+GRID_DIM,
-							rc.readBroadcast(gridStatusBase+gridind+GRID_DIM)|STATUS_KNOW_NORTH|(connected?0:STATUS_UNCONN_NORTH));
+					setConnectivity(gridind+GRID_DIM,STATUS_NORTH,connected);
 			}
 			break;
-		case 2:
+		case STATUS_EAST:
 			// east
 			for (int i=-GRID_SPC/2; i<=GRID_SPC/2; i++)
 			{
@@ -1365,17 +1494,14 @@ public class RobotPlayer {
 					notconn++;
 				}
 			}
-			// we decided whether it's connected one way or another
 			if (connected==true || notconn==GRID_SPC)
 			{
-				rc.broadcast(gridStatusBase+gridind,gridstatus|STATUS_KNOW_EAST|(connected?0:STATUS_UNCONN_EAST));
-				// and update the partner's link
+				setConnectivity(gridind,STATUS_EAST,connected);
 				if (gridX<GRID_DIM-1)
-					rc.broadcast(gridStatusBase+gridind+1,
-							rc.readBroadcast(gridStatusBase+gridind+1)|STATUS_KNOW_WEST|(connected?0:STATUS_UNCONN_WEST));
+					setConnectivity(gridind+1,STATUS_WEST,connected);
 			}
 			break;
-		case 3:
+		case STATUS_WEST:
 			// west
 			for (int i=-GRID_SPC/2; i<=GRID_SPC/2; i++)
 			{
@@ -1392,22 +1518,247 @@ public class RobotPlayer {
 					notconn++;
 				}
 			}
-			// we decided whether it's connected one way or another
 			if (connected==true || notconn==GRID_SPC)
 			{
-				rc.broadcast(gridStatusBase+gridind,gridstatus|STATUS_KNOW_WEST|(connected?0:STATUS_UNCONN_WEST));
-				// and update the partner's link
+				setConnectivity(gridind,STATUS_WEST,connected);
 				if (gridX>0)
-					rc.broadcast(gridStatusBase+gridind-1,
-							rc.readBroadcast(gridStatusBase+gridind-1)|STATUS_KNOW_EAST|(connected?0:STATUS_UNCONN_EAST));
-
+					setConnectivity(gridind-1,STATUS_EAST,connected);
 			}
 			break;
 		}
 		
 		rc.broadcast(gridConnectivityPtrChan,(ptr+1)%gridn);
 		
+		return true;
 		//System.out.println("Connectivity time: " + (Clock.getBytecodeNum()-bc));
+	}
+	
+	static boolean gridConnectivity2() throws GameActionException
+	{
+		int bc = Clock.getBytecodeNum();
+		
+		int ptr = rc.readBroadcast(gridConnectivityPtrChan);
+		int gridn = rc.readBroadcast(gridListCountChan);
+		int gridind = rc.readBroadcast(gridListBase+ptr);
+		int gridstatus = rc.readBroadcast(gridStatusBase+gridind);
+		
+		if (gridn == 0)
+			return false;
+		
+		
+		if (ptr == 0)
+		{
+			int curround = Clock.getRoundNum();
+			int lastup = rc.readBroadcast(gridLastConnectivityChan);
+			// recently updated, don't run again
+			if (curround - lastup < 3)
+				return false;
+
+			rc.broadcast(gridLastConnectivityChan,curround);
+			System.out.println("Connectivity update @ " + curround);
+		}
+		
+		// have we visited? if not, don't bother
+		if ((gridstatus&STATUS_SEEN) == 0 || (gridstatus&STATUS_KNOW_ALL) == STATUS_KNOW_ALL)
+		{
+			// move on to the next one
+			rc.broadcast(gridConnectivityPtrChan,(ptr+1)%gridn);
+			return true;
+		}
+		
+		int gridX = gridind%GRID_DIM;
+		int gridY = gridind/GRID_DIM;
+		
+		MapLocation loc = gridCenter(gridind);
+		
+		final int GRID_N = GRID_SPC*GRID_SPC;
+
+		// seed all the values
+		int norms = rc.readBroadcast(gridConnectivityNormalBase+gridind);
+		int voids = rc.readBroadcast(gridConnectivityVoidBase+gridind);
+		int known = rc.readBroadcast(gridConnectivityKnownBase+gridind);
+		int oldknown = known;
+		
+		// do we know all the tiles?
+		// if we don't, try finding some new ones
+		
+		int nadd=0;
+		
+		if (known != GRID_MASK)
+		{
+			// first, get the terrain tiles
+			int unknown = GRID_MASK&(~known);
+			
+			// drop down the unknown bits one by one
+			while (unknown>0)
+			{
+				int i = Integer.numberOfTrailingZeros(unknown);
+				unknown &= (unknown-1);
+				int z = (1<<i);
+				switch (rc.senseTerrainTile(loc.add(gridOffX[i],gridOffY[i])))
+				{
+				case NORMAL:
+					norms |= z;
+					known |= z;
+					break;
+				case UNKNOWN:
+					break;
+				case VOID:
+				case OFF_MAP:
+					voids |= z;
+					known |= z;
+					break;
+				}
+				nadd++;
+				// limit how many times we add things just to slow it down a bit to 1000-bc-size chunks
+				if (nadd>10) break;
+			}
+			
+			// then write them back if it changed
+			if (known != oldknown)
+			{
+				rc.broadcast(gridConnectivityNormalBase+gridind,norms);
+				rc.broadcast(gridConnectivityVoidBase+gridind,voids);
+				rc.broadcast(gridConnectivityKnownBase+gridind,known);
+			}
+			
+			// and if we added a lot, return without doing stuff
+			if (nadd > 10)
+			{
+				System.out.println("Connectivity add time: " + (Clock.getBytecodeNum()-bc));
+				return true;
+			}
+		}
+		
+		
+		// now, do the flood fill
+		int pathable = rc.readBroadcast(gridConnectivityPathableBase+gridind);
+		// but only if we have new information, or we haven't pathed yet
+		if ((oldknown!=known) || (pathable&PATHABLE_DONE)==0)
+		{
+			pathable &= GRID_MASK;
+			
+			int newpath = pathable;
+			
+			for (int i=0; i<GRID_N; i++)
+			{
+				int path = pathable;
+				while (newpath > 0)
+				{
+					int lbit = Integer.numberOfTrailingZeros(newpath);
+					// add the lowest bit to the growing path
+					path |= (bitAdjacency[lbit] & norms);
+					// and unset lowest bit
+					newpath &= (newpath-1);
+				}
+				// now set newpath to difference between old and new
+				newpath = path & (~pathable);
+				pathable = path;
+				if (newpath == 0)
+					break;
+			}
+			
+			// save the path we found
+			rc.broadcast(gridConnectivityPathableBase+gridind,pathable|PATHABLE_DONE);
+			
+			// do we know all the edges?
+			int unknown = GRID_MASK&(~known);
+			// unknown should need to be relaxed only once
+			int unknownpath = unknown;
+			while (unknown > 0)
+			{
+				int lbit = Integer.numberOfTrailingZeros(unknown);
+				// add the lowest bit to the growing path
+				unknownpath |= (bitAdjacency[lbit] & norms);
+				// and unset lowest bit
+				unknown &= (unknown-1);
+			}
+			// do unknown squares lead to any edges?
+			boolean unknown_conn = (unknownpath & pathable)>0;
+			
+			// now go through and check each edge for known-ness
+			int[] edges = new int[4];
+			int edge = 0;
+	
+			for (int i=0; i<5; i++)
+			{
+				// north edge is just i=0...4
+				edges[0] |= pathable&(1<<i);
+				// south edge is just i=20...24
+				edges[1] |= (pathable&(1<<(i+20)))>>20;
+				// east edge is 4,9,...
+				edges[2] |= (pathable&(1<<(i*5+4)))>>(i*4+4);
+				// west edge is 0,5,...
+				edges[3] |= (pathable&(1<<(i*5)))>>(i*4);
+			}
+			
+			for (int i=0; i<4; i++)
+			{
+				edge |= edges[i]<<(i*5);
+				// if the unknown region connects to pathable
+				// *and* to the edge, flag it as such
+				if (unknown_conn && (bitEdge[i]&unknownpath)>0)
+					edge |= UNKNOWN_NORTH<<i;
+			}
+			
+			rc.broadcast(gridConnectivityEdgesBase+gridind, edge);
+			
+			//for (int i=0; i<4; i++)
+//				System.out.println("Edge " + i + ": " + Integer.toBinaryString(edges[i]));
+			//System.out.println("Connectivity path: " + Integer.toBinaryString(pathable));
+			System.out.println("Connectivity path time: " + (Clock.getBytecodeNum()-bc));
+			
+			// we did our day's work for now
+			return true;
+		}
+		
+		// otherwise, just do some shit
+		for (int i=0; i<4; i++)
+		{
+			// if we know this one, keep going
+			if ((gridstatus&(STATUS_KNOW_NORTH<<i))>0)
+				continue;
+			int edge = rc.readBroadcast(gridConnectivityEdgesBase+gridind);
+			// if it isn't unknown and isn't connected, set it to false
+			if (((edge >> (5*i)) & EDGE_MASK) == 0 && ((edge & (UNKNOWN_NORTH<<i))) == 0)
+			{
+				switch (i)
+				{
+				case 0:
+					setConnectivity(gridind,i,false);
+					if (gridX)
+						setConnectivity(gridind,i,false);
+				}
+			}
+		}
+		
+		
+		System.out.println("Connectivity nonpath time: " + (Clock.getBytecodeNum()-bc));
+		
+		for (int i=0; i<GRID_N; i++)
+			if ((pathable&(1<<i))>0)
+				rc.setIndicatorDot(loc.add(gridOffX[i],gridOffY[i]), 255, 255, 255);
+
+		
+		rc.broadcast(gridConnectivityPtrChan,(ptr+1)%gridn);
+		
+		System.out.println("Connectivity nonpath time: " + (Clock.getBytecodeNum()-bc));
+
+		return true;
+	}
+
+	// update connectivity of single square
+	static void setConnectivity(int gridind, int dir, boolean connected) throws GameActionException
+	{
+		int gridstatus = rc.readBroadcast(gridStatusBase+gridind);
+		
+		gridstatus = gridstatus | (STATUS_KNOW_NORTH<<dir);
+		if (connected)
+			gridstatus = gridstatus | (STATUS_CONN_NORTH<<dir);
+		else
+			gridstatus = gridstatus & (~(STATUS_CONN_NORTH<<dir));
+		
+		rc.broadcast(gridStatusBase+gridind, gridstatus);
 	}
 	
 	static int getRobotStrength(double health, double supply, RobotType type)
@@ -1915,6 +2266,9 @@ public class RobotPlayer {
 	
 	static void debug_drawGridVals() throws GameActionException
 	{
+		if (Clock.getRoundNum() % 50 > 5)
+			return;
+		
 		for (int x=0; x<GRID_DIM; x++)
 		{
 			for (int y=0;y<GRID_DIM;y++)
@@ -1950,35 +2304,33 @@ public class RobotPlayer {
 				}
 				
 				// check connectivities
-				if ((gridstatus&STATUS_KNOW_NORTH)>0)
-				{
-					if ((gridstatus&STATUS_UNCONN_NORTH)==0)
-						rc.setIndicatorLine(loc,loc.add(0,-GRID_SPC),255,255,0);
-					else
-						rc.setIndicatorDot(loc.add(0,-1),255,255,0);
-				}
-				if ((gridstatus&STATUS_KNOW_SOUTH)>0)
-				{
-					if ((gridstatus&STATUS_UNCONN_SOUTH)==0)
-						rc.setIndicatorLine(loc,loc.add(0,GRID_SPC),255,255,0);
-					else
-						rc.setIndicatorDot(loc.add(0,1),255,255,0);
-				}
-				if ((gridstatus&STATUS_KNOW_EAST)>0)
-				{
-					if ((gridstatus&STATUS_UNCONN_EAST)==0)
-						rc.setIndicatorLine(loc,loc.add(GRID_SPC,0),255,255,0);
-					else
-						rc.setIndicatorDot(loc.add(1,0),255,255,0);
-				}
-				if ((gridstatus&STATUS_KNOW_WEST)>0)
-				{
-					if ((gridstatus&STATUS_UNCONN_WEST)==0)
-						rc.setIndicatorLine(loc,loc.add(-GRID_SPC,0),255,255,0);
-					else
-						rc.setIndicatorDot(loc.add(-1,0),255,255,0);
-				}
+				
+				if ((gridstatus&STATUS_CONN_NORTH)>0)
+					rc.setIndicatorLine(loc,loc.add(0,-1),255,255,0);
+				else if ((gridstatus&STATUS_KNOW_NORTH)>0)
+					rc.setIndicatorDot(loc.add(0,-1),255,255,0);
 
+				if ((gridstatus&STATUS_CONN_SOUTH)>0)
+					rc.setIndicatorLine(loc,loc.add(0,1),255,255,0);
+				else if ((gridstatus&STATUS_KNOW_SOUTH)>0)
+					rc.setIndicatorDot(loc.add(0,1),255,255,0);
+
+				if ((gridstatus&STATUS_CONN_EAST)>0)
+					rc.setIndicatorLine(loc,loc.add(1,0),255,255,0);
+				else if ((gridstatus&STATUS_KNOW_EAST)>0)
+					rc.setIndicatorDot(loc.add(1,0),255,255,0);
+				
+				if ((gridstatus&STATUS_CONN_WEST)>0)
+					rc.setIndicatorLine(loc,loc.add(-1,0),255,255,0);
+				else if ((gridstatus&STATUS_KNOW_WEST)>0)
+					rc.setIndicatorDot(loc.add(-1,0),255,255,0);
+
+				MapValue gradient = gridGradient(gridind);
+				int len = (int)(gradient.value/5) + 1;
+				gradient.x /= len;
+				gradient.y /= len;
+				
+				rc.setIndicatorLine(loc,loc.add(gradient.x,gradient.y),0,255,0);
 				
 				// draw a dot
 				/*MapLocation loc = gridCenter(gridind);
