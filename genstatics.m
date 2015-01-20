@@ -98,9 +98,9 @@ for y=-2:2
 end
 for i=1:5
     bitedge(1) = bitor(bitedge(1),bitshift(1,i-1));
-    bitedge(2) = bitor(bitedge(2),bitshift(1,i-1+20));
-    bitedge(3) = bitor(bitedge(3),bitshift(1,(i-1)*5+4));
-    bitedge(4) = bitor(bitedge(4),bitshift(1,(i-1)*5));
+    bitedge(2) = bitor(bitedge(2),bitshift(1,(i-1)*5+4));
+    bitedge(3) = bitor(bitedge(3),bitshift(1,(i-1)*5));
+    bitedge(4) = bitor(bitedge(4),bitshift(1,i-1+20));
 end
 
 pos = 4;
