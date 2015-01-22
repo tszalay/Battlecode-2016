@@ -158,6 +158,8 @@ public class RobotPlayer {
 	// mask for first 25 bits
 	static final int GRID_MASK = (1<<25)-1;
 	static final int EDGE_MASK = (1<<5)-1;
+	// bitmask for center of each edge
+	static final int GRID_EDGE_CENTERS = (1<<2)|(1<<22)|(1<<10)|(1<<14); 
 	
 	// update frequencies
 	static final int GRID_DIFFUSE_FREQ = 2;
@@ -1875,17 +1877,7 @@ public class RobotPlayer {
 			System.out.println("Connectivity update @ " + curround);
 		}
 		
-		// CHECKPOINT #1: HAVE WE SEEN THIS CELL?
-		// if we haven't seen any of it, we have nothing to do
-		// so just go on to the next cell
-		if ((gridinfo&STATUS_SEEN) == 0)
-		{
-			// move on to the next square, skip CCs
-			rc.broadcast(gridConnectivityPtrChan,nextGridIndex(ptr,gridinfo));
-			return true;
-		}
-		
-		// CHECKPOINT #2: CHECK IF WE ARE ADDING ANY NEW TERRAIN TILES
+		// CHECKPOINT #1: CHECK IF WE ARE ADDING ANY NEW TERRAIN TILES
 		MapLocation loc = gridCenter(gridind);
 		
 		final int GRID_N = GRID_SPC*GRID_SPC;
@@ -1909,6 +1901,25 @@ public class RobotPlayer {
 			// first, get the terrain tiles
 			int unknown = GRID_MASK&(~known);
 			
+			// if we haven't seen this cell, we don't want to check all unknowns
+			// we just want to check those around existing knowns, and center of each edge
+			if ((gridinfo&STATUS_SEEN) == 0)
+			{
+				// set unknown to known+1
+				if (known>0)
+				{
+					unknown = relaxGrid(known,GRID_MASK);
+					// and mask it off
+					unknown = unknown & (~known);
+					// and include middle edges
+					unknown |= GRID_EDGE_CENTERS;
+				}
+				else
+				{
+					unknown = GRID_EDGE_CENTERS;
+				}
+			}
+			
 			// drop down the unknown bits one by one
 			while (unknown>0)
 			{
@@ -1920,6 +1931,7 @@ public class RobotPlayer {
 				case NORMAL:
 					norms |= z;
 					known |= z;
+					nadd++;
 					break;
 				case UNKNOWN:
 					break;
@@ -1927,9 +1939,9 @@ public class RobotPlayer {
 				case OFF_MAP:
 					voids |= z;
 					known |= z;
+					nadd++;
 					break;
 				}
-				nadd++;
 				// limit how many times we add things just to slow it down a bit to 1000-bc-size chunks
 				if (nadd>10) break;
 			}
@@ -1964,11 +1976,7 @@ public class RobotPlayer {
 		// now flood-fill the current connected component as far as we can
 		int pathable = rc.readBroadcast(gridConnectivityPathableBase+gridid);
 		
-		// first, if it's zero, check if there are any norms we aren't using
-		// that are definitely not connected to anyone else
-		int maybe = relaxGrid(~known,voids);
-		
-		// if pathable is 0, it's a fresh connected component
+		// if pathable is 0, it's a fresh connected component (or first connected component)
 		// which means we *know* it's not connected to prevpathable, if we did our math right
 		// so we can just set it to any single norm that isn't part of prevpathable, if there are any
 		if (pathable == 0)
@@ -1987,6 +1995,15 @@ public class RobotPlayer {
 		
 		// save the path we found
 		rc.broadcast(gridConnectivityPathableBase+gridid,pathable);
+
+		// this is the region that is pathed so far
+		prevpathable |= pathable;
+		// if it's connected to unknown
+		// NOTE TO TOMORROW TAMAS:
+		// THE BUG IS HERE
+		// NEED TO COMPARE LARGE REGION OF UNPATHED KNOWNS, SEPARATED BY UKNOWNS
+		int mayberegion = relaxGrid(~known,~voids);
+
 		
 		// CHECKPOINT #4: ANY NORMS NOT IN PREVIOUS PATHABLES, CURRENT PATHABLE, OR MAYBES, AND ARE WE THE LAST CC?
 		if (gridcc+1 == (gridinfo&GRID_CC_MASK) && (norms & ~(pathable|prevpathable|maybe)) > 0)
@@ -2725,13 +2742,6 @@ public class RobotPlayer {
 		for (int i=0; i<ncc; i++)
 		{
 			pathables[i] = rc.readBroadcast(gridConnectivityPathableBase+gridid);
-			if (pathables[i]==0)
-			{
-				System.out.println("PATHABLES ZERO @ " + gridid + ";" + i + "/" + ncc);
-				System.out.println("Normals: " + Integer.toBinaryString(rc.readBroadcast(gridConnectivityNormalBase+gridind)));
-				System.out.println("Voids: " + Integer.toBinaryString(rc.readBroadcast(gridConnectivityVoidBase+gridind)));
-				System.out.println("Knowns: " + Integer.toBinaryString(rc.readBroadcast(gridConnectivityKnownBase+gridind)));
-			}
 			gridid = rc.readBroadcast(gridNextIDBase+gridid);
 		}
 		
@@ -2765,8 +2775,8 @@ public class RobotPlayer {
 				int gridinfo = rc.readBroadcast(gridInfoBase+gridind);
 				if (x < gridMinX || x > gridMaxX || y < gridMinY || y > gridMaxY)
 					continue;
-				if ((gridinfo&STATUS_SEEN) == 0)
-					continue;
+				//if ((gridinfo&STATUS_SEEN) == 0)
+				//	continue;
 				
 				//System.out.println("Found seen block @ " + gridind);
 				debug_drawGridMask(gridind);
