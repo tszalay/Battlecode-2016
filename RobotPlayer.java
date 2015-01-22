@@ -1999,14 +1999,13 @@ public class RobotPlayer {
 		// this is the region that is pathed so far
 		prevpathable |= pathable;
 		// if it's connected to unknown
-		// NOTE TO TOMORROW TAMAS:
-		// THE BUG IS HERE
-		// NEED TO COMPARE LARGE REGION OF UNPATHED KNOWNS, SEPARATED BY UKNOWNS
-		int mayberegion = relaxGrid(~known,~voids);
-
+		int maybe = relaxGrid((~known)&GRID_MASK,(~voids)&GRID_MASK);
 		
-		// CHECKPOINT #4: ANY NORMS NOT IN PREVIOUS PATHABLES, CURRENT PATHABLE, OR MAYBES, AND ARE WE THE LAST CC?
-		if (gridcc+1 == (gridinfo&GRID_CC_MASK) && (norms & ~(pathable|prevpathable|maybe)) > 0)
+		// norms that we are considering adding
+		int newnorms = norms & (~prevpathable);
+		
+		// CHECKPOINT #4: ANY NORMS NOT IN PREVIOUS PATHABLES THAT ALSO AREN'T CONNECTED VIA MAYBE
+		if (gridcc+1 == (gridinfo&GRID_CC_MASK) && (newnorms>0) && ((newnorms&maybe)==0||(prevpathable&maybe)==0))
 		{
 			// add a new connected component
 			// first, add a new grid cell at the particular index
