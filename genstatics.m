@@ -132,42 +132,33 @@ end
 fprintf(fid,'};\n');
 
 
-% tower/hq hard-shell repulsion bit-twiddling
-towerbits = zeros(11,11);
-hqbits = zeros(13,13);
-xs = [0 1 1 1 0 -1 -1 -1];
-ys = -[1 1 0 -1 -1 -1 0 1];
+% unit hard-shell repulsion bit-twiddling
+attackbits = zeros(13,13);
+ranges = [8 15 24 35];
+xs = [0 1 1 1 0 -1 -1 -1 0];
+ys = -[1 1 0 -1 -1 -1 0 1 0];
 for i=1:numel(xs)
     for x=-6:6
         for y=-6:6
-            if (xs(i)-x)^2+(ys(i)-y)^2 <= 24
-                % tower can hit this location
-                towerbits(x+6,y+6) = bitor(towerbits(x+6,y+6),bitshift(1,i-1));
-            end
-            if (xs(i)-x)^2+(ys(i)-y)^2 <= 35
-                hqbits(x+7,y+7) = bitor(hqbits(x+7,y+7),bitshift(1,i-1));
+            % can unit hit this location?
+            for r=1:numel(ranges)
+                if (xs(i)-x)^2+(ys(i)-y)^2 <= ranges(r)
+                    attackbits(x+7,y+7) = bitor(attackbits(x+7,y+7),bitshift(1,(i-1)+(r-1)*numel(xs)));
+                end
             end
         end
     end
 end
 
-fprintf(fid,'static int[] towerMask = {');
-for i=1:numel(towerbits)
-    fprintf(fid,'%d',towerbits(i));
-    if i < numel(towerbits)
+fprintf(fid,'static long[] attackMask = {');
+for i=1:numel(attackbits)
+    fprintf(fid,'%d',attackbits(i));
+    if i < numel(attackbits)
         fprintf(fid,',');
     end
 end
 fprintf(fid,'};\n');
 
-fprintf(fid,'static int[] hqMask = {');
-for i=1:numel(hqbits)
-    fprintf(fid,'%d',hqbits(i));
-    if i < numel(hqbits)
-        fprintf(fid,',');
-    end
-end
-fprintf(fid,'};\n');
+imagesc(bitand(attackbits,bitshift(1,14)))
 
-bitand(towerbits,1)>0
 fclose(fid);
