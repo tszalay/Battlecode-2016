@@ -638,10 +638,6 @@ public class RobotPlayer {
 			else
 				myGridID = 0;
 			
-			debug_drawGridMask(myGridCenter,pathable);
-			
-			rc.setIndicatorString(0, "Potential: " + rc.readBroadcast(gridPotentialBase+myGridID));
-			
 			// draw grid boundaries?
 			/*
 			rc.setIndicatorLine(myGridUL, myGridUL.add(GRID_SPC-1,0), 0, 255, 255);
@@ -1091,6 +1087,9 @@ public class RobotPlayer {
 			//	rc.breakpoint();
 			
 			rc.setIndicatorLine(myLocation, myLocation.add(d,3), 0, 255, 255);
+			rc.setIndicatorString(0, "Potential: " + rc.readBroadcast(gridPotentialBase+myGridID) + " " + myGridID);
+			//debug_drawGridMask(myGridInd,myGridID);
+			debug_drawGridMask(myGridCenter,rc.readBroadcast(gridConnectivityEdgesEWBase+myGridID));
 			//supplyTransferFraction = 0.5;
 
 		} catch (Exception e) {
@@ -2326,6 +2325,11 @@ public class RobotPlayer {
 		{
 			if ((newnorms>0) && ((newnorms&maybe)==0||(prevpathable&maybe)==0))
 			{
+				if (gridind == 1639)
+				{
+					System.out.println("CC # " + (gridcc+2) + " ADDED TO 1639...");
+					rc.breakpoint();
+				}
 				// add a new connected component
 				// first, add a new grid cell at the particular index
 				int newid = gridAddID(gridind);
@@ -3112,6 +3116,18 @@ public class RobotPlayer {
 		trySpawn(getRandomDirection(),type);
 	}
 	
+	static int[] unitCounts()
+	{
+		int[] units = new int[RobotType.values().length];
+		
+		RobotInfo[] bots = rc.senseNearbyRobots(999999, myTeam);
+		
+		for (RobotInfo ri : bots)
+			units[ri.type.ordinal()]++;
+		
+		return units;
+	}
+	
 	static void debug_drawGridMask(MapLocation loc, int pathable) throws GameActionException
 	{
 		for (int i=0; i<25; i++)
@@ -3153,6 +3169,15 @@ public class RobotPlayer {
 				}
 			}
 		}
+	}
+	
+	static void debug_drawGridMask(int gridind, int gridid) throws GameActionException
+	{
+		MapLocation loc = gridCenter(gridind);
+		int pathable = rc.readBroadcast(gridConnectivityPathableBase + gridid);
+		for (int i=0; i<25; i++)
+			if ((pathable&(1<<i))>0)
+				rc.setIndicatorDot(loc.add(gridOffX[i],gridOffY[i]),200,128,0);
 	}
 	
 	static int debug_getGridVal(int gridinfo, int cc, int chanbase) throws GameActionException
@@ -3202,7 +3227,10 @@ public class RobotPlayer {
 			adjid = rc.readBroadcast(gridNextIDBase+adjid);
 
 			if ((edges&pathable&bitEdge[dir]) > 0)
+			{
 				nconn++;
+//				System.out.println("GRID INDDDD " + gridind);
+			}
 		}
 		return nconn;
 	}
@@ -3234,7 +3262,7 @@ public class RobotPlayer {
 				// display connectivity #
 				int val = 0;
 				int ncc = (gridinfo & GRID_CC_MASK);
-				for (int i=0; i<ncc; i++)
+				for (int i=2; i<ncc; i++)
 				{
 					val = debug_getGridVal(gridinfo,i,gridFriendBase);
 					if (val > 255) val = 255;
@@ -3253,14 +3281,21 @@ public class RobotPlayer {
 					if (val < 0) val = 0;
 					rc.setIndicatorDot(loc.add(i,1),val,val,0);
 					
+					debug_drawGridMask(loc,debug_getGridVal(gridinfo,i,gridConnectivityPathableBase));//&(bitEdge[0]|bitEdge[1]|bitEdge[2]|bitEdge[3]));
+					//debug_drawGridMask(loc,debug_getGridVal(gridinfo,i,gridConnectivityEdgesEWBase));
 					for (int dir=0; dir<4; dir++)
 					{
 						int nconn = debug_nConnected(gridind|(i<<16),dir); 
 						if (nconn > 0)
 						{
-							rc.setIndicatorLine(loc.add(i,0),loc.add(i+dirOffsX[dir]*2,dirOffsY[dir]*2),255-80*nconn,0,0);
+							rc.setIndicatorLine(loc.add(i,0),loc.add(i+dirOffsX[dir],dirOffsY[dir]),255,255,0);
 						}
+
 					}
+					
+					int pathable = debug_getGridVal(gridinfo,i,gridConnectivityPathableBase);
+					System.out.println("ERrr herr derr" + Integer.toBinaryString(pathable));
+					rc.breakpoint();
 				}
 				
 				//}
