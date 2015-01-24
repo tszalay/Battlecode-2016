@@ -19,6 +19,13 @@ class RobotConsts
 	int[] towerMask = {0,0,128,129,131,131,131,3,2,0,0,0,128,193,195,199,199,199,135,7,2,0,128,193,227,247,255,255,255,223,143,7,2,192,225,247,255,255,255,255,255,223,15,6,224,241,255,255,255,255,255,255,255,31,14,224,241,255,255,255,255,255,255,255,31,14,224,241,255,255,255,255,255,255,255,31,14,96,240,253,255,255,255,255,255,127,30,12,32,112,248,253,255,255,255,127,62,28,8,0,32,112,120,124,124,124,60,28,8,0,0,0,32,48,56,56,56,24,8,0,0};
 	int[] hqMask = {0,0,128,129,131,131,131,131,131,3,2,0,0,0,128,193,195,199,199,199,199,199,135,7,2,0,128,193,227,247,255,255,255,255,255,223,143,7,2,192,225,247,255,255,255,255,255,255,255,223,15,6,224,241,255,255,255,255,255,255,255,255,255,31,14,224,241,255,255,255,255,255,255,255,255,255,31,14,224,241,255,255,255,255,255,255,255,255,255,31,14,224,241,255,255,255,255,255,255,255,255,255,31,14,224,241,255,255,255,255,255,255,255,255,255,31,14,96,240,253,255,255,255,255,255,255,255,127,30,12,32,112,248,253,255,255,255,255,255,127,62,28,8,0,32,112,120,124,124,124,124,124,60,28,8,0,0,0,32,48,56,56,56,56,56,24,8,0,0};
 	int[] dirOffsets = {0,7,1,6,2,5,3,4};
+	
+	// maps position offsets in our 5x5 bit-grid to direction flags
+	int[] gridToDir = { 0,   0,   0,   0,   0,
+					    0,1<<7,1<<0,1<<1,   0,
+					    0,1<<6,   0,1<<2,   0,
+					    0,1<<5,1<<4,1<<3,   0,
+					    0,   0,   0,   0,   0 };
 
 	/* Grid weight values */
 	int WEIGHT_UNKNOWN_EDGE = -10;
@@ -1049,15 +1056,16 @@ public class RobotPlayer {
 			//attackSomething();
 			//movePotential();
 			int bc = Clock.getBytecodeNum();
-			Direction d = gridDescend(myLocation);
+			int bitdir = gridDescend(myLocation);
+			tryMove(bitdir);
 			//System.out.println((Clock.getBytecodeNum()-bc));
-			if (d != Direction.NONE && d != Direction.OMNI)
-				tryMove(d);
+			//if (d != Direction.NONE && d != Direction.OMNI)
+			//	tryMove(d);
 			//else if (d != Direction.OMNI)
 			//	rc.breakpoint();
 			
-			rc.setIndicatorLine(myLocation, myLocation.add(d,3), 0, 255, 255);
-			rc.setIndicatorString(0, "Potential: " + myGrid.readValue(gridPotentialBase));
+			//rc.setIndicatorLine(myLocation, myLocation.add(d,3), 0, 255, 255);
+			rc.setIndicatorString(0, "Moves: " + Integer.toBinaryString(bitdir) + "Potential: " + myGrid.readValue(gridPotentialBase));
 			//debug_drawGridMask(myGridInd,myGridID);
 			//debug_drawGridMask(myGridCenter,rc.readBroadcast(gridConnectivityEdgesEWBase+myGridID));
 			//supplyTransferFraction = 0.5;
@@ -1554,10 +1562,10 @@ public class RobotPlayer {
 
 		// check if the grid needs to be enlarged
 		getExtents();
-		gridMinX = Math.min(gridMinX, gridX);
-		gridMaxX = Math.max(gridMaxX, gridX);
-		gridMinY = Math.min(gridMinY, gridY);
-		gridMaxY = Math.max(gridMaxY, gridY);				
+		gridMinX = Math.min(gridMinX, gridX-1);
+		gridMaxX = Math.max(gridMaxX, gridX+1);
+		gridMinY = Math.min(gridMinY, gridY-1);
+		gridMaxY = Math.max(gridMaxY, gridY+1);				
 		setExtents();
 		
 		// queue this grid cell for pathing
@@ -1573,135 +1581,131 @@ public class RobotPlayer {
 		}
 	}
 	
-	static Direction gridDescend(MapLocation loc) throws GameActionException
+	static int gridDescend(MapLocation loc) throws GameActionException
 	{
-		int gridX = (GRID_OFFSET+loc.x-center.x+GRID_SPC/2)/GRID_SPC;
-		int gridY = (GRID_OFFSET+loc.y-center.y+GRID_SPC/2)/GRID_SPC;
-		int gridind = gridX + gridY*GRID_DIM;
+		GridComponent grid = new GridComponent(loc);
+		// and figure out which connected component we're on
+		int pathind = grid.getPathInd(loc);
+		int pathindex = Integer.numberOfTrailingZeros(pathind);
+		int pathable = grid.findComponent(pathind);
 		
-		int gridinfo = rc.readBroadcast(gridInfoBase+gridind);
-		// get the list ID of the grid cell
-		int gridid = (gridinfo >>> 16);
-		
-		MapLocation gridcenter = gridCenter(gridind);
-
-		int pathindex = ((loc.x-gridcenter.x+GRID_SPC/2)+GRID_SPC*(loc.y-gridcenter.y+GRID_SPC/2));
-		int pathind = 1<<pathindex;
-		
-		// ignoring unknowns for this function
-		int pathable = rc.readBroadcast(gridConnectivityPathableBase+gridid);
-		
-		int ncc = GRID_CC_MASK&gridinfo;
-		
-		// figure out which subgrid we're on
-		for (int cc=0;cc<ncc;cc++)
-		{
-			// if we're on this one, we're good
-			if ((pathind&pathable) > 0)
-				break;
-			// otherwise, go on to the next one
-			gridid = rc.readBroadcast(gridNextIDBase+gridid);
-			pathable = rc.readBroadcast(gridConnectivityPathableBase+gridid);
-		}
 		// if for some reason this didn't work, abandon ship
 		if ((pathind&pathable) == 0)
 		{
 			System.out.println("Pathable is 0");
-			return Direction.NONE;
+			return 0;
 		}
 		
-		// ok, so now we're on the right subgrid/connected component, as defined by gridid
-		// find the max-value neighbor and corresponding connected edge
+		// ok, so now we're on the right subgrid/connected component
+		// find the min-value neighbor and corresponding connected edge
 		// now, let's loop through each adjacent direction & their gridids
 		
-		// my grid value
-		int gridval = rc.readBroadcast(gridPotentialBase+gridid);
-
-		// and minimum values
+		// and stored values of best
 		int bestedge = 0;
-		int bestval = gridval;
+		int bestval = grid.readValue(gridPotentialBase);
+		int bestptr = 0;
 		int bestdir = -1;
-		int bestid = 0;
-
+		
 		// check each adjacent direction
 		for (int dir=0; dir<4; dir++)
 		{
-			int adjind = gridind+gridOffset[dir];
-			int adjinfo = rc.readBroadcast(gridInfoBase+adjind);
-			int adjid = adjinfo>>>16;
-			int adjncc = adjinfo & GRID_CC_MASK;
+			GridComponent adjgrid = grid.offsetTo(dir);
 			
-			for (int cc=0; cc<adjncc; cc++)
+			while (adjgrid.isValid())
 			{
-				int edges = rc.readBroadcast(edgeChans[dir]+adjid);
-				
-				// if they're not unconnected, add the value difference
-				if ((edges&pathable&bitEdge[dir]) > 0)
+				int edges = adjgrid.readValue(edgeChans[dir]);
+				edges &= (pathable&bitEdge[dir]);
+				// possibly connected?
+				if (edges > 0) // add adjacent value
 				{
-					int dirval = rc.readBroadcast(gridPotentialBase+adjid);
-					if (dirval < bestval)
+					int adjval = adjgrid.readValue(gridPotentialBase);
+					if (adjval < bestval)
 					{
-						bestval = dirval;
-						bestedge = (edges&pathable&bitEdge[dir]);
+						bestval = adjval;
+						bestedge = edges;
+						bestptr = adjgrid.getPointer();
 						bestdir = dir;
-						bestid = adjid;
 					}
 				}
-				
 				// and cycle on to the next connected component
-				adjid = rc.readBroadcast(gridNextIDBase+adjid);
+				adjgrid.nextComponent();
 			}
 		}
 		
 		// nothing better found
-		if (bestdir == -1)
+		if (bestedge == 0)
 		{
 			System.out.println("On best square");
-			return Direction.OMNI;
+			return 0xFF;
 		}
 		
 		// ok, now we have the best edge that we want to go to
 		// we flood-fill out until we reach pathind
 		pathable = bestedge;
 		
-		// if we're already on the edge, however, we really just want to step over
-		// to the target square
-		if ((pathind&pathable)>0)
+		// if we're already on the edge, we really just want to step over to the target square
+		if ((pathind&bestedge) > 0)
 		{
-			// where do we go on the adjacent guy
-			int adjpathable = rc.readBroadcast(gridConnectivityPathableBase+bestid);
 			// again, ignore unknowns, we're assuming connectivity calculation is running smoothly
-			// offset our grid center to the adjacent square
-			
-			MapLocation adjcenter = gridcenter.add(GRID_SPC*dirOffsX[bestdir],GRID_SPC*dirOffsY[bestdir]);
-			//rc.setIndicatorDot(gridcenter, 255, 0, 0);
-			// and figure out which pathable indices we can go to, boom-boom
-			//System.out.println("adjpathable of " + bestid + " is " + Integer.toBinaryString(adjpathable) + " in direction " + bestdir);
-			
-			
+			// offset our grid center to the adjacent square, including connectivity info
+			GridComponent adjgrid = new GridComponent(bestptr);
+			// where do we go on the adjacent guy
+			int adjpathable = adjgrid.readValue(gridConnectivityPathableBase);
+			// mask it first, then shift
 			adjpathable &= bitEdge[3-bestdir];
-			// fooooo
-			//debug_drawGridMask(adjcenter,adjpathable);
+
+			// now transform it to our grid
+			switch (bestdir)
+			{
+			case STATUS_NORTH:
+				// bottom-to-top
+				pathindex += 5;
+				adjpathable >>= 20;
+				break;
+			case STATUS_SOUTH:
+				// top-to-bottom
+				pathindex -= 5;
+				adjpathable <<= 20;
+				break;
+			case STATUS_EAST:
+				// left-right
+				pathindex--;
+				adjpathable <<= 4;
+				break;
+			case STATUS_WEST:
+				// right-left
+				pathindex++;
+				adjpathable >>= 4;
+				break;
+			}
 			
-			// now adjpathable is 1 in places on adjacent grid where we can step
-			// we just need to find which one we want to step to
-			// so whittle off the bits one by one
+			// and -and- it with our possible steps
+			adjpathable &= bitAdjacency[pathindex];
+			// and mask it to the steps
+			adjpathable &= bitEdge[bestdir];
+			
+			// now adjpathable is 1 in places on our edge where we can step to on adjacent edge
+			// and pathind is our relative location on the same grid
+			// so I want to shift it over to be @ 12
+			if (pathindex>12) adjpathable >>= (pathindex-12);
+			else if (pathindex<12) adjpathable <<= (12-pathindex);
+			
+			debug_drawGridMask(loc,adjpathable,255,255,255);
+
+			// now create the direction flags
+			int bitdirs = 0;
 			while (adjpathable > 0)
 			{
 				int setbit = Integer.numberOfTrailingZeros(adjpathable);
-				MapLocation dest = adjcenter.add(gridOffX[setbit],gridOffY[setbit]);
-				if (dest.distanceSquaredTo(loc) <= 2)
-					return loc.directionTo(dest);
+				bitdirs |= Consts.gridToDir[setbit]; 
 				// and drop off last bit
 				adjpathable &= adjpathable-1;
 			}
-			System.out.println("No adjacent squares traversable");
-			//debug_drawGridMask(gridcenter,rc.readBroadcast(gridConnectivityPathableBase+gridid));
-			//debug_drawGridMask(adjcenter,rc.readBroadcast(gridConnectivityEdgesEWBase+bestid));
-			return Direction.NONE;
+
+			return bitdirs;
 		}
 		
-		int norms = rc.readBroadcast(gridConnectivityNormalBase+gridind);
+		int norms = grid.readProperty(gridConnectivityNormalBase);
 
 		for (int i=0; i<GRID_N; i++)
 		{
@@ -1714,7 +1718,7 @@ public class RobotPlayer {
 			if (pathable==path)
 			{
 				System.out.println("Path unreachable");
-				return Direction.NONE;
+				return 0;
 			}
 			
 			pathable = path;
@@ -1722,18 +1726,23 @@ public class RobotPlayer {
 		
 		// now, if we got to here, pathable is one step before we hit pathind, so we find the possible directions by masking it
 		pathable &= bitAdjacency[pathindex];
+
+		// now let's shift it to the center
+		if (pathindex>12) pathable >>= (pathindex-12);
+		else if (pathindex<12) pathable <<= (12-pathindex);
+
+		int bitdirs = 0;
+		while (pathable > 0)
+		{
+			int setbit = Integer.numberOfTrailingZeros(pathable);
+			bitdirs |= Consts.gridToDir[setbit]; 
+			// and drop off last bit
+			pathable &= pathable-1;
+		}
 		
-		//debug_drawGridMask(gridcenter,bestedge);
-		
-		// now we figure a bit that is set
-		int setbit = Integer.numberOfTrailingZeros(pathable);
-		// so now we have the row-by-row offset, shift it to the middle of the grid, and use the grid offsets to get direction
-		setbit = setbit-pathindex+12;
-		Direction dir = loc.directionTo(loc.add(gridOffX[setbit],gridOffY[setbit]));
-		
-		//System.out.println(setbit + "/" + dir);
-		
-		return dir;
+		//debug_drawGridMask(grid.getCenter(),bestedge,255,255,255);
+
+		return bitdirs;
 	}
 	
 	static MapValue gridGradient(GridComponent grid) throws GameActionException
@@ -2791,6 +2800,42 @@ public class RobotPlayer {
 		return bitmoves;
 	}
 	
+	// this method will attempt to move in one of the given directions at random
+	static boolean tryMove(int bitdirs) throws GameActionException
+	{
+		if (!rc.isCoreReady())
+			return false;
+		
+		for (int i=0; i<8; i++)
+		{
+			// if not on the list
+			if ((bitdirs&(1<<i))==0)
+				continue;
+
+			// or unset it if we can't move there for some reason
+			if (!rc.canMove(Direction.values()[i]))
+				bitdirs &= ~(1<<i);
+		}
+		
+		if (bitdirs == 0)
+		{
+			System.out.println("no moveable directions left");
+			return false;
+		}
+		
+		// and extract a random bit of remaining ones
+		int nrem = Integer.bitCount(bitdirs);
+		int randval = rand.nextInt(nrem);
+		
+		// shave off randval bits
+		for (int i=0; i<randval; i++)
+			bitdirs &= bitdirs-1;
+		
+		rc.move(Direction.values()[Integer.numberOfTrailingZeros(bitdirs)]);
+		return true;
+	}
+
+	
 	// This method will attempt to move in Direction d (or as close to it as possible)
 	static boolean tryMove(Direction d) throws GameActionException
 	{
@@ -2807,8 +2852,7 @@ public class RobotPlayer {
 				continue;
 			
 			Direction dd = Direction.values()[dir];
-			if (dd == facing.opposite())
-				continue;
+
 			if (!rc.canMove(dd))
 				continue;
 			
@@ -2832,8 +2876,7 @@ public class RobotPlayer {
 			int dir = (dirint+Consts.dirOffsets[i])&7;
 			
 			Direction dd = Direction.values()[dir];
-			if (dd == facing.opposite())
-				continue;
+
 			if (!rc.canMove(dd))
 				continue;
 			
@@ -2979,8 +3022,8 @@ public class RobotPlayer {
 					g.x = g.x/(int)(g.value/4+1);
 					g.y = g.y/(int)(g.value/4+1);
 					
-					rc.setIndicatorLine(grid.getCenter().add(i,0), grid.getCenter().add(i+g.x,0+g.y), 0, 255, 255);
-					System.out.println("Grid: " + g.x + "," + g.y + "," + grid.readValue(gridPotentialBase));
+					rc.setIndicatorLine(grid.getCenter().add(i,0), grid.getCenter().add(i+g.x,0+g.y), 255, 255, 0);
+					//System.out.println("Grid: " + g.x + "," + g.y + "," + grid.readValue(gridPotentialBase));
 					
 					grid.nextComponent();
 				}
@@ -3007,6 +3050,13 @@ class GridComponent
 	int gridInfo;
 	int gridCC; // 0...NCC-1
 	int gridNCC;
+	
+	// start from a map location, and set without doing pathable-finding
+	public GridComponent(MapLocation loc) throws GameActionException
+	{
+		this( RobotPlayer.GRID_DIM * ((RobotPlayer.GRID_OFFSET+loc.y-RobotPlayer.center.y+RobotPlayer.GRID_SPC/2)/RobotPlayer.GRID_SPC)
+				+ (RobotPlayer.GRID_OFFSET+loc.x-RobotPlayer.center.x+RobotPlayer.GRID_SPC/2)/RobotPlayer.GRID_SPC);
+	}
 	
 	// initialize to a grid index etc
 	public GridComponent(int gridPtr) throws GameActionException
@@ -3220,25 +3270,36 @@ class GridComponent
 		return (gridIndex == (RobotPlayer.gridMinX + RobotPlayer.gridMinY*RobotPlayer.GRID_DIM) && gridCC == 0);
 	}
 	
-	// find which component corresponds to a square
-	// (or none, if we ain't have none)
-	public void findComponent(MapLocation loc) throws GameActionException
+	public int getPathInd(MapLocation loc) throws GameActionException
 	{
 		// construct from a map location
 		MapLocation center = this.getCenter();
-		
+		return 1<<((loc.x-center.x+RobotPlayer.GRID_SPC/2)+RobotPlayer.GRID_SPC*(loc.y-center.y+RobotPlayer.GRID_SPC/2));
+	}
+	
+	// find which component corresponds to a square
+	// (or none, if we ain't have none)
+	public int findComponent(MapLocation loc) throws GameActionException
+	{
+		// get the path index of the location
+		return findComponent(getPathInd(loc));
+	}
+	
+	public int findComponent(int pathind) throws GameActionException
+	{
 		// recycle to the first component
 		firstComponent();
 		
-		int pathind = 1<<((loc.x-center.x+RobotPlayer.GRID_SPC/2)+RobotPlayer.GRID_SPC*(loc.y-center.y+RobotPlayer.GRID_SPC/2));
 		int pathable = 0;
 		while (isValid())
 		{
 			pathable = readValue(RobotPlayer.gridConnectivityPathableBase);
 			if ((pathind&pathable)>0)
-				break;
+				return pathable;
 			nextComponent();
 		}
+		// or none found
+		return 0;				
 	}
 	
 	public String toString()
