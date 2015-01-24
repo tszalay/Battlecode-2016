@@ -98,17 +98,9 @@ public class RobotPlayer {
 	
 	static MapLocation myLocation;
 	static Direction facing;
-	static int myGridX;
-	static int myGridY;
-	static int myGridInd;
-	static int myGridID;
+	static GridComponent myGrid;
 	static int lastGridInd=-1;
 
-	// my grid location values
-	static MapLocation myGridUL;
-	static MapLocation myGridBR;
-	static MapLocation myGridCenter;
-		
 	// standard defines
 	static MapLocation center;
 	
@@ -356,6 +348,7 @@ public class RobotPlayer {
 	static double curOre = 0;
 	
 	
+	static final int[] gridOffset = {-GRID_DIM,1,-1,GRID_DIM};
 	static final int[] gridOffX = {-2,-1,0,1,2,-2,-1,0,1,2,-2,-1,0,1,2,-2,-1,0,1,2,-2,-1,0,1,2};
 	static final int[] gridOffY = {-2,-2,-2,-2,-2,-1,-1,-1,-1,-1,0,0,0,0,0,1,1,1,1,1,2,2,2,2,2};
 	static final int[] dirOffsX = {0,1,-1,0};
@@ -363,6 +356,13 @@ public class RobotPlayer {
 
 	static int[] bitAdjacency = {99,231,462,924,792,3171,7399,14798,29596,25368,101472,236768,473536,947072,811776,3247104,7576576,15153152,30306304,25976832,3244032,7569408,15138816,30277632,25952256};
 	static int[] bitEdge = {31,17318416,1082401,32505856};
+	static final int[] edgeChans = {gridConnectivityEdgesNSBase,gridConnectivityEdgesEWBase,gridConnectivityEdgesEWBase,gridConnectivityEdgesNSBase};
+
+	
+	// used for status displays on grid drawing functions
+	static int[] colorR = {1, 0, 0, 0};
+	static int[] colorG = {0, 1, 0, 1};
+	static int[] colorB = {0, 0, 1, 1};
 	
 	
 	static class MapValue implements Comparable<MapValue>
@@ -421,6 +421,7 @@ public class RobotPlayer {
 				
 				mapHQ();
 				// initialize pointers
+				rc.broadcast(gridNextIDChan, 1);
 				rc.broadcast(gridConnectivityPtrChan, gridMinX+gridMinY*GRID_DIM);
 				rc.broadcast(gridPotentialPtrChan, gridMinX+gridMinY*GRID_DIM);
 				rc.broadcast(gridUpdatePtrChan, gridMinX+gridMinY*GRID_DIM);
@@ -600,51 +601,20 @@ public class RobotPlayer {
 		curOre = rc.getTeamOre();
 		
 		if (justMoved)
-		{			
+		{
 			// update internal grid coordinate values
-			myGridX = (GRID_OFFSET+myLocation.x-center.x+GRID_SPC/2)/GRID_SPC;
-			myGridY = (GRID_OFFSET+myLocation.y-center.y+GRID_SPC/2)/GRID_SPC;
-			myGridInd = myGridY*GRID_DIM + myGridX;
+			int gridX = (GRID_OFFSET+myLocation.x-center.x+GRID_SPC/2)/GRID_SPC;
+			int gridY = (GRID_OFFSET+myLocation.y-center.y+GRID_SPC/2)/GRID_SPC;
+			int gridInd = gridY*GRID_DIM + gridX;
 			
-			if (myGridInd != lastGridInd)
+			// did we change and stuff?
+			if (myGrid == null || gridInd != myGrid.gridIndex)
 			{
-				myGridCenter = gridCenter(myGridInd);
-				// both coords are inclusive
-				myGridUL = myGridCenter.add(-GRID_SPC/2,-GRID_SPC/2);
-				myGridBR = myGridCenter.add(GRID_SPC/2,GRID_SPC/2);
-
-				gridAddSeen(myGridInd);
-				
-				lastGridInd = myGridInd;
+				myGrid = new GridComponent(gridInd);
+				gridVisited(myGrid);
 			}
 			
-			int gridinfo = rc.readBroadcast(gridInfoBase+myGridInd);
-			int ncc = gridinfo & GRID_CC_MASK;
-			int gridid = gridinfo >>> 16;
-			int pathind = 1<<((myLocation.x-myGridUL.x)+GRID_SPC*(myLocation.y-myGridUL.y));
-	
-			int pathable = 0;
-			
-			for (int cc=0; cc<ncc; cc++)
-			{
-				pathable = rc.readBroadcast(gridConnectivityPathableBase+gridid);
-				if ((pathind&pathable)>0)
-					break;
-				gridid = rc.readBroadcast(gridNextIDBase+gridid);
-			}
-			
-			if ((pathable&pathind)>0)
-				myGridID = gridid;
-			else
-				myGridID = 0;
-			
-			// draw grid boundaries?
-			/*
-			rc.setIndicatorLine(myGridUL, myGridUL.add(GRID_SPC-1,0), 0, 255, 255);
-			rc.setIndicatorLine(myGridUL, myGridUL.add(0,GRID_SPC-1), 0, 255, 255);
-			rc.setIndicatorLine(myGridBR, myGridBR.add(0,-GRID_SPC+1), 0, 255, 255);
-			rc.setIndicatorLine(myGridBR, myGridBR.add(-GRID_SPC+1,0), 0, 255, 255);
-			*/
+			myGrid.findComponent(myLocation);
 		}
 	}
 	
@@ -1080,16 +1050,16 @@ public class RobotPlayer {
 			//movePotential();
 			int bc = Clock.getBytecodeNum();
 			Direction d = gridDescend(myLocation);
-			System.out.println((Clock.getBytecodeNum()-bc));
+			//System.out.println((Clock.getBytecodeNum()-bc));
 			if (d != Direction.NONE && d != Direction.OMNI)
 				tryMove(d);
 			//else if (d != Direction.OMNI)
 			//	rc.breakpoint();
 			
 			rc.setIndicatorLine(myLocation, myLocation.add(d,3), 0, 255, 255);
-			rc.setIndicatorString(0, "Potential: " + rc.readBroadcast(gridPotentialBase+myGridID) + " " + myGridID);
+			rc.setIndicatorString(0, "Potential: " + myGrid.readValue(gridPotentialBase));
 			//debug_drawGridMask(myGridInd,myGridID);
-			debug_drawGridMask(myGridCenter,rc.readBroadcast(gridConnectivityEdgesEWBase+myGridID));
+			//debug_drawGridMask(myGridCenter,rc.readBroadcast(gridConnectivityEdgesEWBase+myGridID));
 			//supplyTransferFraction = 0.5;
 
 		} catch (Exception e) {
@@ -1571,19 +1541,16 @@ public class RobotPlayer {
 	}
 	
 	// this is for local units to do
-	static void gridAddSeen(int gridind) throws GameActionException
+	static void gridVisited(GridComponent grid) throws GameActionException
 	{
-		// add "seen" flag to grid cell
-		int gridinfo = rc.readBroadcast(gridInfoBase+gridind);
-		
 		// if we have been here before, we have called this function
-		if ((gridinfo&STATUS_VISITED) > 0)
+		if (grid.getFlag(STATUS_VISITED))
 			return;
 		
-		rc.broadcast(gridInfoBase+gridind, gridinfo|STATUS_VISITED|STATUS_SEEN);
+		grid.setFlag(STATUS_VISITED|STATUS_SEEN);
 			
-		int gridX = gridind%GRID_DIM;
-		int gridY = gridind/GRID_DIM;
+		int gridX = grid.gridX();
+		int gridY = grid.gridY();
 
 		// check if the grid needs to be enlarged
 		getExtents();
@@ -1593,73 +1560,19 @@ public class RobotPlayer {
 		gridMaxY = Math.max(gridMaxY, gridY);				
 		setExtents();
 		
+		// queue this grid cell for pathing
+		//rc.broadcast(gridConnectivityPtrChan, grid.gridIndex);
+		
 		// mark adjacent 4 squares as "SEEN", meaning do connectivity processing
 		// (if it's inside gridMinX, etc), but not yet "VISITED"
 		for (int dir=0;dir<4;dir++)
 		{
-			int adjind = gridind + gridOffset(dir);
-			int adjinfo = rc.readBroadcast(gridInfoBase+adjind);
-			if ((adjinfo&STATUS_SEEN)==0)
-				rc.broadcast(gridInfoBase+adjind,adjinfo|STATUS_SEEN);
+			GridComponent adjgrid = grid.offsetTo(dir);
+			if (!adjgrid.getFlag(STATUS_SEEN))
+				adjgrid.setFlag(STATUS_SEEN);
 		}
 	}
 	
-	// adds a new ID to the linked list of grid cell connected components
-	// this is for distributed grid calculations
-	static int gridAddID(int gridind) throws GameActionException
-	{
-		int gridinfo = rc.readBroadcast(gridInfoBase+gridind);
-		
-		int gridid = (gridinfo >>> 16);
-		int lastgridid = 0;
-		
-		int gridncc = 0;
-		while (gridid > 0)
-		{
-			lastgridid = gridid;
-			gridid = rc.readBroadcast(gridNextIDBase+gridid);
-			gridncc++;
-		}
-		
-		// now add one
-		gridncc++;
-		if (gridncc > GRID_MAX_CC)
-			return 0;
-
-		// lastgridid is now the id of the current end of chain, or 0 if beginning
-		// now get the next ID of the next grid element
-		gridid = rc.readBroadcast(gridNextIDChan);
-		rc.broadcast(gridNextIDChan,gridid+1);
-		
-		if (lastgridid > 0)
-		{
-			// and save it to either the next ID channel
-			rc.broadcast(gridNextIDBase+lastgridid, gridid);
-		}
-		else
-		{
-			// or the info channel (base id)
-			gridinfo = (gridinfo&65535) | (gridid<<16);
-		}
-		
-		// save the ncc in grid info
-		gridinfo = (gridinfo&(~GRID_CC_MASK)) | gridncc;
-		// we need to re-path
-		gridinfo &= ~STATUS_PATHED;
-		// write that we have entered it
-		rc.broadcast(gridInfoBase+gridind, gridinfo);
-		
-		/*
-		if (gridind == 1124)
-		{
-			System.out.println("Added " + gridid + " to the end of " + lastgridid + " at " + gridind);
-			rc.breakpoint();
-		}
-*/
-		
-		return gridid;
-	}
-		
 	static Direction gridDescend(MapLocation loc) throws GameActionException
 	{
 		int gridX = (GRID_OFFSET+loc.x-center.x+GRID_SPC/2)/GRID_SPC;
@@ -1713,12 +1626,10 @@ public class RobotPlayer {
 		// check each adjacent direction
 		for (int dir=0; dir<4; dir++)
 		{
-			int adjind = gridind+gridOffset(dir);
+			int adjind = gridind+gridOffset[dir];
 			int adjinfo = rc.readBroadcast(gridInfoBase+adjind);
 			int adjid = adjinfo>>>16;
 			int adjncc = adjinfo & GRID_CC_MASK;
-			
-			final int[] edgeChans = {gridConnectivityEdgesNSBase,gridConnectivityEdgesEWBase,gridConnectivityEdgesEWBase,gridConnectivityEdgesNSBase};
 			
 			for (int cc=0; cc<adjncc; cc++)
 			{
@@ -1770,7 +1681,7 @@ public class RobotPlayer {
 			
 			adjpathable &= bitEdge[3-bestdir];
 			// fooooo
-			debug_drawGridMask(adjcenter,adjpathable);
+			//debug_drawGridMask(adjcenter,adjpathable);
 			
 			// now adjpathable is 1 in places on adjacent grid where we can step
 			// we just need to find which one we want to step to
@@ -1785,8 +1696,8 @@ public class RobotPlayer {
 				adjpathable &= adjpathable-1;
 			}
 			System.out.println("No adjacent squares traversable");
-			debug_drawGridMask(gridcenter,rc.readBroadcast(gridConnectivityPathableBase+gridid));
-			debug_drawGridMask(adjcenter,rc.readBroadcast(gridConnectivityEdgesEWBase+bestid));
+			//debug_drawGridMask(gridcenter,rc.readBroadcast(gridConnectivityPathableBase+gridid));
+			//debug_drawGridMask(adjcenter,rc.readBroadcast(gridConnectivityEdgesEWBase+bestid));
 			return Direction.NONE;
 		}
 		
@@ -1812,7 +1723,7 @@ public class RobotPlayer {
 		// now, if we got to here, pathable is one step before we hit pathind, so we find the possible directions by masking it
 		pathable &= bitAdjacency[pathindex];
 		
-		debug_drawGridMask(gridcenter,bestedge);
+		//debug_drawGridMask(gridcenter,bestedge);
 		
 		// now we figure a bit that is set
 		int setbit = Integer.numberOfTrailingZeros(pathable);
@@ -1820,67 +1731,50 @@ public class RobotPlayer {
 		setbit = setbit-pathindex+12;
 		Direction dir = loc.directionTo(loc.add(gridOffX[setbit],gridOffY[setbit]));
 		
-		System.out.println(setbit + "/" + dir);
+		//System.out.println(setbit + "/" + dir);
 		
 		return dir;
 	}
 	
-	static MapValue gridGradient(int ptr) throws GameActionException
+	static MapValue gridGradient(GridComponent grid) throws GameActionException
 	{
 		int bc = Clock.getBytecodeNum();
 		
-		int gridind = (ptr & 65535);
-		int gridcc = (ptr>>>16);
-		// and corresponding info
-		int gridinfo = rc.readBroadcast(gridInfoBase+gridind);
-		// get the list ID of the grid cell
-		int gridid = (gridinfo >>> 16);
-
 		MapValue gradient = new MapValue(0,0,0);
 		
-		// now step forward to the relevant cc  
-		for (int i=0; i<gridcc; i++)
-			gridid = rc.readBroadcast(gridNextIDBase+gridid);
-
 		// get our square's pathable U maybe
-		int pathable = rc.readBroadcast(gridConnectivityPathableBase+gridid);
-		pathable |= GRID_MASK&(~rc.readBroadcast(gridConnectivityKnownBase+gridind));
+		int pathable = grid.getMaybes();
 		
 		// now, let's loop through each adjacent direction & their gridids
-		int[] dirvals = new int[4];
 		
-		int gridval = rc.readBroadcast(gridPotentialBase+gridid);
+		int gridval = grid.readValue(gridPotentialBase);
 		
 		for (int dir=0; dir<4; dir++)
 		{
-			int adjind = gridind+gridOffset(dir);
-			int adjinfo = rc.readBroadcast(gridInfoBase+adjind);
-			int adjid = adjinfo>>>16;
-			int adjncc = adjinfo & GRID_CC_MASK;
-			
-			final int[] edgeChans = {gridConnectivityEdgesNSBase,gridConnectivityEdgesEWBase,gridConnectivityEdgesEWBase,gridConnectivityEdgesNSBase};
-			
+			GridComponent adjgrid = grid.offsetTo(dir);
+
+			int dirval = 0;
 			int dircount = 0;
 			
-			for (int cc=0; cc<adjncc; cc++)
+			while (adjgrid.isValid())
 			{
-				int edges = rc.readBroadcast(edgeChans[dir]+adjid);
+				int edges = adjgrid.readValue(edgeChans[dir]);
 				
 				// if they're not unconnected, add the value difference
 				if ((edges&pathable&bitEdge[dir]) > 0)
 				{
-					dirvals[dir] += rc.readBroadcast(gridPotentialBase+adjid);
+					dirval += adjgrid.readValue(gridPotentialBase);
 					dircount++;
 				}
-				
+
 				// and cycle on to the next connected component
-				adjid = rc.readBroadcast(gridNextIDBase+adjid);
+				adjgrid.nextComponent();
 			}
 			
 			if (dircount > 0)
 			{
-				gradient.x -= (dirvals[dir]/dircount - gridval)*dirOffsX[dir];
-				gradient.y -= (dirvals[dir]/dircount - gridval)*dirOffsY[dir];
+				gradient.x -= (dirval/dircount - gridval)*dirOffsX[dir];
+				gradient.y -= (dirval/dircount - gridval)*dirOffsY[dir];
 			}
 		}
 		
@@ -1899,21 +1793,10 @@ public class RobotPlayer {
 		
 		int bc = Clock.getBytecodeNum();
 
-		int ptr = rc.readBroadcast(gridUpdatePtrChan);
-		
-		// position-based grid index
-		int gridind = (ptr & 65535);
-		int gridcc = (ptr>>>16);
-		// and corresponding info
-		int gridinfo = rc.readBroadcast(gridInfoBase+gridind);
-		// get the list ID of the grid cell
-		int gridid = (gridinfo >>> 16);
-		
-		// if it's zero, make sure we add it
-		if (gridid==0) gridid = gridAddID(gridind);
+		GridComponent grid = new GridComponent(rc.readBroadcast(gridUpdatePtrChan));
 		
 		// check if we made it all the way around
-		if (ptr == (gridMinX + gridMinY*GRID_DIM))
+		if (grid.isFirst())
 		{
 			int curround = Clock.getRoundNum();
 			int lastup = rc.readBroadcast(gridLastUpdateChan);
@@ -1928,32 +1811,26 @@ public class RobotPlayer {
 		
 		
 		// advance the pointer
-		rc.broadcast(gridUpdatePtrChan,nextGridCC(ptr,gridinfo));
+		rc.broadcast(gridUpdatePtrChan,grid.nextCCPointer());
 		
-		MapLocation loc = gridCenter(gridind);
+		MapLocation loc = grid.getCenter();
 
 		MapLocation ul = loc.add(-GRID_SPC/2,-GRID_SPC/2);
 		MapLocation br = loc.add(GRID_SPC/2,GRID_SPC/2);
-		
-		
-		// now step forward to the relevant cc  
-		for (int i=0; i<gridcc; i++)
-			gridid = rc.readBroadcast(gridNextIDBase+gridid);
-		
+				
 		// gridid now contains id of relevant connected component, is what we want to read/write
 		// so figure out which regions belong to it
-		int pathable = rc.readBroadcast(gridConnectivityPathableBase+gridid);
+		int pathable = grid.readValue(gridConnectivityPathableBase);
 		// ignore unknowns, because we literally can't sense anything there
-		//pathable |= GRID_MASK&(~rc.readBroadcast(gridConnectivityKnownBase+gridind));
 		
 		// now sense frienemies in all grid cells
 		RobotInfo[] bots = new RobotInfo[0];
-		if ((gridinfo&STATUS_SEEN)>0)
+		if (grid.getFlag(STATUS_SEEN))
 			bots = rc.senseNearbyRobots(loc,GRID_SENSE,null);
 		
-		int prevFriend = rc.readBroadcast(gridFriendBase+gridid);
-		int prevEnemy = rc.readBroadcast(gridEnemyBase+gridid);
-		int prevPotential = rc.readBroadcast(gridPotentialBase+gridid);
+		int prevFriend = grid.readValue(gridFriendBase);
+		int prevEnemy = grid.readValue(gridFriendBase);
+		int prevPotential = grid.readValue(gridPotentialBase);
 		
 		int gridFriend = 0;
 		int gridEnemy = 0;
@@ -1984,7 +1861,7 @@ public class RobotPlayer {
 //			gridEnemy = prevEnemy+Consts.ENEMY_DECAY_RATE*(prevEnemy>0?-1:1);
 		
 		// quick check for myself
-		if (myGridInd == gridind)
+		if (myGrid.gridID == grid.gridID && myGrid.isValid())
 		{
 			int pathind = (1<<((myLocation.x-ul.x)+GRID_SPC*(myLocation.y-ul.y)));
 			if ((pathind&pathable)>0)
@@ -2000,10 +1877,10 @@ public class RobotPlayer {
 		
 		// and rebroadcast the values
 		if (gridFriend != prevFriend)
-			rc.broadcast(gridFriendBase+gridid,gridFriend);
+			grid.writeValue(gridFriendBase, gridFriend);
 
 		if (gridEnemy != prevEnemy)
-			rc.broadcast(gridEnemyBase+gridid,gridEnemy);
+			grid.writeValue(gridEnemyBase, gridEnemy);
 		
 		//System.out.println("Update time (" + bots.length + "): " + (Clock.getBytecodeNum()-bc));
 		
@@ -2014,21 +1891,10 @@ public class RobotPlayer {
 	{
 		int bc = Clock.getBytecodeNum();
 
-		int ptr = rc.readBroadcast(gridPotentialPtrChan);
-		
-		// position-based grid index
-		int gridind = (ptr & 65535);
-		int gridcc = (ptr>>>16);
-		// and corresponding info
-		int gridinfo = rc.readBroadcast(gridInfoBase+gridind);
-		// get the list ID of the grid cell
-		int gridid = (gridinfo >>> 16);
-		
-		// if it's zero, make sure we add it
-		if (gridid==0) gridid = gridAddID(gridind);
+		GridComponent grid = new GridComponent(rc.readBroadcast(gridPotentialPtrChan));
 		
 		// check if we made it all the way around
-		if (ptr == (gridMinX + gridMinY*GRID_DIM))
+		if (grid.isFirst())
 		{
 			int curround = Clock.getRoundNum();
 			int lastup = rc.readBroadcast(gridLastPotentialChan);
@@ -2054,29 +1920,22 @@ public class RobotPlayer {
 		
 		
 		// advance the pointer
-		rc.broadcast(gridPotentialPtrChan,nextGridCC(ptr,gridinfo));		
+		rc.broadcast(gridPotentialPtrChan,grid.nextCCPointer());		
 		// # of grid squares to closest friendly unit
 				
-		// now step forward to the relevant cc  
-		for (int i=0; i<gridcc; i++)
-			gridid = rc.readBroadcast(gridNextIDBase+gridid);
-
-		
 		// source term for potential is difference between friend and enemy squares
-		int gridval = rc.readBroadcast(gridPotentialBase+gridid);
-		int source = rc.readBroadcast(gridFriendBase+gridid);		
-		source = source + rc.readBroadcast(gridEnemyBase+gridid);
+		int gridval = grid.readValue(gridPotentialBase);
+		int source = grid.readValue(gridFriendBase) + grid.readValue(gridEnemyBase);		
 
 		
-		if ((gridinfo&STATUS_HQ)>0)
+		if (grid.getFlag(STATUS_HQ))
 			source += Consts.WEIGHT_ENEMY_HQ;
 		//else if ((gridinfo&STATUS_TOWER)>0)
 		//	source += Consts.WEIGHT_ENEMY_TOWER;
 
 		
 		// get our square's pathable U unknown, and see what it connects to...
-		int pathable = rc.readBroadcast(gridConnectivityPathableBase+gridid);
-		pathable |= GRID_MASK&(~rc.readBroadcast(gridConnectivityKnownBase+gridind));
+		int pathable = grid.getMaybes();
 		
 		// now, let's loop through each adjacent direction & their gridids
 
@@ -2084,89 +1943,69 @@ public class RobotPlayer {
 		
 		for (int dir=0; dir<4; dir++)
 		{
-			int adjind = gridind+gridOffset(dir);
-			int adjinfo = rc.readBroadcast(gridInfoBase+adjind);
-			int adjid = adjinfo>>>16;
-			int adjncc = adjinfo & GRID_CC_MASK;
-			
-			final int[] edgeChans = {gridConnectivityEdgesNSBase,gridConnectivityEdgesEWBase,gridConnectivityEdgesEWBase,gridConnectivityEdgesNSBase};
-			
-			int dirval = 0;
+			GridComponent adjgrid = grid.offsetTo(dir);
 
-			for (int cc=0; cc<adjncc; cc++)
+			int dirval = 0;
+			int diradd = 0;
+			while (adjgrid.isValid())
 			{
-				int edges = rc.readBroadcast(edgeChans[dir]+adjid);
+				int edges = adjgrid.readValue(edgeChans[dir]);
 				
 				// possibly connected?
 				if ((edges&pathable&bitEdge[dir]) > 0) // add adjacent value
-					dirval += rc.readBroadcast(gridPotentialBase+adjid);
+					dirval += adjgrid.readValue(gridPotentialBase);
 				else // insulating boundary, add my value
 					dirval += gridval;
-				
-				/*if (gridind == 1123)
-				{
-					System.out.println(adjind + "@ " + dir + "," + adjid + " ----- " + adjncc + " | " + newval + " ; " + gridval);
-					System.out.println("offset: " + rc.readBroadcast(gridPotentialOffsetChan) + ", adjval = " + rc.readBroadcast(gridPotentialBase+adjid));
-				}
-				*/
+				diradd++;
 				// and cycle on to the next connected component
-				adjid = rc.readBroadcast(gridNextIDBase+adjid);
+				adjgrid.nextComponent();
 			}
 			
-			if (adjncc > 0)
-				dirval /= adjncc;
+			if (adjgrid.gridNCC > 0)
+				dirval /= diradd;//adjgrid.gridNCC;
 			else
 				dirval = gridval;
 			
 			newval += dirval;
 		}
 		
-		/*if (gridind == 1123)
-		{
-			System.out.println("newval sum: " + newval);
-		}*/
-
 		// and take the average
 		newval = newval / 4;
 		
 		newval += source;
 		
 		// shift the potential by the offset
-		newval += rc.readBroadcast(gridPotentialOffsetChan);
+		//newval += rc.readBroadcast(gridPotentialOffsetChan);
+		
+		if (grid.getFlag(STATUS_HQ))
+			newval = Consts.WEIGHT_ENEMY_HQ;
 		
 		// and add the value we're writing to the accumulating total
 		rc.broadcast(gridPotentialTotalChan, newval+rc.readBroadcast(gridPotentialTotalChan));
 		
-		rc.broadcast(gridPotentialBase+gridid, newval);
+		grid.writeValue(gridPotentialBase, newval);
 		//rc.broadcast(gridPotentialPtrChan,(ptr+1)%gridn);
 		//System.out.println("Diffuse time (" + edgecount + "): " + (Clock.getBytecodeNum()-bc));
 		
 		return true;
 	}
 	
-		
+	
 	static boolean gridConnectivity() throws GameActionException
 	{
 		int bc = Clock.getBytecodeNum();
 		
 		int ptr = rc.readBroadcast(gridConnectivityPtrChan);
+		// start off the grid at the first connected component for this function
+		GridComponent grid = new GridComponent(ptr&65535);
 		
-		// position-based grid index
-		int gridind = (ptr & 65535);
-		int gridcc = (ptr>>>16);
-		// and corresponding info
-		int gridinfo = rc.readBroadcast(gridInfoBase+gridind);
-		// get the list ID of the grid cell
-		int gridid = (gridinfo >>> 16);
-		
-		// if it's zero, make sure we add it
-		if (gridid==0) gridid = gridAddID(gridind);
+		int atomicStartRound = Clock.getRoundNum();
 		
 		// go on to the next connected component, so we don't double-count things
-		rc.broadcast(gridConnectivityPtrChan,nextGridCC(ptr,gridinfo));
+		rc.broadcast(gridConnectivityPtrChan,grid.nextIndexPointer());
 		
 		// check if we made it all the way around
-		if (ptr == (gridMinX + gridMinY*GRID_DIM))
+		if (grid.isFirst())
 		{
 			int curround = Clock.getRoundNum();
 			int lastup = rc.readBroadcast(gridLastConnectivityChan);
@@ -2179,20 +2018,16 @@ public class RobotPlayer {
 		}
 		
 		// now, if we haven't seen it at all, do nothing
-		if ((gridinfo&STATUS_SEEN)==0)
-		{
-			rc.broadcast(gridConnectivityEdgesEWBase+gridid,GRID_MASK);
-			rc.broadcast(gridConnectivityEdgesNSBase+gridid,GRID_MASK);
+		if (!grid.getFlag(STATUS_SEEN))
 			return true;
-		}
 		
 		// CHECKPOINT #1: CHECK IF WE ARE ADDING ANY NEW TERRAIN TILES
-		MapLocation loc = gridCenter(gridind);
+		MapLocation loc = grid.getCenter();
 		
 		// get previously loaded values for this grid cell
-		int norms = rc.readBroadcast(gridConnectivityNormalBase+gridind);
-		int voids = rc.readBroadcast(gridConnectivityVoidBase+gridind);
-		int known = rc.readBroadcast(gridConnectivityKnownBase+gridind);
+		int norms = grid.readProperty(gridConnectivityNormalBase);
+		int voids = grid.readProperty(gridConnectivityVoidBase);
+		int known = grid.readProperty(gridConnectivityKnownBase);
 		
 		int oldknown = known;
 		
@@ -2203,7 +2038,7 @@ public class RobotPlayer {
 		
 		// only add terrain tiles right before connected-component 0
 		// to make sure next steps are consistent
-		if (known != GRID_MASK && gridcc == 0)
+		if (known != GRID_MASK && grid.gridCC == 0)
 		{
 			// first, get the terrain tiles
 			int unknown = GRID_MASK&(~known);
@@ -2254,40 +2089,45 @@ public class RobotPlayer {
 			// then write them back if it changed
 			if (known != oldknown)
 			{
-				rc.broadcast(gridConnectivityNormalBase+gridind,norms);
-				rc.broadcast(gridConnectivityVoidBase+gridind,voids);
-				rc.broadcast(gridConnectivityKnownBase+gridind,known);
+				grid.writeProperty(gridConnectivityNormalBase, norms);
+				grid.writeProperty(gridConnectivityVoidBase, voids);
+				grid.writeProperty(gridConnectivityKnownBase, known);
 				// and flag it as needing a path update
-				gridinfo &= ~STATUS_PATHED;
-				rc.broadcast(gridInfoBase+gridind, gridinfo);
+				grid.unsetFlag(STATUS_PATHED);
 			}
 			
 			// and if we added a lot, return without doing stuff, but stay on the same square
 			if (nadd > 10)
 			{
-				System.out.println("Connectivity add time for " + gridind + ": " + (Clock.getBytecodeNum()-bc));
+				System.out.println("Connectivity add time for " + grid.gridIndex + ": " + (Clock.getBytecodeNum()-bc));
+				// stay on same round, til we're done adding
+				if (Clock.getRoundNum() == atomicStartRound)
+					rc.broadcast(gridConnectivityPtrChan,grid.gridIndex);
 				return true;
 			}
 		}
 		
 		// do we know anything at all, or do we need to re-path?
-		if (known == 0 || (gridinfo&STATUS_PATHED) > 0)
+		if (known == 0 || grid.getFlag(STATUS_PATHED))
 		{
 			//System.out.println("Blank grid time (" + nadd + "): " + (Clock.getBytecodeNum()-bc));
+			// already went on to next round
 			return true;
 		}
 		
 		// CHECKPOINT #3: ADD UP PATHABLES UP TO THIS CONNECTED COMPONENT INDEX
 		// note that this is where gridid gets advanced to current grid cell
 		int prevpathable = 0;
+		int gridcc = (ptr>>>16);
 		for (int i=0; i<gridcc; i++)
 		{
-			prevpathable |= rc.readBroadcast(gridConnectivityPathableBase+gridid);
-			gridid = rc.readBroadcast(gridNextIDBase+gridid);
+			prevpathable |= grid.readValue(gridConnectivityPathableBase);
+			grid.nextComponent();
+			debug_assert(grid.gridID != 0, "AWWWWWWWWWWW" + grid);
 		}
 
 		// now flood-fill the current connected component as far as we can
-		int pathable = rc.readBroadcast(gridConnectivityPathableBase+gridid);
+		int pathable = grid.readValue(gridConnectivityPathableBase);
 		
 		// if pathable is 0, it's a fresh connected component (or first connected component)
 		// which means we *know* it's not connected to prevpathable, if we did our math right
@@ -2305,12 +2145,13 @@ public class RobotPlayer {
 			// now set newpath to difference between old and new
 			int newpath = path & (~pathable);
 			pathable = path;
+			// if nothing new, stop looping
 			if (newpath == 0)
 				break;
 		}
 		
 		// save the path we found
-		rc.broadcast(gridConnectivityPathableBase+gridid,pathable);
+		grid.writeValue(gridConnectivityPathableBase,pathable);
 
 		// this is the region that is pathed so far
 		prevpathable |= pathable;
@@ -2321,18 +2162,13 @@ public class RobotPlayer {
 		int newnorms = norms & (~prevpathable);
 		
 		// CHECKPOINT #4: ANY NORMS NOT IN PREVIOUS PATHABLES THAT ALSO AREN'T CONNECTED VIA MAYBE
-		if (gridcc+1 == (gridinfo&GRID_CC_MASK))
+		if (grid.gridCC+1 == grid.gridNCC)
 		{
 			if ((newnorms>0) && ((newnorms&maybe)==0||(prevpathable&maybe)==0))
 			{
-				if (gridind == 1639)
-				{
-					System.out.println("CC # " + (gridcc+2) + " ADDED TO 1639...");
-					rc.breakpoint();
-				}
 				// add a new connected component
 				// first, add a new grid cell at the particular index
-				int newid = gridAddID(gridind);
+				grid.addComponent();
 				// now, we shouldn't need to do anything
 				// the norms should be filled in automatically next update
 				System.out.println("newnorms = " + Integer.toBinaryString(newnorms) + " | " + Integer.toBinaryString(pathable) + 
@@ -2341,7 +2177,7 @@ public class RobotPlayer {
 			else
 			{
 				// no new components on the last update, so set pathable
-				rc.broadcast(gridInfoBase+gridind,gridinfo|STATUS_PATHED);
+				grid.setFlag(STATUS_PATHED);
 			}
 		}
 		
@@ -2350,6 +2186,8 @@ public class RobotPlayer {
 		// or to pathable|unknown, if they connect
 		if ((pathable&maybe)>0 || pathable == 0)
 			pathable |= GRID_MASK&(~known);
+		
+		pathable = grid.getMaybes();
 		
 		// do UD-DU flip
 		int nsEdge = (pathable >>> 20)&bitEdge[0]; // south edge -> north
@@ -2361,60 +2199,18 @@ public class RobotPlayer {
 		nsEdge = relaxGrid(nsEdge,GRID_MASK&~voids)&(bitEdge[0]|bitEdge[3]);
 		ewEdge = relaxGrid(ewEdge,GRID_MASK&~voids)&(bitEdge[1]|bitEdge[2]);
 		// and save them
-		rc.broadcast(gridConnectivityEdgesNSBase+gridid, nsEdge);
-		rc.broadcast(gridConnectivityEdgesEWBase+gridid, ewEdge);
+		grid.writeValue(gridConnectivityEdgesNSBase,nsEdge);
+		grid.writeValue(gridConnectivityEdgesEWBase,ewEdge);
 		
 		System.out.println("Connectivity path time: " + (Clock.getBytecodeNum()-bc));
+		
+		// go on to next CC, if we made it in a single round
+		if (Clock.getRoundNum() == atomicStartRound)
+			rc.broadcast(gridConnectivityPtrChan,grid.nextCCPointer());
 
 		return true;
-	}
+	}	
 	
-	// moves on to the next connected component index
-	static int nextGridCC(int ptr, int gridinfo)
-	{		
-		int gridind = ptr&65535;
-		int gridcc = (ptr >>> 16);
-		int gridx = gridind%GRID_DIM;
-		int gridy = gridind/GRID_DIM;
-		int gridncc = gridinfo&GRID_CC_MASK;
-		
-		gridcc++;
-		if (gridcc >= gridncc)
-		{
-			gridcc = 0;
-			gridx++;
-			if (gridx > gridMaxX)
-			{
-				gridx = gridMinX;
-				gridy++;
-				if (gridy > gridMaxY)
-					gridy = gridMinY;
-			}
-		}
-		
-		return (gridy*GRID_DIM + gridx) + (gridcc << 16);
-	}
-	
-	// moves on to the next grid square, ignoring connected components
-	static int nextGridIndex(int ptr, int gridinfo)
-	{		
-		int gridind = ptr&65535;
-		int gridx = gridind%GRID_DIM;
-		int gridy = gridind/GRID_DIM;
-		
-		int gridcc = 0;
-		gridx++;
-		if (gridx > gridMaxX)
-		{
-			gridx = gridMinX;
-			gridy++;
-			if (gridy > gridMaxY)
-				gridy = gridMinY;
-		}
-		
-		return (gridy*GRID_DIM + gridx) + (gridcc << 16);
-	}
-
 	
 	static int relaxGrid(int fill, int mask)
 	{
@@ -2428,27 +2224,6 @@ public class RobotPlayer {
 			fill &= (fill-1);
 		}
 		return path;
-	}
-	
-	static int gridOffset(int dir)
-	{
-		switch (dir)
-		{
-		case STATUS_NORTH:
-			return -GRID_DIM;
-		case STATUS_SOUTH:
-			return GRID_DIM;
-		case STATUS_EAST:
-			return +1;
-		case STATUS_WEST:
-			return -1;
-		}
-		return 0;
-	}
-	
-	static int getRobotStrength(double health, double supply, RobotType type)
-	{
-		return 10*(int)(type.attackPower + ((supply>type.supplyUpkeep*10)?5:0));
 	}
 	
 	// Supply Transfer Protocol
@@ -2533,7 +2308,7 @@ public class RobotPlayer {
 		}
 	}
 	
-	private static boolean isGoodMovementDirection() throws GameActionException { //checks if the facing direction is "good", meaning safe from towers and not a blockage or off-map or occupied
+	static boolean isGoodMovementDirection() throws GameActionException { //checks if the facing direction is "good", meaning safe from towers and not a blockage or off-map or occupied
 		MapLocation tileInFront = rc.getLocation().add(facing);
 		boolean goodSpace = true;
 		//check that we are not facing off the edge of the map or are blocked
@@ -3110,7 +2885,6 @@ public class RobotPlayer {
 		}
 	}
 
-	
 	static void spawnUnit(RobotType type) throws GameActionException
 	{
 		trySpawn(getRandomDirection(),type);
@@ -3128,111 +2902,45 @@ public class RobotPlayer {
 		return units;
 	}
 	
-	static void debug_drawGridMask(MapLocation loc, int pathable) throws GameActionException
+	static void debug_drawGridMask(MapLocation loc, int mask, int r, int g, int b) throws GameActionException
 	{
 		for (int i=0; i<25; i++)
-			if ((pathable&(1<<i)) > 0)
-				rc.setIndicatorDot(loc.add(gridOffX[i],gridOffY[i]),255,255,255);
+			if ((mask&(1<<i)) > 0)
+				rc.setIndicatorDot(loc.add(gridOffX[i],gridOffY[i]),r,g,b);
 	}
-	
-	static void debug_drawGridMask(int gridind) throws GameActionException
-	{
-		int gridinfo = rc.readBroadcast(gridInfoBase+gridind);
-		int ncc = gridinfo & GRID_CC_MASK;
-		int[] pathables = new int[ncc];
-		
-		int gridid =  gridinfo >>> 16;
-		
-		if (gridid == 0)
-			return;
-		
-		if (ncc == 0)
-			return;
 
-		for (int i=0; i<ncc; i++)
+	static void debug_drawConnections(GridComponent grid) throws GameActionException
+	{
+		// loop through all of my connected components
+		while (grid.isValid())
 		{
-			pathables[i] = rc.readBroadcast(gridConnectivityPathableBase+gridid);
-			//pathables[i] = rc.readBroadcast(gridConnectivityEdgesNSBase+gridid);
-			//pathables[i] = rc.readBroadcast(gridConnectivityEdgesEWBase+gridid);
-			gridid = rc.readBroadcast(gridNextIDBase+gridid);
-		}
-		
-		MapLocation loc = gridCenter(gridind);
-		
-		for (int i=0; i<25; i++)
-		{
-			for (int j=0; j<ncc; j++)
+			// get our square's pathable U unknown
+			int pathable = grid.getMaybes();
+
+			// for each edge, now draw locations that connect to adjacent grid indices
+			
+			for (int dir=0; dir<4; dir++)
 			{
-				if ((pathables[j]&(1<<i)) > 0)
+				// get index of adjacent square here
+				GridComponent adjgrid = grid.offsetTo(dir);
+				
+				while (adjgrid.isValid())
 				{
-					rc.setIndicatorDot(loc.add(gridOffX[i],gridOffY[i]),50*(j+1),50*(j+1),50*(j+1));
+					int edges = adjgrid.readValue(edgeChans[dir]);					
+					
+					int conn = (edges&pathable&bitEdge[dir]); 
+					if (conn > 0)
+					{
+						// draw connected edges for this connected component
+						debug_drawGridMask(grid.getCenter(),conn,150*colorR[grid.gridCC],150*colorG[grid.gridCC],150*colorB[grid.gridCC]);
+					}
+					
+					adjgrid.nextComponent();
 				}
 			}
+
+			grid.nextComponent();
 		}
-	}
-	
-	static void debug_drawGridMask(int gridind, int gridid) throws GameActionException
-	{
-		MapLocation loc = gridCenter(gridind);
-		int pathable = rc.readBroadcast(gridConnectivityPathableBase + gridid);
-		for (int i=0; i<25; i++)
-			if ((pathable&(1<<i))>0)
-				rc.setIndicatorDot(loc.add(gridOffX[i],gridOffY[i]),200,128,0);
-	}
-	
-	static int debug_getGridVal(int gridinfo, int cc, int chanbase) throws GameActionException
-	{
-		int gridid = (gridinfo>>>16);
-			
-		if (gridid==0)
-			return 0;
-		
-		for (int i=0; i<cc; i++)
-			gridid = rc.readBroadcast(gridNextIDBase+gridid);
-		
-		return rc.readBroadcast(chanbase+gridid);
-	}
-	
-	static int debug_nConnected(int ptr, int dir) throws GameActionException
-	{
-		int gridind = (ptr & 65535);
-		int gridcc = (ptr>>>16);
-		// and corresponding info
-		int gridinfo = rc.readBroadcast(gridInfoBase+gridind);
-		// get the list ID of the grid cell
-		int gridid = (gridinfo >>> 16);
-
-		// now step forward to the relevant cc  
-		for (int i=0; i<gridcc; i++)
-			gridid = rc.readBroadcast(gridNextIDBase+gridid);
-
-		// get our square's pathable U unknown
-		int pathable = rc.readBroadcast(gridConnectivityPathableBase+gridid);
-		pathable |= GRID_MASK&(~rc.readBroadcast(gridConnectivityKnownBase+gridind));
-		
-		int adjind = gridind+gridOffset(dir);
-		int adjinfo = rc.readBroadcast(gridInfoBase+adjind);
-		int adjid = adjinfo>>>16;
-		int adjncc = adjinfo & GRID_CC_MASK;
-		
-		int nconn = 0;
-		
-		final int[] edgeChans = {gridConnectivityEdgesNSBase,gridConnectivityEdgesEWBase,gridConnectivityEdgesEWBase,gridConnectivityEdgesNSBase};
-			
-		for (int cc=0; cc<adjncc; cc++)
-		{
-			int edges = rc.readBroadcast(edgeChans[dir]+adjid);
-			
-			// and cycle on to the next connected component
-			adjid = rc.readBroadcast(gridNextIDBase+adjid);
-
-			if ((edges&pathable&bitEdge[dir]) > 0)
-			{
-				nconn++;
-//				System.out.println("GRID INDDDD " + gridind);
-			}
-		}
-		return nconn;
 	}
 	
 	static void debug_drawGridVals() throws GameActionException
@@ -3248,174 +2956,293 @@ public class RobotPlayer {
 				int gridind = y*GRID_DIM+x;
 				
 				// not mapped yet
-				int gridinfo = rc.readBroadcast(gridInfoBase+gridind);
 				if (x < gridMinX || x > gridMaxX || y < gridMinY || y > gridMaxY)
 					continue;
 				
-				//System.out.println("Found seen block @ " + gridind);
-				//if (Clock.getRoundNum()%5 < 3)
-				//	debug_drawGridMask(gridind);
-				//else {
-				MapLocation loc = gridCenter(gridind);
-				//int val = (rc.readBroadcast(gridPotentialBase+gridind));
+				GridComponent grid = new GridComponent(gridind);
 				
-				// display connectivity #
-				int val = 0;
-				int ncc = (gridinfo & GRID_CC_MASK);
-				for (int i=2; i<ncc; i++)
+				debug_drawConnections(grid);
+				
+//				System.out.println(grid.readValue(gridPotentialBase));
+				
+				int brt = 0;
+				if (grid.getFlag(STATUS_SEEN)) brt = 100;
+				if (grid.getFlag(STATUS_VISITED)) brt = 255;
+				
+				if (grid.gridNCC > 0)
+					rc.setIndicatorDot(grid.getCenter(),brt*colorR[grid.gridNCC-1],brt*colorG[grid.gridNCC-1],brt*colorB[grid.gridNCC-1]);
+				
+				grid.firstComponent();
+				for (int i=0; i<grid.gridNCC; i++)
 				{
-					val = debug_getGridVal(gridinfo,i,gridFriendBase);
-					if (val > 255) val = 255;
-					if (val < 0) val = 0;
-					rc.setIndicatorDot(loc.add(i,0),val,val,0);
+					MapValue g = gridGradient(grid);
+					g.x = g.x/(int)(g.value/4+1);
+					g.y = g.y/(int)(g.value/4+1);
 					
-					MapValue gradient = gridGradient(gridind | (i<<16));
-					int len = (int)(gradient.value/4) + 1;
-					//int len = 40;
-					gradient.x /= len;
-					gradient.y /= len;
-					rc.setIndicatorLine(loc.add(i,0),loc.add(i+gradient.x,gradient.y),0,255,0);
+					rc.setIndicatorLine(grid.getCenter().add(i,0), grid.getCenter().add(i+g.x,0+g.y), 0, 255, 255);
+					System.out.println("Grid: " + g.x + "," + g.y + "," + grid.readValue(gridPotentialBase));
 					
-					val = debug_getGridVal(gridinfo,i,gridPotentialBase);
-					if (val > 255) val = 255;
-					if (val < 0) val = 0;
-					rc.setIndicatorDot(loc.add(i,1),val,val,0);
-					
-					debug_drawGridMask(loc,debug_getGridVal(gridinfo,i,gridConnectivityPathableBase));//&(bitEdge[0]|bitEdge[1]|bitEdge[2]|bitEdge[3]));
-					//debug_drawGridMask(loc,debug_getGridVal(gridinfo,i,gridConnectivityEdgesEWBase));
-					for (int dir=0; dir<4; dir++)
-					{
-						int nconn = debug_nConnected(gridind|(i<<16),dir); 
-						if (nconn > 0)
-						{
-							rc.setIndicatorLine(loc.add(i,0),loc.add(i+dirOffsX[dir],dirOffsY[dir]),255,255,0);
-						}
-
-					}
-					
-					int pathable = debug_getGridVal(gridinfo,i,gridConnectivityPathableBase);
-					System.out.println("ERrr herr derr" + Integer.toBinaryString(pathable));
-					rc.breakpoint();
+					grid.nextComponent();
 				}
-				
-				//}
-				/*switch (ncc)
-				{
-				case 0:
-					rc.setIndicatorDot(loc,0,0,0);
-					break;
-				case 1:
-					rc.setIndicatorDot(loc,0,0,255);
-					break;
-				case 2:
-					rc.setIndicatorDot(loc,0,255,0);
-					break;
-				case 3:
-					rc.setIndicatorDot(loc,255,0,0);
-					break;
-				case 4:
-					rc.setIndicatorDot(loc,255,255,255);
-					break;
-				}*/
-				/*if ((gridinfo&STATUS_HQ) > 0)
-				{
-					rc.setIndicatorDot(loc,255,255,255);
-					continue;
-				}
-				if ((gridstatus&STATUS_TOWER) > 0)
-				{
-					rc.setIndicatorDot(loc,128,128,128);
-					continue;
-				}
-				*/
-				//int dist2friends = val >> 16;
-				/*if (dist2friends > 2)
-				{
-					rc.setIndicatorDot(loc,255,255,0);
-				}
-				else*/
-				/*
-				if (val > 0)
-				{
-					// friendly-controlled, set blue
-					if (val>5)
-						val += 100;
-					if (val>255) val = 255;
-					rc.setIndicatorDot(loc,0,0,val);
-				}
-				else
-				{
-					// enemy-controlled, set red
-					val = -val;
-					if (val>5)
-						val += 100;
-					if (val>255) val = 255;
-					rc.setIndicatorDot(loc,val,0,0);
-				}
-				*/
-				// check connectivities
-				/*
-				if ((gridstatus&STATUS_CONN_NORTH)>0)
-				{
-					int l = 1;
-					if ((gridstatus&STATUS_KNOW_NORTH)>0)
-						l=GRID_SPC;
-					rc.setIndicatorLine(loc,loc.add(0,-l),255,255,0);
-				}
-				else if ((gridstatus&STATUS_KNOW_NORTH)>0)
-					rc.setIndicatorDot(loc.add(0,-1),255,255,0);
-
-				if ((gridstatus&STATUS_CONN_SOUTH)>0)
-				{
-					int l = 1;
-					if ((gridstatus&STATUS_KNOW_SOUTH)>0)
-						l=GRID_SPC;
-					rc.setIndicatorLine(loc,loc.add(0,l),255,255,0);
-				}
-				else if ((gridstatus&STATUS_KNOW_SOUTH)>0)
-					rc.setIndicatorDot(loc.add(0,1),255,255,0);
-
-				if ((gridstatus&STATUS_CONN_EAST)>0)
-				{
-					int l = 1;
-					if ((gridstatus&STATUS_KNOW_EAST)>0)
-						l=GRID_SPC;
-					rc.setIndicatorLine(loc,loc.add(l,0),255,255,0);
-				}
-				else if ((gridstatus&STATUS_KNOW_EAST)>0)
-					rc.setIndicatorDot(loc.add(1,0),255,255,0);
-				
-				if ((gridstatus&STATUS_CONN_WEST)>0)
-				{
-					int l = 1;
-					if ((gridstatus&STATUS_KNOW_WEST)>0)
-						l=GRID_SPC;
-					rc.setIndicatorLine(loc,loc.add(-l,0),255,255,0);
-				}
-				else if ((gridstatus&STATUS_KNOW_WEST)>0)
-					rc.setIndicatorDot(loc.add(-1,0),255,255,0);
-
-				MapValue gradient = gridGradient(gridind);
-				int len = (int)(gradient.value/4) + 1;
-				//int len = 2;
-				gradient.x /= len;
-				gradient.y /= len;
-				
-				rc.setIndicatorLine(loc,loc.add(gradient.x,gradient.y),0,255,0);
-				*/
-				// draw a dot
-				/*MapLocation loc = gridCenter(gridind);
-				int val = (rc.readBroadcast(gridFriendBase+gridind));
-				if (val > 255) val = 255;
-				rc.setIndicatorDot(loc,0,0,val);
-				
-				val = (rc.readBroadcast(gridEnemyBase+gridind));
-				if (val > 255) val = 255;
-				rc.setIndicatorDot(loc.add(1,0),val,0,0);*/
 			}
 		}
 	}
 	
+	static void debug_assert(boolean val, String s) throws GameActionException
+	{
+		if (val)
+			return;
+		
+		System.out.println(s);
+		//rc.breakpoint();
+		throw new GameActionException(GameActionExceptionType.CANT_DO_THAT_BRO,s);
+	}
+}
+
+//class to represent information about a grid location & connected component
+class GridComponent
+{
+	int gridIndex;
+	int gridID;
+	int gridInfo;
+	int gridCC; // 0...NCC-1
+	int gridNCC;
+	
+	// initialize to a grid index etc
+	public GridComponent(int gridPtr) throws GameActionException
+	{
+		gridIndex = gridPtr&65535;
+		gridInfo = RobotPlayer.rc.readBroadcast(RobotPlayer.gridInfoBase+gridIndex);
+		gridCC = 0;
+		gridNCC = gridInfo&RobotPlayer.GRID_CC_MASK;
+		gridID = (gridInfo>>>16);
+		
+		// we need a minimum of one connected component...
+		if (gridID == 0)
+		{
+			addComponent();
+			gridID = (gridInfo>>>16);
+		}
+		
+		// what connected component did we request?
+		int destcc = (gridPtr >>> 16);
+		for (int i=0; i<destcc; i++)
+			nextComponent();
+	}
+	
+	public void firstComponent()
+	{
+		gridCC = 0;
+		gridNCC = gridInfo&RobotPlayer.GRID_CC_MASK;
+		gridID = (gridInfo>>>16);
+	}
+	
+	public void nextComponent() throws GameActionException
+	{
+		if (gridCC<gridNCC-1)
+		{
+			gridCC++;
+			gridID = RobotPlayer.rc.readBroadcast(RobotPlayer.gridNextIDBase+gridID);
+		}
+		else
+		{
+			gridID = 0;
+		}
+	}
+	
+	public boolean isValid()
+	{
+		return gridID>0;
+	}
+	
+	public int getPointer()
+	{
+		return gridIndex|(gridCC<<16);
+	}
+	
+	public int readValue(int chan) throws GameActionException
+	{
+		return RobotPlayer.rc.readBroadcast(chan + gridID);
+	}
+	
+	public int readProperty(int chan) throws GameActionException
+	{
+		return RobotPlayer.rc.readBroadcast(chan + gridIndex);
+	}
+	
+	public void writeValue(int chan, int val) throws GameActionException
+	{
+		RobotPlayer.debug_assert(gridID != 0, "Writing to ID 0 for index " + gridIndex + " and cc " + gridCC + " and gridInfo " + Integer.toBinaryString(gridInfo));
+		
+		RobotPlayer.rc.broadcast(chan+gridID, val);
+	}
+
+	public void writeProperty(int chan, int val) throws GameActionException
+	{
+		RobotPlayer.rc.broadcast(chan+gridIndex, val);
+	}
+	
+	public GridComponent offsetTo(int dir) throws GameActionException
+	{
+		return new GridComponent(gridIndex+RobotPlayer.gridOffset[dir]);
+	}
+	
+	public MapLocation getCenter() throws GameActionException
+	{
+		return RobotPlayer.gridCenter(gridIndex);
+	}
+	
+	public int getMaybes() throws GameActionException
+	{
+		// get our square's pathable U unknown, but only if connected
+		// only fails if there are two (known) unconnected unknown regions
+		// which is fairly pathological, or more probably impossible
+		int pathable = readValue(RobotPlayer.gridConnectivityPathableBase);
+		int unknown = RobotPlayer.GRID_MASK&~readProperty(RobotPlayer.gridConnectivityKnownBase);
+		if (pathable == 0 || (RobotPlayer.relaxGrid(unknown,RobotPlayer.GRID_MASK)&pathable)>0)
+			pathable |= unknown;
+		return pathable;
+	}
+	
+	public boolean getFlag(int flag) throws GameActionException
+	{
+		return (gridInfo&flag)>0;
+	}
+	
+	public void setFlag(int flag) throws GameActionException
+	{
+		gridInfo = readProperty(RobotPlayer.gridInfoBase);
+		gridInfo |= flag;
+		writeProperty(RobotPlayer.gridInfoBase,gridInfo);
+	}
+	
+	public void unsetFlag(int flag) throws GameActionException
+	{
+		gridInfo = readProperty(RobotPlayer.gridInfoBase);
+		gridInfo &= ~flag;
+		writeProperty(RobotPlayer.gridInfoBase,gridInfo);
+	}
+	
+	int nextCCPointer()
+	{		
+		int gridx = gridIndex%RobotPlayer.GRID_DIM;
+		int gridy = gridIndex/RobotPlayer.GRID_DIM;
+		
+		int gridcc = gridCC + 1;
+		// can we advance by one?
+		if (gridcc >= gridNCC)
+		{
+			gridcc = 0;
+			gridx++;
+			if (gridx > RobotPlayer.gridMaxX)
+			{
+				gridx = RobotPlayer.gridMinX;
+				gridy++;
+				if (gridy > RobotPlayer.gridMaxY)
+					gridy = RobotPlayer.gridMinY;
+			}
+		}
+		
+		return (gridy*RobotPlayer.GRID_DIM + gridx) + (gridcc << 16);
+	}
+	
+	int nextIndexPointer()
+	{		
+		int gridx = gridIndex%RobotPlayer.GRID_DIM;
+		int gridy = gridIndex/RobotPlayer.GRID_DIM;
+		
+		gridx++;
+		if (gridx > RobotPlayer.gridMaxX)
+		{
+			gridx = RobotPlayer.gridMinX;
+			gridy++;
+			if (gridy > RobotPlayer.gridMaxY)
+				gridy = RobotPlayer.gridMinY;
+		}
+		
+		return (gridy*RobotPlayer.GRID_DIM + gridx);
+	}
+	
+	public int gridX()
+	{
+		return gridIndex%RobotPlayer.GRID_DIM;
+	}
+	
+	public int gridY()
+	{
+		return gridIndex/RobotPlayer.GRID_DIM;
+	}
 	
 	
+	// adds a new ID to the linked list of grid cell connected components
+	// note that this does not actually advance the block to the next comp.
+	// but it does update gridInfo to reflect the addition (unless block is first)
+	public void addComponent() throws GameActionException
+	{
+		if (gridNCC >= RobotPlayer.GRID_MAX_CC)
+			return;
+		
+		gridNCC++;
+
+		// now get the next ID of the next grid element
+		int nextid = RobotPlayer.rc.readBroadcast(RobotPlayer.gridNextIDChan);
+		RobotPlayer.rc.broadcast(RobotPlayer.gridNextIDChan,nextid+1);
+		
+		// so this grid cell should be at the current end of the linked list 
+		if (gridID > 0)
+		{
+			// and save it to either the next ID channel
+			writeValue(RobotPlayer.gridNextIDBase, nextid);
+		}
+		else
+		{
+			gridID = nextid;
+			System.out.println("Initial gridID set to " + nextid + " for " + gridIndex);
+			RobotPlayer.debug_assert((gridInfo>>16)==0,"New block on bad cell");
+			// or it is the first, so set base info
+			gridInfo = (gridInfo&65535) | (gridID<<16);
+			// this is the first block, so we just added it, so set the edges to 0, since unknown
+			writeValue(RobotPlayer.gridConnectivityEdgesNSBase,RobotPlayer.GRID_MASK);
+			writeValue(RobotPlayer.gridConnectivityEdgesEWBase,RobotPlayer.GRID_MASK);
+		}
+		
+		// save the ncc in grid info
+		gridInfo = (gridInfo&(~RobotPlayer.GRID_CC_MASK)) | gridNCC;
+		// we need to re-path
+		gridInfo &= ~RobotPlayer.STATUS_PATHED;
+		// write that we have entered it
+		writeProperty(RobotPlayer.gridInfoBase,gridInfo);
+	}
+	
+	// check if we're at the start of the list
+	public boolean isFirst() throws GameActionException
+	{
+		return (gridIndex == (RobotPlayer.gridMinX + RobotPlayer.gridMinY*RobotPlayer.GRID_DIM) && gridCC == 0);
+	}
+	
+	// find which component corresponds to a square
+	// (or none, if we ain't have none)
+	public void findComponent(MapLocation loc) throws GameActionException
+	{
+		// construct from a map location
+		MapLocation center = this.getCenter();
+		
+		// recycle to the first component
+		firstComponent();
+		
+		int pathind = 1<<((loc.x-center.x+RobotPlayer.GRID_SPC/2)+RobotPlayer.GRID_SPC*(loc.y-center.y+RobotPlayer.GRID_SPC/2));
+		int pathable = 0;
+		while (isValid())
+		{
+			pathable = readValue(RobotPlayer.gridConnectivityPathableBase);
+			if ((pathind&pathable)>0)
+				break;
+			nextComponent();
+		}
+	}
+	
+	public String toString()
+	{
+		return "Grid (" + gridIndex + "." + gridCC + "/" + gridNCC + ":" + gridID + ")";
+	}
 }

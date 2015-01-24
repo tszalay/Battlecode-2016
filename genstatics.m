@@ -152,7 +152,7 @@ end
 
 fprintf(fid,'static long[] attackMask = {');
 for i=1:numel(attackbits)
-    fprintf(fid,'%d',attackbits(i));
+    fprintf(fid,'%dL',attackbits(i));
     if i < numel(attackbits)
         fprintf(fid,',');
     end
