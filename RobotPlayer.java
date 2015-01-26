@@ -128,6 +128,30 @@ class RobotConsts
 			0  // MISSILE
 	};
 	
+	int[] minerUnitVals = {
+			100, // HQ 
+			100, // TOWER
+			0, // SUPPLYDEPOT
+			0, // TECHNOLOGYINSTITUTE
+			0, // BARRACKS
+			0, // HELIPAD
+			0, // TRAININGFIELD
+			0, // TANKFACTORY
+			0, // MINERFACTORY
+			0, // HANDWASHSTATION
+			0, // AEROSPACELAB
+			1, // BEAVER
+			0, // COMPUTER
+			1, // SOLDIER
+			2, // BASHER
+			1, // MINER
+			2, // DRONE
+			5, // TANK
+			5, // COMMANDER
+			8, // LAUNCHER
+			0  // MISSILE
+	};
+	
 	float[] supplyFactors = {
 			1000, // HQ 
 			1000, // TOWER
@@ -476,7 +500,8 @@ public class RobotPlayer {
 	static int scoutEnemyDetectionTime = curChan++;
 	static int scoutedAttack = curChan++; // is my squad currently taking part in a scouted attack? 0 is no, 1 is yes
 	// Local enemy targets
-	static int[] defenceTargetChannels = {curChan+1, curChan+2, curChan+3, curChan+4, curChan+5}; // channels to keep their robotIDs
+	static int[] defenceTargetChannels = {curChan++, curChan++, curChan++, curChan++, curChan++}; // channels to keep their robotIDs
+	static int[] minerRageTargets = {curChan++, curChan++};
 	static int rallyXChan = curChan++;
 	static int rallyYChan = curChan++;
 	static int engageDirChan = curChan++;
@@ -1993,7 +2018,7 @@ public class RobotPlayer {
 		myLocation = rc.getLocation();
 		if(!attacking) // chase a target on the list and go for it
 		{
-			MapLocation targetLoc = chooseEnemyTarget();
+			MapLocation targetLoc = chooseEnemyTarget(defenceTargetChannels, 25);
 			if(targetLoc!=null)
 			{
 				tryMove(myLocation.directionTo(targetLoc),0,myAggression);
@@ -2008,49 +2033,42 @@ public class RobotPlayer {
 		}
 		return;
 	}
-	static MapLocation chooseEnemyTarget() throws GameActionException {
+	
+	static MapLocation chooseEnemyTarget(int[] channels, int limit) throws GameActionException {
 		MapLocation targetLoc = null;
 		// choose a target from the hit list
-		for(int i: defenceTargetChannels)
+		for(int i: channels)
 		{
 			int targetID = rc.readBroadcast(i);
-			if(targetID!=0 && rc.canSenseRobot(targetID))
+			if(targetID!=0)
 			{
-				targetLoc = rc.senseRobot(targetID).location;
-				int dist = myLocation.distanceSquaredTo(targetLoc);
-				if(dist<200)
-					return targetLoc;
+				if(rc.canSenseRobot(targetID))
+				{
+					MapLocation thisTarget = rc.senseRobot(targetID).location;
+					int dist = myLocation.distanceSquaredTo(thisTarget);
+					if(dist<limit)
+					{
+						targetLoc = thisTarget;
+						return targetLoc;
+					}
+				}
 			}
-			
 		}
-		
 		return targetLoc;
 	}
-
-
-	static void addEnemyToTargets(int newID) throws GameActionException {
-
+	
+	static void addEnemyToTargets(int[] channels, int ID) throws GameActionException {
 		// adds an enemy ID to a list of targets, if that list is not full
-
-		for(int i: defenceTargetChannels)
-
+		for(int i: channels)
 		{
-
 			int enemyID = rc.readBroadcast(i);
-
-			if (rc.canSenseRobot(enemyID))
-				continue;
-			else
+			if(!rc.canSenseRobot(enemyID))
 			{
-				rc.broadcast(i,newID);
-				rc.setIndicatorString(3, "Enemy Spotted - added to defense list");
-				//System.out.println("New target ID = " + ID);
-			}
+				rc.broadcast(i,ID);
 				return;
-
 			}
-
 		}
+	}
 
 	
 	//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2060,20 +2078,22 @@ public class RobotPlayer {
 	static void doMiner()
 	{
 		try {
-			
-
 			rc.setIndicatorString(2, toString(minerState));
 			rc.setIndicatorString(2, "gridOreBase = " + myGrid.readValue(gridOreBase) + ", gridMiningBase = "+ myGrid.readValue(gridMiningBase) + " ");
-			if (rc.isCoreReady())
-				minerDefensiveManeuvers();
-			myLocation = rc.getLocation();
-			attackSomething();
-			if (rc.isCoreReady())
+			boolean engagedDefinsively = false;
+			engagedDefinsively = minerDefensiveManeuvers();
+			if(engagedDefinsively)
+			{
+				myLocation = rc.getLocation();
+				attackSomething();
+			}
+			else if (rc.isCoreReady())
 			{
 				rc.setIndicatorString(0,"Mining");
 				miningDuties();
 			}
 			defenseUpdate();
+			
 		} catch (Exception e) {
 			System.out.println("Miner Exception");
 			e.printStackTrace();
@@ -2123,7 +2143,7 @@ public class RobotPlayer {
 				rc.setIndicatorString(0, "Exploring");
 				rc.setIndicatorString(1, "Following the grid: " + minersCounter);
 				int bitdir = gridPathfind(myLocation, gridMiningBase, true);
-				tryMove(Direction.OMNI,bitdir,myAggression);
+				tryMove(Direction.OMNI, bitdir, UnitAggression.NO_TOWERS);
 			}
 			supplyFactor = 9;
 			break;
@@ -2148,11 +2168,11 @@ public class RobotPlayer {
 					rc.setIndicatorString(1, "Mining");
 				}
 			}else{
-				justMoved = tryMove(facing,0,myAggression);
+				justMoved = tryMove(facing, 0, UnitAggression.NO_TOWERS);
 				rc.setIndicatorString(1, "Moving straight");
 			}
 		}else{
-			justMoved = tryMove(facing,0,myAggression);
+			justMoved = tryMove(facing, 0, UnitAggression.NO_TOWERS);
 			rc.setIndicatorString(1, "Moving straight");
 		}
 		if(justMoved) // update the starting amount of ore on each space we move to
@@ -2176,7 +2196,7 @@ public class RobotPlayer {
 				}
 			}else{
 				facing = minerLocalOreDirection(localOre, oreMiningCriterion);
-				tryMove(facing,0,myAggression);
+				tryMove(facing, 0, UnitAggression.NO_TOWERS);
 			}
 			
 		}else if(oreHere>0.8){ //there is a bit of ore, so maybe try to mine, maybe move on (suppliers don't mine)
@@ -2187,16 +2207,16 @@ public class RobotPlayer {
 				}
 			}else{ // look for more ore
 				facing = minerLocalOreDirection(localOre, oreMiningCriterion);
-				tryMove(facing,0,myAggression);
+				tryMove(facing, 0, UnitAggression.NO_TOWERS);
 			}
 		}else if(localOre[2]>2*oreMiningCriterion){ // still look locally
 			facing = minerLocalOreDirection(localOre, oreMiningCriterion);
-			tryMove(facing,0,myAggression);
+			tryMove(facing, 0, UnitAggression.NO_TOWERS);
 		}else{ //no ore, so look for more
 			minersCounter = 0;
 			minerState = MinerState.EXPLORING;
 			int bitdir = gridPathfind(myLocation, gridMiningBase, true);
-			tryMove(Direction.NONE,bitdir,myAggression);
+			tryMove(Direction.OMNI, bitdir, UnitAggression.NO_TOWERS);
 			//facing = Direction.values()[Integer.numberOfTrailingZeros(bitdir)];
 			//tryMove(facing);
 			rc.setIndicatorString(1, "Following grid without counting moves, since the ore is so bad: " + minersCounter);
@@ -2275,45 +2295,20 @@ public class RobotPlayer {
 		return potential;
 	}
 	
-	static void minerDefensiveManeuvers() throws GameActionException
+	static boolean minerDefensiveManeuvers() throws GameActionException
 	{
 		// rage if there is anything nearby to rage at
 		MapLocation here = rc.getLocation();
-		int target1 = rc.readBroadcast(minerRageTarget);
-		int target2 = rc.readBroadcast(minerRageTarget2);
-		if(rc.canSenseRobot(target1))
+		MapLocation target = chooseEnemyTarget(minerRageTargets, 10); // (list, max distance)
+		if(target==null)
 		{
-			// if we can still see our target, check if we're close enough and go for him
-			RobotInfo target = rc.senseRobot(target1);
-			if(here.distanceSquaredTo(target.location)<24) // arbitrarily rage attack at most 24 spaces away
-			{
-				rc.setIndicatorString(0,"Attacking");
-				rc.setIndicatorString(1,"Target 1: robot " + target1);
-				tryMove(here.directionTo(target.location),0,myAggression);
-			}
-			return;
-		}
-		else if(rc.canSenseRobot(target2))
-		{
-			// if we can still see our target, check if we're close enough and go for him
-			RobotInfo target = rc.senseRobot(target2);
-			if(here.distanceSquaredTo(target.location)<24) // arbitrarily rage attack at most 24 spaces away
-			{
-				rc.setIndicatorString(0,"Attacking");
-				rc.setIndicatorString(1,"Target 2: robot " + target2);
-				tryMove(here.directionTo(target.location),0,myAggression);
-			}
-			return;
-		}
-		else
-		{
-			// check our surroundings
+			// if we didn't acquire a target, check our surroundings
 			RobotInfo[] enemyRobots = rc.senseNearbyRobots(myType.sensorRadiusSquared, myTeam.opponent());
 			int strengthBal = 0;
 			int evadeX = 0;
 			int evadeY = 0;
 
-			if (enemyRobots.length != 0 && Clock.getRoundNum()<Consts.ATTACK_ROUND)
+			if (enemyRobots.length != 0)
 			{
 				RobotInfo[] friendlyRobots = rc.senseNearbyRobots(myType.sensorRadiusSquared, myTeam);
 				// attract enemies, and count up enemy firepower
@@ -2327,13 +2322,13 @@ public class RobotPlayer {
 					double vecx = (bot.location.x - myLocation.x) * scale;
 					double vecy = (bot.location.y - myLocation.y) * scale;
 
-					// repulsion from range of enemy weapons, proportional to attack power
+					// repulsion from enemy location, proportional to attack power
 					// subtracts a positive # if we're in range
-					evadeX -= (bot.type.attackRadiusSquared - d2) * bot.type.attackPower * (bot.type.attackRadiusSquared - (vecy * vecy));
-					evadeY -= (bot.type.attackRadiusSquared - d2) * bot.type.attackPower * (bot.type.attackRadiusSquared - (vecx * vecx));
+					evadeX -= bot.type.attackPower * vecx;
+					evadeY -= bot.type.attackPower * vecy;
 
 					// enemy firepower
-					strengthBal -= Consts.unitVals[bot.type.ordinal()] * bot.type.attackPower;
+					strengthBal -= Consts.minerUnitVals[bot.type.ordinal()] * bot.type.attackPower;
 
 				}
 
@@ -2347,29 +2342,30 @@ public class RobotPlayer {
 					// our firepower
 					strengthBal += Consts.unitVals[bot.type.ordinal()] * bot.type.attackPower;
 				}
-				if(strengthBal<=20)
+				if(strengthBal<=0)
 				{
 					Direction dir = here.directionTo(here.add((int)evadeX,(int)evadeY));
-					tryMove(dir,0,myAggression);
-					rc.setIndicatorString(0,"Evading");
+					tryMove(dir, 0, UnitAggression.NO_TOWERS);
+					rc.setIndicatorString(0,"Evading: (" + evadeX + ", " + evadeY + ")");
 					rc.setIndicatorString(1,"Strength balance = " + strengthBal);
 				}
 				else
 				{
 					// set a rage attack target
-					if(!rc.canSenseRobot(target1))
-					{
-						rc.broadcast(minerRageTarget, enemyRobots[0].ID);
-					}
-					else if(!rc.canSenseRobot(target2))
-					{
-						rc.broadcast(minerRageTarget2, enemyRobots[0].ID);
-					}
+					rc.setIndicatorString(0,"Attacking enemy " + enemyRobots[0].ID);
+					rc.setIndicatorString(1,"Strength balance = " + strengthBal);
+					addEnemyToTargets(minerRageTargets,enemyRobots[0].ID);
 				}
-				return;
+				return true; // evading, but enemies in sight
 			}
 			else // no enemies in sight
-				return;
+				return false;
+		}
+		else
+		{
+			tryMove(here.directionTo(target), 0, UnitAggression.NO_TOWERS);
+			rc.setIndicatorString(0,"Attacking enemy at (" + target.x + ", " + target.y + "), from list.");
+			return true; // raging at someone on list
 		}
 	}
 
@@ -2467,7 +2463,7 @@ public class RobotPlayer {
 		
 		for (RobotInfo ri : bots)
 		{
-			addEnemyToTargets(ri.ID);
+			addEnemyToTargets(defenceTargetChannels, ri.ID);
 
 			/*
 			// can we add any?
@@ -2565,7 +2561,7 @@ public class RobotPlayer {
 		if (rc.getID() == rc.readBroadcast(rallyLeaderChan))
 		{
 			
-			MapLocation targetLoc = chooseEnemyTarget();
+			MapLocation targetLoc = chooseEnemyTarget(defenceTargetChannels, 100);
 			rc.setIndicatorString(1, "Hold Leader: Defense Target = " + targetLoc);			
 			
 			// if at enemy location and don't see anyone
