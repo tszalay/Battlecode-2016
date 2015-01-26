@@ -1,4 +1,4 @@
-package grid366;
+package rAAAge_3_0;
 
 import battlecode.common.*;
 
@@ -16,9 +16,14 @@ class RobotConsts
 	float[] sqrt = {0.000000f,1.000000f,1.414214f,1.732051f,2.000000f,2.236068f,2.449490f,2.645751f,2.828427f,3.000000f,3.162278f,3.316625f,3.464102f,3.605551f,3.741657f,3.872983f,4.000000f,4.123106f,4.242641f,4.358899f,4.472136f,4.582576f,4.690416f,4.795832f,4.898979f,5.000000f,5.099020f,5.196152f,5.291503f,5.385165f,5.477226f,5.567764f,5.656854f,5.744563f,5.830952f,5.916080f,6.000000f,6.082763f,6.164414f,6.244998f,6.324555f,6.403124f,6.480741f,6.557439f,6.633250f,6.708204f,6.782330f,6.855655f,6.928203f,7.000000f,7.071068f,7.141428f,7.211103f,7.280110f,7.348469f,7.416198f,7.483315f,7.549834f,7.615773f,7.681146f,7.745967f,7.810250f,7.874008f,7.937254f,8.000000f,8.062258f,8.124038f,8.185353f,8.246211f,8.306624f,8.366600f,8.426150f,8.485281f,8.544004f,8.602325f,8.660254f,8.717798f,8.774964f,8.831761f,8.888194f,8.944272f,9.000000f};
 	float[] invSqrt = {0.000000f,1.000000f,0.707107f,0.577350f,0.500000f,0.447214f,0.408248f,0.377964f,0.353553f,0.333333f,0.316228f,0.301511f,0.288675f,0.277350f,0.267261f,0.258199f,0.250000f,0.242536f,0.235702f,0.229416f,0.223607f,0.218218f,0.213201f,0.208514f,0.204124f,0.200000f,0.196116f,0.192450f,0.188982f,0.185695f,0.182574f,0.179605f,0.176777f,0.174078f,0.171499f,0.169031f,0.166667f,0.164399f,0.162221f,0.160128f,0.158114f,0.156174f,0.154303f,0.152499f,0.150756f,0.149071f,0.147442f,0.145865f,0.144338f,0.142857f,0.141421f,0.140028f,0.138675f,0.137361f,0.136083f,0.134840f,0.133631f,0.132453f,0.131306f,0.130189f,0.129099f,0.128037f,0.127000f,0.125988f,0.125000f,0.124035f,0.123091f,0.122169f,0.121268f,0.120386f,0.119523f,0.118678f,0.117851f,0.117041f,0.116248f,0.115470f,0.114708f,0.113961f,0.113228f,0.112509f,0.111803f,0.111111f};
 	
-	int[] towerMask = {0,0,128,129,131,131,131,3,2,0,0,0,128,193,195,199,199,199,135,7,2,0,128,193,227,247,255,255,255,223,143,7,2,192,225,247,255,255,255,255,255,223,15,6,224,241,255,255,255,255,255,255,255,31,14,224,241,255,255,255,255,255,255,255,31,14,224,241,255,255,255,255,255,255,255,31,14,96,240,253,255,255,255,255,255,127,30,12,32,112,248,253,255,255,255,127,62,28,8,0,32,112,120,124,124,124,60,28,8,0,0,0,32,48,56,56,56,24,8,0,0};
-	int[] hqMask = {0,0,128,129,131,131,131,131,131,3,2,0,0,0,128,193,195,199,199,199,199,199,135,7,2,0,128,193,227,247,255,255,255,255,255,223,143,7,2,192,225,247,255,255,255,255,255,255,255,223,15,6,224,241,255,255,255,255,255,255,255,255,255,31,14,224,241,255,255,255,255,255,255,255,255,255,31,14,224,241,255,255,255,255,255,255,255,255,255,31,14,224,241,255,255,255,255,255,255,255,255,255,31,14,224,241,255,255,255,255,255,255,255,255,255,31,14,96,240,253,255,255,255,255,255,255,255,127,30,12,32,112,248,253,255,255,255,255,255,127,62,28,8,0,32,112,120,124,124,124,124,124,60,28,8,0,0,0,32,48,56,56,56,56,56,24,8,0,0};
+	long[] attackMask = {0L,0L,17179869184L,17314086912L,17582522368L,17582522368L,17582522368L,17582522368L,17582522368L,402653184L,268435456L,0L,0L,0L,17179869184L,25904021504L,60565749760L,61102882816L,61103407104L,61103407104L,61103407104L,61069852672L,52479655936L,939524096L,268435456L,0L,17179869184L,25904021504L,64860717056L,67562176512L,68703552000L,68704601600L,68704601600L,68704601600L,68687758848L,64292127744L,53553397760L,939524096L,268435456L,25769803776L,64592281600L,67562176512L,68711973504L,68717348481L,68719447683L,68719447683L,68719447683L,68711026179L,68689858050L,64292127744L,36373528576L,805306368L,30064771072L,66756542464L,68711448576L,68717363904L,68719472577L,68719476679L,68719476679L,68719476679L,68719460103L,68710964742L,68656303104L,38522060800L,1879048192L,30064771072L,66764931072L,68715659264L,68719469280L,68719476721L,68719476735L,68719476735L,68719476735L,68719476511L,68719361550L,68660501504L,38524157952L,1879048192L,30064771072L,66764931072L,68715659264L,68719469280L,68719476721L,68719476735L,68719476735L,68719476735L,68719476511L,68719361550L,68660501504L,38524157952L,1879048192L,30064771072L,66764931072L,68715659264L,68719469280L,68719476721L,68719476735L,68719476735L,68719476735L,68719476511L,68719361550L,68660501504L,38524157952L,1879048192L,30064771072L,66731376640L,68715331584L,68718944352L,68719475568L,68719476604L,68719476604L,68719476604L,68719410972L,68685806604L,68660238336L,38523633664L,1879048192L,12884901888L,66580381696L,68346200064L,68717436960L,68718882864L,68719409208L,68719409208L,68719409208L,68685821976L,68668635144L,51412733952L,38388367360L,1610612736L,4294967296L,15032385536L,67654123520L,68346200064L,68683849728L,68684902400L,68684902400L,68684902400L,68668108800L,51412733952L,42683334656L,3758096384L,1073741824L,0L,4294967296L,15032385536L,50474254336L,51015319552L,51017416704L,51017416704L,51017416704L,51009028096L,42414899200L,3758096384L,1073741824L,0L,0L,0L,4294967296L,6442450944L,7516192768L,7516192768L,7516192768L,7516192768L,7516192768L,3221225472L,1073741824L,0L,0L};
 	int[] dirOffsets = {0,7,1,6,2,5,3,4};
+	
+	static int[] directionLocsX = {0, 1, 1, 1, 0, -1, -1, -1, 0, 0};
+	static int[] directionLocsY = {-1, -1, 0, 1, 1, 1, 0, -1, 0, 0};
+	static float[] cos = {1.0f, .707f, 0.0f, -.707f, -1.0f, -.707f, 0.0f, .707f};
+	static float[] sin = {0.0f, .707f, 1.0f, .707f, 0.0f, -.707f, -1.0f, -.707f};
+	static float[] directionLengths = {1, 1.414f, 1, 1.414f, 1, 1.414f, 1, 1.414f, 0, 0};
 	
 	// maps position offsets in our 5x5 bit-grid to direction flags
 	int[] gridToDir = { 0,   0,   0,   0,   0,
@@ -47,7 +52,7 @@ class RobotConsts
 	int RALLY_BASE = 1000;
 	
 	int HOLD_DISTANCE = 24;
-	int RALLY_STRENGTH_THRESH = 39;
+	int RALLY_STRENGTH_THRESH = 47;
 	
 	int ATTACK_ROUND = 1700;
 	
@@ -145,6 +150,32 @@ class RobotConsts
 			1, // COMMANDER
 			1, // LAUNCHER
 			1  // MISSILE
+	};
+
+	// Unit Ranges
+    /* Ordinal unit weight array */
+	int[] unitRanges = {
+		   3, // HQ 
+		   2, // TOWER
+		   4, // SUPPLYDEPOT
+		   4, // TECHNOLOGYINSTITUTE
+		   4, // BARRACKS
+		   4, // HELIPAD
+		   4, // TRAININGFIELD
+		   4, // TANKFACTORY
+		   4, // MINERFACTORY
+		   4, // HANDWASHSTATION
+		   4, // AEROSPACELAB
+		   0, // BEAVER
+		   4, // COMPUTER
+		   0, // SOLDIER
+		   0, // BASHER
+		   0, // MINER
+		   0, // DRONE
+		   1, // TANK
+		   1, // COMMANDER
+		   4, // LAUNCHER
+		   0  // MISSILE
 	};
 }
 
@@ -324,6 +355,7 @@ public class RobotPlayer {
 	static final int gridLastRageChan = curChan++;
 	static final int gridRagePtrChan = curChan++;
 	static final int gridRageBase = curChan; static {curChan+=GRID_NUM;}
+	static final int gridDefenceBase = curChan; static {curChan+=GRID_NUM;}
 
 	// DEFENSIVE GRID
 	static final int gridLastDefenseChan = curChan++;
@@ -361,10 +393,17 @@ public class RobotPlayer {
 	static final int rageIDBase = curChan; static {curChan+=TARGET_COUNT;}
 	static final int rageGridBase = curChan; static {curChan+=TARGET_COUNT;}
 	
+	// number of targets in defence list
+
+	static final int defenceIDBase = curChan++;static {curChan+=TARGET_COUNT;}
+	static final int defenceGridBase = curChan++;static {curChan+=TARGET_COUNT;}
+	
 	//===========================================================================================	
 	
 	static final int rallyLeaderChan = curChan++;
 	static final int rallyStrengthChan = curChan++;
+	static final int rageLeaderChan = curChan ++;
+
 	
 	static enum UnitState
 	{
@@ -437,12 +476,18 @@ public class RobotPlayer {
 	static int scoutEnemyDetectionTime = curChan++;
 	static int scoutedAttack = curChan++; // is my squad currently taking part in a scouted attack? 0 is no, 1 is yes
 	// Local enemy targets
-	static int[] targetChannels = {curChan+1, curChan+2, curChan+3, curChan+4, curChan+5}; // channels to keep their robotIDs
+	static int[] defenceTargetChannels = {curChan+1, curChan+2, curChan+3, curChan+4, curChan+5}; // channels to keep their robotIDs
 	static int rallyXChan = curChan++;
 	static int rallyYChan = curChan++;
 	static int engageDirChan = curChan++;
+
 	//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	
+
+	// enemy tower bookkeeping
+	static final int towerCountChan = curChan++;
+	static MapLocation[] enemyTowers;
+	static int lastTowerCount=0;
+
 	//===============================================================================================================
 	
 	// Keep track of best mine, score and location
@@ -545,7 +590,7 @@ public class RobotPlayer {
     static int numDrones = 5;
 	static int numSupplyDepots = 0;
 	static int numTankFactories = 5;
-	static int numTanks = 50;
+	static int numTanks = 500;
 
 	
 	
@@ -878,6 +923,11 @@ public class RobotPlayer {
 			
 			myGrid.findComponent(myLocation);
 		}
+		
+		// and every once in a while, update enemy tower locations
+		int ntowers = rc.readBroadcast(towerCountChan);
+		if (ntowers != lastTowerCount)
+			enemyTowers = rc.senseEnemyTowerLocations();
 	}
 	
 	
@@ -1033,11 +1083,13 @@ public class RobotPlayer {
 			
 			// check last tower count
 			MapLocation[] towers = rc.senseEnemyTowerLocations();
-			if (towers.length != hqLastTowerCount)
+			if (towers.length != lastTowerCount)
 			{
-				hqLastTowerCount = towers.length;
+				lastTowerCount = towers.length;
+				enemyTowers = towers;
 				// flag towers for recomputation
 				rc.broadcast(gridTowerDoneChan, 0);
+				rc.broadcast(towerCountChan, towers.length);
 			}
 			
 			// figure out miner state updates ======================================================================================
@@ -1184,16 +1236,41 @@ public class RobotPlayer {
 	static void doBarracks()
 	{
 		try {
+			RobotInfo[] bots = rc.senseNearbyRobots(99999, myTeam);
+			int soldiers = 0;
+			for (RobotInfo b: bots)
+			{
+				if (b.type == RobotType.SOLDIER)
+				{
+					soldiers++;
+				}
+			}
+			if (soldiers < numSoldiers)
+			{
+				trySpawn(facing,RobotType.SOLDIER);
+			}
 			/*RobotInfo[] bots = rc.senseNearbyRobots(99999, myTeam);
 			for (RobotInfo b: bots)
 				if (b.type == RobotType.SOLDIER)
-					return;
-*/
+
 			double r = rand.nextDouble();
 			if(r < 0.75)
 				trySpawn(facing,RobotType.SOLDIER);
 			else if(r<0.75)
 				trySpawn(facing,RobotType.BASHER);
+									return;
+			 */
+			/*RobotInfo[] bots = rc.senseNearbyRobots(99999, myTeam);
+			for (RobotInfo b: bots)
+				if (b.type == RobotType.SOLDIER)
+					return;
+
+			double r = rand.nextDouble();
+			if(r < 0.75)
+				trySpawn(facing,RobotType.SOLDIER);
+			else if(r<0.75)
+				trySpawn(facing,RobotType.BASHER);
+				*/
 		} catch (Exception e) {
 			System.out.println("Barracks Exception");
 			e.printStackTrace();
@@ -1232,7 +1309,7 @@ public class RobotPlayer {
 				{
 					Direction dir = myLocation.directionTo(scoutTarget);
 					attackSomething(); // attack something if on the way
-					tryMove(dir); // go back to HQ to load up
+					tryMove(dir,0,myAggression); // go back to HQ to load up
 				}
 				
 				supplyFactor = loadingSupplyFactor;
@@ -1255,7 +1332,7 @@ public class RobotPlayer {
 					supplyFactor = enRouteSupplyFactor; 
 					// do not attack, only move
 					Direction dir = myLocation.directionTo(scoutTarget);
-					tryMove(dir); // go to supply drop location
+					tryMove(dir,0,myAggression); // go to supply drop location
 				}
 				else if (rc.getSupplyLevel() > supplyMin)
 				{
@@ -1274,14 +1351,14 @@ public class RobotPlayer {
 				scoutTarget = enemyHQ; //for now
 				attackSomething(); // attack something if on the way
 				Direction dir = myLocation.directionTo(scoutTarget);
-				tryMove(dir); // go back to HQ to load up
+				tryMove(dir,0,myAggression); // go back to HQ to load up
 				
 				break;
 			}
 			//myGrid.firstComponent();
-			//rc.setIndicatorString(0, "Rage: " + (myGrid.readValue(gridRageBase)&65535) + " | Target: " + (myGrid.readValue(gridRageBase)>>16));
+			//rc.setIndicatorString(0, "Rage: " + ((gridRageBase)&65535) + " | Target: " + ((gridRageBase)>>16));
 			rc.setIndicatorString(0, "Scout State = " + toString(scoutState));
-			rc.setIndicatorString(1, "Supply Factor = " + supplyFactor);		
+			rc.setIndicatorString(2, "Supply Factor = " + supplyFactor);		
 		} catch (Exception e) {
 			System.out.println("Drone Exception");
 			e.printStackTrace();
@@ -1368,12 +1445,124 @@ public class RobotPlayer {
 	static void doTank()
 	{
 		try {
-			attackSomething();
-			rageUpdate();
-			rageMove();
+				// always attack if you can
+				attackSomething();
+				
+				// check enemies in sight
+				RobotInfo[] enemyRobots = rc.senseNearbyRobots(myType.sensorRadiusSquared, enemyTeam);
+				boolean enemiesInSight = enemyRobots.length > 0;
+			
+				defenseUpdate(); // add to defense list if see enemies
+				int rallyID = rc.readBroadcast(rallyLeaderChan);
+				
+				switch (myState)
+				{
+				case CONVOY: 
+	
+					// if no hold leader, become the hold leader
+					if (!rc.canSenseRobot(rallyID))
+					{
+						rallyID = rc.getID();
+						rc.broadcast(rallyLeaderChan, rallyID);
+						myState = UnitState.HOLD;
+						myAggression = UnitAggression.NO_TOWERS;
+					}
+					
+					rc.setIndicatorString(0, "CONVOY, Leader: " + rallyID + ", strength " + rc.readBroadcast(rallyStrengthChan));
+
+					// set myTarget for leaders and others
+					if (rc.getID() == rc.readBroadcast(rallyLeaderChan)){ // if leader
+						myTarget = center; 
+					}else{
+						myTarget = rc.senseRobot(rallyID).location;
+					}
+					// if we've caught up with leader, switch to HOLD
+					if (myLocation.distanceSquaredTo(myTarget) < Consts.HOLD_DISTANCE)
+					{
+						myState = UnitState.HOLD; // switch to HOLD state
+						myAggression = UnitAggression.NO_TOWERS;
+						
+						int rallyStrength = rc.readBroadcast(rallyStrengthChan);
+						
+						/*
+						// if hold group is strong enough, go directly to attackmove.
+						if (rallyStrength > Consts.RALLY_STRENGTH_THRESH)
+						{
+							myState = UnitState.ATTACK_MOVE;
+							myAggression = UnitAggression.NO_TOWERS;
+							break;
+						}
+						*/
+						break;
+					}
+					
+					defenseMove(enemiesInSight);
+					break;
+					
+				case HOLD:
+					//defenseUpdate();  holding units don't add to defense list
+	
+					MapLocation targetLoc = null;
+		
+					// or, still holding....
+					if (!rc.canSenseRobot(rallyID))
+					{
+						// become the new squad leader
+						rallyID = rc.getID();
+						rc.broadcast(rallyLeaderChan, rallyID);
+						myAggression = UnitAggression.NEVER_MOVE_INTO_RANGE;
+					}
+					
+					rc.setIndicatorString(0, "HOLD, Leader: " + rallyID + ", strength " + rc.readBroadcast(rallyStrengthChan));
+					myTarget = rc.senseRobot(rallyID).location;
+					
+					if (rc.getID() == rc.readBroadcast(rallyLeaderChan)) // if leader
+						myTarget = center; //for now
+					
+					// and then move toward rally location
+					defenseMove(enemiesInSight);
+					
+					// switch to attack if our entire squad is strong enough
+					int rallyStrength = rc.readBroadcast(rallyStrengthChan);
+					if (rallyStrength > Consts.RALLY_STRENGTH_THRESH)
+					{
+						myState = UnitState.ATTACK_MOVE;
+						myAggression = UnitAggression.NO_TOWERS;
+						break;
+					}
+					
+					break;
+					
+				case ATTACK_MOVE:
+					// JUST RAAAAAAAAAAAAAAAAAAAAAAGE
+					// (check to make sure our ID isn't set as a leader)
+					if (rallyID == rc.getID())
+						rc.broadcast(rallyLeaderChan, 0);
+					
+					int rageLeaderID = rc.readBroadcast(rageLeaderChan);
+					// do we become the rage leader?
+					if (!rc.canSenseRobot(rageLeaderID))
+					{
+						// instantly become rage leader
+						rageLeaderID = rc.getID();
+						rc.broadcast(rageLeaderChan, rageLeaderID);
+						// and act aggressive
+						myAggression = UnitAggression.NO_TOWERS;		
+					}
+					
+					
+					//rc.setIndicatorString(0, "RAGING, Leader: " + rageLeaderID + ", strength " + rc.readBroadcast(rallyStrengthChan));
+					myTarget = rc.senseRobot(rageLeaderID).location;
+					
+					myAggression = UnitAggression.NO_TOWERS;
+					rageUpdate();
+					rageMove();
+					break;
+				}
+				
 			
 			supplyFactor = requestSupplies();
-			rc.setIndicatorString(1, "supplyFactor = " + supplyFactor);
+
 			
 			/*
 			//this is Stephen scout attack
@@ -1381,7 +1570,7 @@ public class RobotPlayer {
 			// clump in middle
 			if(!attacking)
 			{
-				squadTarget = center;
+				myTarget = center;
 				movePotential();
 			}
 			break;
@@ -1494,7 +1683,7 @@ public class RobotPlayer {
 			
 			//rc.setIndicatorLine(myLocation, myLocation.add(d,3), 0, 255, 255);
 			
-			//rc.setIndicatorString(0, "Rage: " + (myGrid.readValue(gridRageBase)&65535) + " | Target: " + (myGrid.readValue(gridRageBase)>>16));
+			//rc.setIndicatorString(0, "Rage: " + ((gridRageBase)&65535) + " | Target: " + ((gridRageBase)>>16));
 
 		} catch (Exception e) {
 			System.out.println("Soldier Exception");
@@ -1502,7 +1691,7 @@ public class RobotPlayer {
 		}
 	}
 	
-	// moves toward rally target if not the squad leader
+	// moves toward rally target if not the squad leader with simple move potential
 	// or other stuff if we are the squad leader
 	static void rallyMove() throws GameActionException
 	{
@@ -1512,11 +1701,24 @@ public class RobotPlayer {
 		if (rc.getID() == rc.readBroadcast(rallyLeaderChan))
 		{
 			// descend the defensive grid if we're not too far already
-			int defval = myGrid.readValue(gridDefenseBase);
+			int defval = (gridDefenseBase);
 			if (defval < 995)
 				return;
-			int bitmoves = gridPathfind(myLocation,gridRageBase,true);
-			tryMove(myLocation.directionTo(enemyHQ),bitmoves);
+			//int bitmoves = gridPathfind(myLocation,gridRageBase,true);
+			
+			//move at half speed so others can catch up
+			if(rand.nextDouble()<0.5)
+			{	
+			// follow to best mining loc	
+				
+	
+				// int bitdir = gridPathfind(myLocation, gridMiningBase, true);
+				//tryMove(bitdir);
+				
+				Direction dir = myLocation.directionTo(myHQ); // for now
+				tryMove(dir,0,myAggression);
+				//tryMove(myLocation.directionTo(enemyHQ),bitmoves);
+			}
 			return;
 		}
 		
@@ -1525,24 +1727,41 @@ public class RobotPlayer {
 			if (myTarget.equals(myLocation))
 				return;
 			
-			rc.setIndicatorDot(myTarget, 255, 255, 255);
+			rc.setIndicatorDot(myTarget.add(Direction.NORTH), 255, 255, 255);
 			// see if we're close, move straight towards it
 			if (myLocation.distanceSquaredTo(myTarget)<=24)
 			{
-				tryMove(myLocation.directionTo(myTarget));
+				tryMove(myLocation.directionTo(myTarget),0,myAggression);
 				return;
 			}
 		}
 		// not close, or no target, just go in the general direction
-		int bitdir = gridPathfind(myLocation,gridRallyBase,true);
+		int bitdir = gridPathfind(myLocation,gridMiningBase,true);
 		if (myTarget != null)
-			tryMove(myLocation.directionTo(myTarget),bitdir);
+			tryMove(myLocation.directionTo(myTarget),bitdir,myAggression);
 	}
 	
+	static void gridDefenseDescend() throws GameActionException
+	{
+		if (!rc.isCoreReady())
+			return;
+		// descend the defensive grid if we're not too far already
+		int defval = (gridDefenseBase);
+		if (defval < 995)
+			return;
+		int bitmoves = gridPathfind(myLocation,gridRageBase,true);
+		tryMove(myLocation.directionTo(enemyHQ),bitmoves,myAggression);
+		return;
+
+	}
+
 
 	static void doBeaver()
 	{
 		try {
+			defenseUpdate();
+			
+			
 			facing = myLocation.directionTo(rc.senseEnemyHQLocation());
 			RobotInfo[] ourTeam = rc.senseNearbyRobots(100000, rc.getTeam());
 			int n = 0; // current number of miner factories
@@ -1672,7 +1891,7 @@ public class RobotPlayer {
 				}
 
 				// run toward enemy
-				tryMove(here.directionTo(here.add(enemyX,enemyY)));
+				tryMove(here.directionTo(here.add(enemyX,enemyY)),0,myAggression);
 
 				// make a tactical attack decision
 				if(enemyPower > ATTACK_THRESHOLD)
@@ -1696,7 +1915,7 @@ public class RobotPlayer {
 				int attack = rc.readBroadcast(scoutDecision);
 				if(attack == 0) // we are retreating
 				{
-					// NOTE: this code is an old movePotential() that doesn't do this yet, it just uses squadTarget
+					// NOTE: this code is an old movePotential() that doesn't do this yet, it just uses myTarget
 					int x = rc.readBroadcast(rallyXChan);
 					int y = rc.readBroadcast(rallyYChan);
 					myTarget = new MapLocation(x,y); // for now, since the rallyChan thing isn't working in this code
@@ -1764,7 +1983,7 @@ public class RobotPlayer {
 		scoutEnemyDetectionLocationX =  rc.getLocation().x;
 		scoutEnemyDetectionLocationY =  rc.getLocation().y;
 		rc.broadcast(scoutEnemyDetectionTime, Clock.getRoundNum());
-		rc.broadcast(targetChannels[0], enemyID); // put this enemy as first priority on rage hit list
+		rc.broadcast(defenceTargetChannels[0], enemyID); // put this enemy as first priority on rage hit list
 		return;
 	}
 
@@ -1777,7 +1996,7 @@ public class RobotPlayer {
 			MapLocation targetLoc = chooseEnemyTarget();
 			if(targetLoc!=null)
 			{
-				tryMove(myLocation.directionTo(targetLoc));
+				tryMove(myLocation.directionTo(targetLoc),0,myAggression);
 			}
 			else // we're done, reset this thing
 			{
@@ -1792,31 +2011,48 @@ public class RobotPlayer {
 	static MapLocation chooseEnemyTarget() throws GameActionException {
 		MapLocation targetLoc = null;
 		// choose a target from the hit list
-		for(int i: targetChannels)
+		for(int i: defenceTargetChannels)
 		{
 			int targetID = rc.readBroadcast(i);
-			if(targetID!=0)
+			if(targetID!=0 && rc.canSenseRobot(targetID))
 			{
-				try{
-					targetLoc = rc.senseRobot(targetID).location;
-					int dist = myLocation.distanceSquaredTo(targetLoc);
-					if(dist<200)
-						return targetLoc;
-				}catch(Exception e){
-				}
+				targetLoc = rc.senseRobot(targetID).location;
+				int dist = myLocation.distanceSquaredTo(targetLoc);
+				if(dist<200)
+					return targetLoc;
 			}
+			
 		}
-		/*
-		// if there's nobody, pick an enemy tower or HQ
-		if(targetLoc==null)
-		{
-			MapLocation[] targets = getBuildings(myTeam.opponent());
-			targetLoc = targets[rand.nextInt(targets.length)]; // at random
-		}
-		*/
+		
 		return targetLoc;
 	}
 
+
+	static void addEnemyToTargets(int newID) throws GameActionException {
+
+		// adds an enemy ID to a list of targets, if that list is not full
+
+		for(int i: defenceTargetChannels)
+
+		{
+
+			int enemyID = rc.readBroadcast(i);
+
+			if (rc.canSenseRobot(enemyID))
+				continue;
+			else
+			{
+				rc.broadcast(i,newID);
+				rc.setIndicatorString(3, "Enemy Spotted - added to defense list");
+				//System.out.println("New target ID = " + ID);
+			}
+				return;
+
+			}
+
+		}
+
+	
 	//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	
 //===========================================================================================
@@ -1824,6 +2060,8 @@ public class RobotPlayer {
 	static void doMiner()
 	{
 		try {
+			
+
 			rc.setIndicatorString(2, toString(minerState));
 			rc.setIndicatorString(2, "gridOreBase = " + myGrid.readValue(gridOreBase) + ", gridMiningBase = "+ myGrid.readValue(gridMiningBase) + " ");
 			if (rc.isCoreReady())
@@ -1835,7 +2073,7 @@ public class RobotPlayer {
 				rc.setIndicatorString(0,"Mining");
 				miningDuties();
 			}
-			
+			defenseUpdate();
 		} catch (Exception e) {
 			System.out.println("Miner Exception");
 			e.printStackTrace();
@@ -1885,7 +2123,7 @@ public class RobotPlayer {
 				rc.setIndicatorString(0, "Exploring");
 				rc.setIndicatorString(1, "Following the grid: " + minersCounter);
 				int bitdir = gridPathfind(myLocation, gridMiningBase, true);
-				tryMove(bitdir);
+				tryMove(Direction.OMNI,bitdir,myAggression);
 			}
 			supplyFactor = 9;
 			break;
@@ -1910,11 +2148,11 @@ public class RobotPlayer {
 					rc.setIndicatorString(1, "Mining");
 				}
 			}else{
-				justMoved = tryMove(facing);
+				justMoved = tryMove(facing,0,myAggression);
 				rc.setIndicatorString(1, "Moving straight");
 			}
 		}else{
-			justMoved = tryMove(facing);
+			justMoved = tryMove(facing,0,myAggression);
 			rc.setIndicatorString(1, "Moving straight");
 		}
 		if(justMoved) // update the starting amount of ore on each space we move to
@@ -1938,7 +2176,7 @@ public class RobotPlayer {
 				}
 			}else{
 				facing = minerLocalOreDirection(localOre, oreMiningCriterion);
-				tryMove(facing);
+				tryMove(facing,0,myAggression);
 			}
 			
 		}else if(oreHere>0.8){ //there is a bit of ore, so maybe try to mine, maybe move on (suppliers don't mine)
@@ -1949,16 +2187,16 @@ public class RobotPlayer {
 				}
 			}else{ // look for more ore
 				facing = minerLocalOreDirection(localOre, oreMiningCriterion);
-				tryMove(facing);
+				tryMove(facing,0,myAggression);
 			}
 		}else if(localOre[2]>2*oreMiningCriterion){ // still look locally
 			facing = minerLocalOreDirection(localOre, oreMiningCriterion);
-			tryMove(facing);
+			tryMove(facing,0,myAggression);
 		}else{ //no ore, so look for more
 			minersCounter = 0;
 			minerState = MinerState.EXPLORING;
 			int bitdir = gridPathfind(myLocation, gridMiningBase, true);
-			tryMove(bitdir);
+			tryMove(Direction.NONE,bitdir,myAggression);
 			//facing = Direction.values()[Integer.numberOfTrailingZeros(bitdir)];
 			//tryMove(facing);
 			rc.setIndicatorString(1, "Following grid without counting moves, since the ore is so bad: " + minersCounter);
@@ -2051,7 +2289,7 @@ public class RobotPlayer {
 			{
 				rc.setIndicatorString(0,"Attacking");
 				rc.setIndicatorString(1,"Target 1: robot " + target1);
-				tryMove(here.directionTo(target.location));
+				tryMove(here.directionTo(target.location),0,myAggression);
 			}
 			return;
 		}
@@ -2063,7 +2301,7 @@ public class RobotPlayer {
 			{
 				rc.setIndicatorString(0,"Attacking");
 				rc.setIndicatorString(1,"Target 2: robot " + target2);
-				tryMove(here.directionTo(target.location));
+				tryMove(here.directionTo(target.location),0,myAggression);
 			}
 			return;
 		}
@@ -2112,7 +2350,7 @@ public class RobotPlayer {
 				if(strengthBal<=20)
 				{
 					Direction dir = here.directionTo(here.add((int)evadeX,(int)evadeY));
-					tryMove(dir);
+					tryMove(dir,0,myAggression);
 					rc.setIndicatorString(0,"Evading");
 					rc.setIndicatorString(1,"Strength balance = " + strengthBal);
 				}
@@ -2153,6 +2391,15 @@ public class RobotPlayer {
 		rc.broadcast(rageGridBase+ind, GridComponent.indexFromLocation(target.location));
 	}
 	
+	static void defenceSetTarget(RobotInfo target, int ind) throws GameActionException
+	{
+		// we can add it
+		rc.broadcast(defenceIDBase+ind, target.ID);
+		// and its grid square, for later convenience			
+		rc.broadcast(defenceGridBase+ind, GridComponent.indexFromLocation(target.location));
+	}
+	
+	
 	static int rageOpenSlots() throws GameActionException
 	{
 		int rageslots = 0;
@@ -2171,6 +2418,24 @@ public class RobotPlayer {
 		return rageslots;
 	}
 
+	static int defenceOpenSlots() throws GameActionException
+	{
+		int defenceSlots = 0;
+		
+		for (int i=1; i<TARGET_COUNT; i++)
+		{
+			int targetID = rc.readBroadcast(defenceIDBase+i);
+			// is this rage target taken/valid?
+			if (!rc.canSenseRobot(targetID))
+			{
+				defenceSlots |= (1<<i);
+				rc.broadcast(defenceIDBase+i, 0);
+			}
+		}
+		
+		return defenceSlots;
+	}
+	
 	static void rageUpdate() throws GameActionException
 	{
 		// get full list of robots
@@ -2192,41 +2457,156 @@ public class RobotPlayer {
 		}
 	}
 	
+	static void defenseUpdate() throws GameActionException
+	{
+		// get full list of robots
+		RobotInfo[] bots = rc.senseNearbyRobots(myType.sensorRadiusSquared,myTeam.opponent());
+		
+		if (bots.length == 0)
+			rc.setIndicatorString(3, "No Enemies Spotted");
+		
+		for (RobotInfo ri : bots)
+		{
+			addEnemyToTargets(ri.ID);
+
+			/*
+			// can we add any?
+			if (defenceSlots == 0){
+				rc.setIndicatorString(2, "Enemy Spotted: no free defence slots");
+				break;
+			}
+			// then add it
+			int defenceInd = Integer.numberOfTrailingZeros(defenceSlots);
+			defenceSetTarget(ri,defenceInd);
+			// and nuke defence slots
+			defenceSlots &= defenceSlots-1;
+			
+			rc.setIndicatorString(2, "Enemy Spotted, added to defence list");
+			*/
+		}
+	}
+	
+	
 	static void rageMove() throws GameActionException
 	{
+
+		
 		// if we can't move, meh
 		if (!rc.isCoreReady())
 			return;
-		
-		int rageVal = myGrid.readValue(gridRageBase);
-		// this rage target is the index, not the ID
-		int rageID = (rageVal>>>16);
-		
-		MapLocation targetLoc = null;
-		
-		// first, check if this is still a live rage target...
-		if (rc.canSenseRobot(rageID))
+			
+		// if rage leader
+		if (rc.getID() == rc.readBroadcast(rageLeaderChan))
 		{
-			RobotInfo ri = rc.senseRobot(rageID);
-			targetLoc = ri.location;
-			// update its grid location
-//			rc.broadcast(rageGridBase+rageTarget, rageGrid);
-			// check if we're within attack range or so
-			if (myLocation.distanceSquaredTo(ri.location) < 49)
+
+			// this rage target is the index, not the ID
+			int rageVal = myGrid.readValue(gridRageBase);
+			int rageID = (rageVal>>>16);
+
+			MapLocation targetLoc = null;
+
+			// first, check if this is still a live rage target...
+			if (rc.canSenseRobot(rageID))
 			{
-				// then just move directly towards the target
-				tryMove(myLocation.directionTo(ri.location));
+				RobotInfo ri = rc.senseRobot(rageID);
+				targetLoc = ri.location;
+				rc.setIndicatorString(0,"RAGE leader. Target = " + rageID);
+				// update its grid location
+				// rc.broadcast(rageGridBase+rageTarget, rageGrid);
+				// check if we're within attack range or so
+				if (myLocation.distanceSquaredTo(ri.location) < 49)
+				{
+					// then just move directly towards the target
+					tryMove(myLocation.directionTo(ri.location),0,myAggression);
+					rc.setIndicatorDot(targetLoc.add(Direction.NORTH), 0,0, 0); // black dot
+					return;
+				}
+			}
+
+			// otherwise, do long-range move towards target
+			int bitdir = gridPathfind(myLocation,gridRageBase,true);
+			if (targetLoc != null)
+				tryMove(myLocation.directionTo(targetLoc),bitdir,myAggression);
+			else
+				tryMove(Direction.NONE,bitdir,myAggression);
+		}
+		
+		// other tanks follow
+		if (myTarget != null)
+		{
+			if (myTarget.equals(myLocation))
+				return;
+			
+			rc.setIndicatorDot(myTarget, 255, 255, 255);
+			// see if we're close, move straight towards it
+			if (myLocation.distanceSquaredTo(myTarget)<=24)
+			{
+				tryMove(myLocation.directionTo(myTarget),0,myAggression);
 				return;
 			}
 		}
-		
-		// otherwise, do long-range move towards target
+		// not close, or no target, just go in the general direction
 		int bitdir = gridPathfind(myLocation,gridRageBase,true);
-		if (targetLoc != null)
-			tryMove(myLocation.directionTo(targetLoc),bitdir);
-		else
-			tryMove(bitdir);
+		if (myTarget != null)
+			tryMove(myLocation.directionTo(myTarget),bitdir,myAggression);		
 	}
+	
+	
+
+	static void defenseMove(boolean enemiesInSight) throws GameActionException
+	{
+
+		
+		// if we can't move, meh
+		if (!rc.isCoreReady())
+			return;
+			
+		// if rally leader
+		if (rc.getID() == rc.readBroadcast(rallyLeaderChan))
+		{
+			
+			MapLocation targetLoc = chooseEnemyTarget();
+			rc.setIndicatorString(1, "Hold Leader: Defense Target = " + targetLoc);			
+			
+			// if at enemy location and don't see anyone
+			if (targetLoc == null)
+			{
+				rc.setIndicatorString(1, "Hold Leader: No enemies - continue to rally");		
+				rallyMove();
+				//just go to normal rally.
+			}
+			else // otherwise, move towards targetLoc.
+			{
+				// then just move directly towards the target
+				tryMove(myLocation.directionTo(targetLoc),0,myAggression);
+				return;
+			}
+
+		}
+
+		// other tanks follow
+		if (myTarget != null)
+		{
+			if (myTarget.equals(myLocation))
+				return;
+			
+			rc.setIndicatorDot(myTarget, 255, 255, 255);
+			// see if we're close, move straight towards it
+			if (myLocation.distanceSquaredTo(myTarget)<=24)
+			{
+				tryMove(myLocation.directionTo(myTarget),0,myAggression);
+				return;
+			}
+		}
+		// not close, or no target, just go in the general direction
+		rallyMove();
+
+		
+		
+		
+		
+	}
+	
 	
 //=============================================================================================
 	
@@ -3428,7 +3808,7 @@ public class RobotPlayer {
 				rc.broadcast(supplyRequestYChan, myLocation.y);
 			}
 
-			rc.setIndicatorString(2, " nearby supply urgency = " + nearbyUrgency);
+			rc.setIndicatorString(2, "supply factor = " + supplyFactor + " nearby supply urgency = " + nearbyUrgency);
 		}
 		return supplyFactor;
 	}
@@ -3740,413 +4120,263 @@ public class RobotPlayer {
 	
 	
 	// Potential field move
-	static void movePotential() throws GameActionException {
+		static void movePotential() throws GameActionException {
 
-		float forceX = 0.0f;
-		float forceY = 0.0f;
+			float forceX = 0.0f;
+			float forceY = 0.0f;
 
-		float fDest = 3.0f;
-		float fBored = 1.5f;
+			float fDest = 10.0f;
+			float fBored = 0.0f; // off for now
+			float fFormation = 3.0f;
+			float qFriendly = 0.0f; // off for now repel, goes as 1/r
 
-		float qFriendly = -2.0f; // repel, goes as 1/r
+			float fSticky = 0.0f; //off for now. goes as 1/r
+			float fBinding = 1.0f;
+			float fNoiseMax = 0.0f;// off for now
+			float fEnemySighted = 10.0f;
+			float qEnemyInRange = -15.0f; //is multiplied by attack strength
+			//float aggCoef = 0.8f;
+			float fNoise = 0.0f;
+			
+			float strengthBal = 0;
+			
+			/*
+			// get list of nearby robots
+			RobotInfo[] friendlyRobots = rc.senseNearbyRobots(
+					myType.sensorRadiusSquared, myTeam);
+			RobotInfo[] enemyRobots = rc.senseNearbyRobots(
+					myType.sensorRadiusSquared, myTeam.opponent());
+			for (RobotInfo bot : friendlyRobots) strengthBal += unitVal[bot.type.ordinal()];
+			for (RobotInfo bot : enemyRobots) strengthBal -= unitVal[bot.type.ordinal()];
+			//rc.setIndicatorString(2, "StrengthBal = " + strengthBal);
+			*/
+			
+			// attracted to squad target, far away, const fDest
+			if (myTarget !=null){
+				int destX = (myTarget.x - myLocation.x);
+				int destY = (myTarget.y - myLocation.y);
 
-		float fSticky = 0.0f; // goes as 1/r
-		float fBinding = 1.0f;
-		float fNoiseMax = 1.0f;
-		float fEnemySighted = 1.5f;
-		float qEnemyInRange = -2.0f; //is multiplied by attack strength
-		//float aggCoef = 0.8f;
-		float fNoise = 0.0f;
-		
-		float strengthBal = unitVal[rc.getType().ordinal()];
-		
-		// get dem robots
-		RobotInfo[] friendlyRobots = rc.senseNearbyRobots(
-				myType.sensorRadiusSquared, myTeam);
-		RobotInfo[] enemyRobots = rc.senseNearbyRobots(
-				myType.sensorRadiusSquared, myTeam.opponent());
-		for (RobotInfo bot : friendlyRobots) strengthBal += unitVal[bot.type.ordinal()];
-		for (RobotInfo bot : enemyRobots) strengthBal -= unitVal[bot.type.ordinal()];
-
-		// attracted to squad target, far away
-		int destX = 0;
-		int destY = 0;
-		if (myTarget != null)
-		{
-			destX = (myTarget.x - myLocation.x);
-			destY = (myTarget.y - myLocation.y);
-		}
-		float d2dest = (float) Math.sqrt(destX * destX + destY * destY);
-		//MapValue dest = enemyHQ;//gridGradient(myGridInd);
-		//int destX = dest.x;
-		//int destY = dest.y;
-		//float d2dest = (float)dest.value;
+				float d2dest = (float) Math.sqrt(destX * destX + destY * destY);
 
 
-		forceX = (fDest + aggCoef)* destX / d2dest;
-		forceY = (fDest + aggCoef) * destY / d2dest;
-		// attraction to target goes as const qDest
-		
-		
-		// ********** BOREDOM ENGINE  **************
-		// Move impatience: if not moving or rocking, stop it and get attracted randomly for a while.
-		//rc.setIndicatorString(0, "moves: " + myLocation + " " + moveRec[moveIdx] + " " + moveRec[moveIdx-1]+" " + moveRec[moveIdx-2]);
-		lastMoveCounter += 1;
-		lastShotCounter +=1;
-
-		if (bored == 1){
-
-			// if bored add a force in direction boredDir for boredLength ticks;
-			forceX += fBored * Consts.senseLocsX[boredDirIdx];
-			forceY += fBored * Consts.senseLocsY[boredDirIdx];		
-			boredCounter += 1; 
-			rc.setIndicatorString(1, "Boredom Counter = " + boredCounter);
-			if (boredCounter > boredomLength){
-				bored = 0;
-				boredCounter = 0;
-				lastMoveCounter = 0;
-				lastShotCounter = 0;
-				//rc.setIndicatorString(0, "not bored");
+				forceX =  destX / d2dest;
+				forceY =  destY / d2dest;
 			}
 
-		}else if (lastMoveCounter > moveImpatience || myLocation.equals(moveRec[moveIdx - 2])){
-			//rc.setIndicatorString(0, "BORED!");
-			bored = 1;
-			boredomLength = moveBoredomLength;
-			boredDirIdx = rand.nextInt(8);
-			
-		}else if (lastShotCounter > shootImpatience){
-			//rc.setIndicatorString(0, "BORED! Sweeping...");
-			bored = 1;
-			boredomLength = sweepBoredomLength;
-			boredDirIdx = rand.nextInt(8);
-			
-		}else rc.setIndicatorString(0, "not bored");
+			/*
+				int engageDirOrd = rc.readBroadcast(engageDirChan); 
 
-		
+				//rotate basis to point along engageDir
+				float forceEx = Consts.cos[engageDirOrd]*forceX - Consts.sin[engageDirOrd]*forceY;
+				float forceEy = Consts.sin[engageDirOrd]*forceX + Consts.cos[engageDirOrd]*forceY;
 
-		rc.setIndicatorString(2, "lastShot Counter = " + lastShotCounter);
+				// elongate along Ey
+				forceEx *= 50;
 
-	
-		for (RobotInfo bot : friendlyRobots) {
-
-
-			// doesn't apply to towers and HQ
-			if (bot.type == RobotType.TOWER || bot.type == RobotType.HQ)
-				continue;
-
-			int vecx = bot.location.x - myLocation.x;
-			int vecy = bot.location.y - myLocation.y;
-			int d2 = bot.location.distanceSquaredTo(myLocation);
-			float id = Consts.invSqrt[d2];
-
-			// weakly attract, constant normalized to unitVal 
-			forceX += unitVal[bot.type.ordinal()] * fSticky *id * vecx; // constant
-			forceY += unitVal[bot.type.ordinal()] * fSticky *id* vecy;	
-	
-			// don't get too close, at close range, as -1/r
-			forceX += qFriendly * id * id*vecx;
-			forceY += qFriendly * id * id*vecy;
-			
-		}
-
-		for (RobotInfo bot : enemyRobots) {
-			// dangerous ones, dealt with below
-			if (bot.type == RobotType.TOWER || bot.type == RobotType.HQ)
-				continue;
-
-			int vecx = bot.location.x - myLocation.x;
-			int vecy = bot.location.y - myLocation.y;
-			int d2 = bot.location.distanceSquaredTo(myLocation);
-
-
-			float id = Consts.invSqrt[d2];
-
-			// attract to enemy units, adjusted for strength balance, constant
-			forceX += strengthBal * fEnemySighted * unitAtt[bot.type.ordinal()] * id  * vecx ; // constant 
-			forceY += strengthBal * fEnemySighted * unitAtt[bot.type.ordinal()] * id  * vecy ;
-
-
-			// enemies in range, 1/r
-			float dattack = Consts.sqrt[bot.type.attackRadiusSquared] - Consts.sqrt[d2]
-					+ 2.0f;
-			if (dattack > 0) {
-				forceX += unitVal[bot.type.ordinal()] * qEnemyInRange * id*id * vecx; // constant
-				forceY += unitVal[bot.type.ordinal()] * qEnemyInRange * id *id * vecy;	
-			}
-		}
-
-//		boolean hasSquad = friendlyRobots.length > 8
-//				|| ((rc.readBroadcast(squadTaskBase + mySquad) >> 8) & 255) > 8;
-
-			MapLocation[] towers = getBuildings(myTeam.opponent());
-			
-			MapLocation enHQ = towers[0];
-			int d2 = enHQ.distanceSquaredTo(myLocation);
-			// check if it's in range
-			if (d2 <= RobotType.HQ.attackRadiusSquared + 20){
-
-				float id = Consts.invSqrt[d2];
-
-				int vecx = enHQ.x - myLocation.x;
-				int vecy = enHQ.y - myLocation.y;
-
-
-				float dattack = Consts.sqrt[RobotType.HQ.attackRadiusSquared] - Consts.sqrt[d2]
-						+ 2.0f;		
-
-				if (dattack > 0) {
-					// repel with fEnemyInRange 
-					forceX += unitVal[0] * qEnemyInRange * id * vecx ; // hard shell
-					forceY += unitVal[0] * qEnemyInRange * id * vecy ;	
-				}
-
-			}
-			
-			for (MapLocation tower : towers) {
-				d2 = tower.distanceSquaredTo(myLocation);
-				// check if it's in range
-				if (d2 > RobotType.TOWER.attackRadiusSquared + 20)
+				//rotate back to XY coordinates
+				forceX = Consts.cos[engageDirOrd]*forceEx + Consts.sin[engageDirOrd]*forceEy;
+				forceY = -Consts.sin[engageDirOrd]*forceEx + Consts.cos[engageDirOrd]*forceEy;
+			*/
+			/*
+			for (RobotInfo bot : friendlyRobots) {
+				// doesn't apply to towers and HQ
+				if (bot.type == RobotType.TOWER || bot.type == RobotType.HQ)
 					continue;
 
-				float id = Consts.invSqrt[d2];
+				int vecx = bot.location.x - myLocation.x;
+				int vecy = bot.location.y - myLocation.y;
+				int d2 = bot.location.distanceSquaredTo(myLocation);
+				float id = invSqrt[d2];
 
-				int vecx = tower.x - myLocation.x;
-				int vecy = tower.y - myLocation.y;
+				// weakly attract, constant normalized to unitVal 
+				forceX += unitVal[bot.type.ordinal()] * fSticky *id * vecx; // constant
+				forceY += unitVal[bot.type.ordinal()] * fSticky *id* vecy;	
+		
+				// don't get too close, at close range, as -1/r
+				forceX += qFriendly * id * id*vecx;
+				forceY += qFriendly * id * id*vecy;	
+			}
+
+			for (RobotInfo bot : enemyRobots) {
+				// dangerous ones, dealt with in tryMove
+				if (bot.type == RobotType.TOWER || bot.type == RobotType.HQ)
+					continue;
+
+				int vecx = bot.location.x - myLocation.x;
+				int vecy = bot.location.y - myLocation.y;
+				int d2 = bot.location.distanceSquaredTo(myLocation);
 
 
-				float dattack = Consts.sqrt[RobotType.TOWER.attackRadiusSquared] - Consts.sqrt[d2]
-						+ 2.0f;		
-				
-				if (dattack > 0) {
-					// repel with fEnemyInRange 
-					forceX += unitVal[1] * qEnemyInRange * id * vecx ; // hard shell
-					forceY += unitVal[1] * qEnemyInRange * id * vecy ;	
-				}
+				float id = invSqrt[d2];
+
+				// attract to enemy units, adjusted for strength balance, constant
+				forceX += strengthBal * fEnemySighted * unitAtt[bot.type.ordinal()] * id  * vecx ; // constant 
+				forceY += strengthBal * fEnemySighted * unitAtt[bot.type.ordinal()] * id  * vecy ;
+
+
+				// enemies in range, 1/r
+				forceX += unitVal[bot.type.ordinal()] * qEnemyInRange * id*id * vecx; // constant
+				forceY += unitVal[bot.type.ordinal()] * qEnemyInRange * id *id * vecy;	
+		
+			}
+				*/
+
+			// get direction of force
+			
+			Direction dir = myLocation.directionTo(myLocation.add((int)(10*forceX),(int)(10*forceY)));
+
+
+			// only move if nonzero force
+			if(forceX*forceX + forceY*forceY > 0){ 
+				tryMove(dir,0,myAggression);
+			}		
+
+			rc.setIndicatorLine(myLocation, myLocation.add((int)forceX,(int)forceY), 0,
+					255, 255); // indicator line along preferred direction
+
+
+
+
+			return;
+
+		}
+	
+	// this method will attempt to move towards d, preferentially using bitmoves, using specified aggression
+		static boolean tryMove(Direction d, int bitmoves, UnitAggression agg) throws GameActionException
+		{
+			// can't move, don't do anything
+			if (!rc.isCoreReady())
+				return false;
+
+			// take into account enemies of particular types
+			int safemoves = 0;
+			
+			switch (agg)
+			{
+			case CHARGE:
+			case NO_RESTRICTIONS:
+				// they're all safe
+				safemoves = 0x1FF;
+				break;
+			case NO_TOWERS:
+				safemoves = 0x1FF&(~getTowerMoves());
+				break;
+			case NEVER_MOVE_INTO_RANGE:
+				safemoves = ~getTowerMoves();
+				safemoves &= ~getEnemyMoves();
+				safemoves &= 0x1FF;
+				break;
+			}
+
+			// now mask it by moves we deem safe
+			bitmoves &= safemoves;
+			
+			// check which directions we can move in
+			int canmoves = 0;
+			for (int i=0; i<8; i++)
+			{
+				if (rc.canMove(Direction.values()[i]))
+					canmoves |= (1<<i);
 			}
 			
+			// now only move in directions we can move
+			bitmoves &= canmoves;
+			
+			if (bitmoves == 0)
+			{
+				// if we're here, it means we said to move, but we can't move anywhere
+				// that we specified with bitmoves
+				// so we just pick a random safe direction instead, if possible
+				bitmoves = (canmoves&safemoves);
+				if (bitmoves == 0)
+					return false;
+			}
+
+			// now pick by starting in direction d and moving out
+			int dirint = d.ordinal();
+			
+			// do we check preferred directions in the other way?
+			boolean tryopposite = rand.nextBoolean();
+			
+			for (int i=0; i<8; i++)
+			{
+				int dir = tryopposite?(dirint+Consts.dirOffsets[i])&7:
+					(dirint+16-Consts.dirOffsets[i])&7;
+				// can we move here/do we want to move here?
+				if ((bitmoves&(1<<dir))==0)
+					continue;
 				
-				// get direction of force
-			MapValue[] mvs = new MapValue[9];
+				// ok, so now we can and do want to, double check and then do it
+				Direction dd = Direction.values()[dir];
 
-			for (int i = 0; i < 9; i++)
-				mvs[i] = new MapValue(Consts.senseLocsX[i], Consts.senseLocsY[i], forceX
-						* Consts.senseLocsX[i] + forceY * Consts.senseLocsY[i]);
+				// already checked this with canmoves, but best to double-check...
+				if (!rc.canMove(dd))
+					continue;
+				
+				rc.move(dd);
+				return true;
+			}
+			
+			return false;
+		}
 
-/*			rc.setIndicatorLine(myLocation, new MapLocation(myLocation.x
-					+ (int) (forceX * 10), myLocation.y + (int) (forceY * 10)), 0,
-					255, 255);
-*/
-			Arrays.sort(mvs);
-
-			for (int i = 8; i > 0; i--) {
-				// don't move unless you exceed "binding force"
-				fNoise *= fNoiseMax * 2 * (rand.nextDouble() - 0.5);
-				if (mvs[i].value < fBinding + fNoise)
-					break;
-				Direction newdir = myLocation.directionTo(mvs[i]
-						.offsetFrom(myLocation));
-				if (rc.isCoreReady() && rc.canMove(newdir)) {
+		static int getTowerMoves()
+		{
+			MapLocation myloc = rc.getLocation();
+			
+			long bitmoves = 0;
+			
+			if (Math.abs(myloc.x-enemyHQ.x)<7 && Math.abs(myloc.y-enemyHQ.y)<7)
+			{
+				int ind = (enemyHQ.x-myloc.x+6) + 13*(enemyHQ.y-myloc.y+6);
+				if (enemyTowers.length>1) // use range 35
+					bitmoves |= (Consts.attackMask[ind]>>(9*Consts.unitRanges[0]));
+				else // use 24
+					bitmoves |= (Consts.attackMask[ind]>>(9*Consts.unitRanges[1]));;
+			}
+			
+			for (MapLocation t : enemyTowers)
+			{
+				if (Math.abs(myloc.x-t.x)>=6 || Math.abs(myloc.y-t.y)>=6)
+					continue;
 					
-					rc.move(newdir);					
-					moveIdx += 1;
-					moveRec[moveIdx] = myLocation.add(newdir);
-					lastMoveCounter = 0;
-					//rc.setIndicatorString(0, "moveIdx = " + moveIdx);
-
-				}
+				int ind = (t.x-myloc.x+6) + 13*(t.y-myloc.y+6);
+				bitmoves |= (Consts.attackMask[ind]>>(9*Consts.unitRanges[1]));;
 			}
-	}
-	
-	static int getDangerMoves()
-	{
-		MapLocation[] towers = rc.senseEnemyTowerLocations();
-		MapLocation hq = rc.senseEnemyHQLocation();
-		MapLocation myloc = rc.getLocation();
-		
-		int bitmoves = 0;
-		
-		if (Math.abs(myloc.x-hq.x)<7 && Math.abs(myloc.y-hq.y)<7)
-		{
-			if (towers.length>1) // use range 35
+			
+			/*for (int i=0; i<8; i++)
 			{
-				int ind = (hq.x-myloc.x+6) + 13*(hq.y-myloc.y+6);
-				bitmoves |= Consts.hqMask[ind];				
-			}
-			else // use 24
+				if ((bitmoves&(1<<i)) > 0)
+					rc.setIndicatorDot(myloc.add(Direction.values()[i]), 255, 0, 255);
+			}*/
+			
+			return (int)(bitmoves&0x1FF);
+		}
+		
+		static int getEnemyMoves()
+		{
+			RobotInfo[] bots = rc.senseNearbyRobots(myType.sensorRadiusSquared, enemyTeam);
+			MapLocation myloc = rc.getLocation();
+			
+			// 0...8 bits determine which squares are dangerous
+			long bitmoves = 0;
+			
+			// by definition, if inside sensor radius, will be on array
+			for (RobotInfo ri : bots)
 			{
-				int ind = (hq.x-myloc.x+5) + 11*(hq.y-myloc.y+5);
-				bitmoves |= Consts.towerMask[ind];
+				int ind = (ri.location.x-myloc.x+6) + 13*(ri.location.y-myloc.y+6);
+				bitmoves |= (Consts.attackMask[ind]>>(9*Consts.unitRanges[ri.type.ordinal()]));
 			}
-		}
-		
-		for (MapLocation t : towers)
-		{
-			if (Math.abs(myloc.x-t.x)>=6 || Math.abs(myloc.y-t.y)>=6)
-				continue;
-				
-			int ind = (t.x-myloc.x+5) + 11*(t.y-myloc.y+5);
-			bitmoves |= Consts.towerMask[ind];
-		}
-		
-		return bitmoves;
-	}
-	
-	// this method will attempt to move in one of the given directions at random
-	static boolean tryMove(int bitmoves) throws GameActionException
-	{
-		if (!rc.isCoreReady())
-			return false;
-
-		if (bitmoves == 0)
-			return false;
-		
-		// take into account enemies
-		int safemoves = ~getDangerMoves();
-		bitmoves &= safemoves;
-		
-		// check which directions we can move in
-		int canmoves = 0;
-		for (int i=0; i<8; i++)
-		{
-			if (rc.canMove(Direction.values()[i]))
-				canmoves |= (1<<i);
-		}
-		
-		// now only move in directions we can move
-		bitmoves &= canmoves;
-		
-		if (bitmoves == 0)
-		{
-			// if we're here, it means we said to move, but we can't move anywhere
-			// so we just pick a random safe direction instead, if possible
-			bitmoves = (canmoves&safemoves);
-			if (bitmoves == 0)
-				return false;
-		}
-
-		// now pick randomly from canmove&bitmoves
-		
-		// and extract a random bit of remaining ones
-		int nrem = Integer.bitCount(bitmoves);
-		int randval = rand.nextInt(nrem);
-		
-		// shave off randval bits
-		for (int i=0; i<randval; i++)
-			bitmoves &= bitmoves-1;
-		
-		rc.move(Direction.values()[Integer.numberOfTrailingZeros(bitmoves)]);
-		return true;
-	}
-	
-	// this method will attempt to move towards d, preferentially using bitmoves
-	static boolean tryMove(Direction d, int bitmoves) throws GameActionException
-	{
-		if (!rc.isCoreReady())
-			return false;
-
-		if (bitmoves == 0)
-			return false;
-		
-		// take into account enemies
-		int safemoves = ~getDangerMoves();
-		bitmoves &= safemoves;
-		
-		// check which directions we can move in
-		int canmoves = 0;
-		for (int i=0; i<8; i++)
-		{
-			if (rc.canMove(Direction.values()[i]))
-				canmoves |= (1<<i);
-		}
-		
-		// now only move in directions we can move
-		bitmoves &= canmoves;
-		
-		if (bitmoves == 0)
-		{
-			// if we're here, it means we said to move, but we can't move anywhere
-			// so we just pick a random safe direction instead, if possible
-			bitmoves = (canmoves&safemoves);
-			if (bitmoves == 0)
-				return false;
-		}
-
-		// now pick by starting in direction d and moving out
-		int dirint = d.ordinal();
-		
-		for (int i=0; i<8; i++)
-		{
-			int dir = (dirint+Consts.dirOffsets[i])&7;
-			// can we move here/do we want to move here?
-			if ((bitmoves&(1<<dir))==0)
-				continue;
 			
-			// ok, so now we can and do want to, double check and then do it
-			Direction dd = Direction.values()[dir];
-
-			if (!rc.canMove(dd))
-				continue;
+			/*for (int i=0; i<8; i++)
+			{
+				if ((bitmoves&(1<<i)) > 0)
+					rc.setIndicatorDot(myloc.add(Direction.values()[i]), 255, 255, 255);
+			}*/
 			
-			rc.move(dd);
-			return true;
+			// and return lowest 9 bits
+			return (int)(bitmoves&0x1FF);
 		}
-		
-		return false;
-	}
-
-	
-	// This method will attempt to move in Direction d (or as close to it as possible)
-	static boolean tryMove(Direction d) throws GameActionException
-	{
-		if (!rc.isCoreReady())
-			return false;
-		
-		int isDanger = getDangerMoves();
-		int dirint = d.ordinal();
-		
-		for (int i=0; i<8; i++)
-		{
-			int dir = (dirint+Consts.dirOffsets[i])&7;
-			if ((isDanger&(1<<dir))>0)
-				continue;
-			
-			Direction dd = Direction.values()[dir];
-
-			if (!rc.canMove(dd))
-				continue;
-			
-			rc.move(dd);
-			return true;
-		}
-		
-		return false;
-	}
-	
-	// This method will attempt to move in Direction d (or as close to it as possible)
-	static boolean tryAggressiveMove(Direction d) throws GameActionException
-	{
-		if (!rc.isCoreReady())
-			return false;
-		
-		int dirint = d.ordinal();
-		
-		for (int i=0; i<8; i++)
-		{
-			int dir = (dirint+Consts.dirOffsets[i])&7;
-			
-			Direction dd = Direction.values()[dir];
-
-			if (!rc.canMove(dd))
-				continue;
-			
-			rc.move(dd);
-			return true;
-		}
-		
-		return false;
-	}
-	
 
 	// This method will attempt to spawn in the given direction (or as close to it as possible)
 	static boolean trySpawn(Direction d, RobotType type) throws GameActionException
