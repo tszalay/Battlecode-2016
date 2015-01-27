@@ -1,4 +1,4 @@
-package rAAAge_3_0;
+package player1;
 
 import battlecode.common.*;
 
@@ -124,6 +124,30 @@ class RobotConsts
 			8, // TANK
 			8, // COMMANDER
 			10, // LAUNCHER
+			0  // MISSILE
+	};
+	
+	int[] droneUnitAtt = {
+			0, // HQ 
+			0, // TOWER
+			1, // SUPPLYDEPOT
+			1, // TECHNOLOGYINSTITUTE
+			4, // BARRACKS
+			4, // HELIPAD
+			1, // TRAININGFIELD
+			5, // TANKFACTORY
+			6, // MINERFACTORY
+			1, // HANDWASHSTATION
+			4, // AEROSPACELAB
+			2, // BEAVER
+			2, // COMPUTER
+			1, // SOLDIER
+			1, // BASHER
+			6, // MINER
+			1, // DRONE
+			0, // TANK
+			7, // COMMANDER
+			0, // LAUNCHER
 			0  // MISSILE
 	};
 	
@@ -467,7 +491,9 @@ public class RobotPlayer {
 	{
 		LOAD, //
 		DELIVER,	// 
-		HARASS,	// 
+		HARASS,	//
+		SCOUT, //
+		LAUNCHER_BLITZ,	// 
 	}
 
 	static String toString(ScoutState state) {
@@ -480,21 +506,30 @@ public class RobotPlayer {
 		case DELIVER:
 			ans = "DELIVER";
 			break;
-
+		case SCOUT:
+			ans =  "SCOUT";
+			break;
 		case HARASS:
 			ans =  "HARASS";
+			break;
+		case LAUNCHER_BLITZ:
+			ans =  "LAUNCHER_BLITZ";
 			break;
 		}
 		return ans;
 	}
-	static ScoutState scoutState= ScoutState.LOAD;
+	static ScoutState scoutState;
 	static double supplyFactor;
 	static double supplyPackage = 2500;
 	static double supplyMin = 100;
 	static int supplyLoadingChan = curChan++;
 	static int supplyUrgencyChan = curChan++;
-	static int supplyRequestXChan = curChan++;
-	static int supplyRequestYChan = curChan++;
+	static int supplyRequestID = curChan++;
+	
+	// Drones
+	static int t;
+	static int launcherID;
+	static int launcherIDchan = curChan++;
 	
 	//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	
@@ -576,11 +611,6 @@ public class RobotPlayer {
 		return ans;
 	}
 	static MinerState minerState;
-	static double lastLocationStartingOre;
-	static double currentLocationStartingOre;
-	static boolean bestMine;
-	static double oreHere;
-	static int[] minersPerState = {0,0,0}; // initially no miners: minersPerState[0]=SUPPLYING, minersPerState[1]=SEARCHING, minersPerState[2]=LEADING
 	
 	//===========================================================================================
 
@@ -710,8 +740,6 @@ public class RobotPlayer {
 			case HQ:
 				System.out.println(curChan + " channels in use");
 				
-				rc.broadcast(minerContiguousID,500);
-				
 				mapHQ();
 				// initialize pointers
 				rc.broadcast(gridNextIDChan, 1);
@@ -739,6 +767,8 @@ public class RobotPlayer {
 				minerState = MinerState.SEARCHING; // initially miners are in supply chain
 				break;
 			case DRONE:
+				scoutState= ScoutState.LOAD; // initially drones are loading
+				t = 0; // move timer for SCOUT state
 				break;
 			}
 		} catch (Exception e) {
@@ -1134,50 +1164,6 @@ public class RobotPlayer {
 				rc.broadcast(towerCountChan, towers.length);
 			}
 			
-			// figure out miner state updates ======================================================================================
-			int roundNow = Clock.getRoundNum();
-			
-			// suppliers
-			int supplierCount = rc.readBroadcast(minersSupplying);
-			if(supplierCount >> 16 == roundNow - 1){ // if the most recent update was last round
-				supplierCount = supplierCount & 255; // bit shifting nonsense
-			}
-			else
-				supplierCount = 0; // no units reporting, all are dead
-			minersPerState[0] = supplierCount;
-			
-			// searchers
-			int searcherCount = rc.readBroadcast(minersSearching);
-			if(searcherCount >> 16 == roundNow - 1){ // if the most recent update was last round
-				searcherCount = searcherCount & 255; // bit shifting nonsense
-			}
-			else
-				searcherCount = 0; // no units reporting, all are dead
-			minersPerState[1] = searcherCount;
-			
-			// leaders
-			int leaderCount = rc.readBroadcast(minersLeading);
-			if(leaderCount >> 16 == roundNow - 1) // if the most recent update was last round
-				leaderCount = leaderCount & 255; // bit shifting nonsense
-			else
-				leaderCount = 0; // no units reporting, all are dead
-			minersPerState[2] = leaderCount;
-			rc.setIndicatorString(0,"Miners supplying: " + supplierCount + ", searching: " + searcherCount + ", leading: " + leaderCount);
-			int bestMineScore = rc.readBroadcast(bestMineScoreChan);
-			int bestMineX = rc.readBroadcast(bestMineXChan);
-			int bestMineY = rc.readBroadcast(bestMineYChan);
-			rc.setIndicatorDot(new MapLocation(bestMineX,bestMineY), 0,255,0);
-			rc.setIndicatorString(2,"Best mine = " + bestMineScore + " at (" + bestMineX + "," + bestMineY + ")");
-			rc.broadcast(bestMineScoreChan, bestMineScore - 2); // slight decay ensures best mine won't last for too long
-			
-			// if we have too many suppliers, promote a supplier to searcher (numbers track until supplierCount reaches TARGET_SUPPLYING_MINERS)
-			if(supplierCount<TARGET_SUPPLYING_MINERS)
-				rc.broadcast(minerShuffle, supplierCount - searcherCount); // the miners only react to a positive number
-			else
-				rc.broadcast(minerShuffle, supplierCount - TARGET_SUPPLYING_MINERS); // the miners only react to a positive number
-			
-			//========================================================================================================================
-			
 			int rallyID = rc.readBroadcast(rallyLeaderChan);
 			if (rc.canSenseRobot(rallyID))
 			{
@@ -1247,8 +1233,18 @@ public class RobotPlayer {
 	static void doHelipad()
 	{
 		try {
-			if (rand.nextInt(100) < 20)
-				spawnUnit(RobotType.DRONE);
+			if(rand.nextInt(100) < 20)
+			{
+				RobotInfo[] units = rc.senseNearbyRobots(10000,myTeam);
+				int d = 0;
+				for(RobotInfo b: units)
+				{
+					if(b.type==RobotType.DRONE)
+						d++;
+				}
+				if(d<numDrones)
+					spawnUnit(RobotType.DRONE);
+			}
 		} catch (Exception e) {
 			System.out.println("Helipad Exception");
 			e.printStackTrace();
@@ -1328,14 +1324,14 @@ public class RobotPlayer {
 		double deliverSupplyFactor = 10;
 		double harassSupplyFactor = 10; // this needs to be low bc sometimes new drones come out and push loading ones into harass state.
 		try {
-			//rageUpdate();
-
 			switch (scoutState)
 			{
 			case LOAD:
+				// stay out of enemy tower range
+				myAggression = UnitAggression.NO_TOWERS;
 				numLoading = rc.readBroadcast(supplyLoadingChan);
 				rc.setIndicatorString(2, "LoadingNum = " + numLoading);
-				if (numLoading > 0) 
+				if (numLoading > 0) // make sure only one drone loads at a time
 				{
 					scoutState = ScoutState.HARASS;
 					supplyFactor = harassSupplyFactor;
@@ -1345,7 +1341,7 @@ public class RobotPlayer {
 					numLoading += 1;
 					rc.broadcast(supplyLoadingChan,numLoading);
 				}
-								
+				// make my target my HQ to load up
 				MapLocation scoutTarget = myHQ;
 				if (myLocation.distanceSquaredTo(scoutTarget) > GameConstants.SUPPLY_TRANSFER_RADIUS_SQUARED)
 				{
@@ -1353,22 +1349,22 @@ public class RobotPlayer {
 					attackSomething(); // attack something if on the way
 					tryMove(dir,0,myAggression); // go back to HQ to load up
 				}
-				
+				// check my supply and change to DELIVER status when we have the full amount
 				supplyFactor = loadingSupplyFactor;
 				if (rc.getSupplyLevel() > supplyPackage)
 					scoutState = ScoutState.DELIVER;
 				break;
-				
+
 			case DELIVER:
-				
-				scoutTarget = myHQ; // if no target
-				
-				int supplyLocationX = rc.readBroadcast(supplyRequestXChan);
-				int supplyLocationY = rc.readBroadcast(supplyRequestYChan);
-				
-				scoutTarget = new MapLocation(supplyLocationX, supplyLocationY);
-				rc.setIndicatorString(2, "supply request x = " + supplyLocationX);
-				
+				// move very cautiously with supply
+				myAggression = UnitAggression.NEVER_MOVE_INTO_RANGE;
+				// find target destination
+				scoutTarget = myHQ; // if no target, defaults to own HQ
+				int supplyDestID = rc.readBroadcast(supplyRequestID);
+				if(rc.canSenseRobot(supplyDestID))
+					scoutTarget = rc.senseRobot(supplyDestID).location;
+				rc.setIndicatorString(2, "supply destination = (" + scoutTarget.x + ", " + scoutTarget.y + ")");
+				// go to destination
 				if (myLocation.distanceSquaredTo(scoutTarget) > GameConstants.SUPPLY_TRANSFER_RADIUS_SQUARED)
 				{
 					supplyFactor = enRouteSupplyFactor; 
@@ -1379,26 +1375,169 @@ public class RobotPlayer {
 				else if (rc.getSupplyLevel() > supplyMin)
 				{
 					supplyFactor = deliverSupplyFactor;
-					scoutState = ScoutState.HARASS;
 				}
 				else
 				{
 					supplyFactor = harassSupplyFactor;
 					scoutState = ScoutState.HARASS;
 				}
-					break;
-				
-			case HARASS:
-				supplyFactor = harassSupplyFactor;
-				scoutTarget = enemyHQ; //for now
-				attackSomething(); // attack something if on the way
-				Direction dir = myLocation.directionTo(scoutTarget);
-				tryMove(dir,0,myAggression); // go back to HQ to load up
-				
 				break;
+
+			case HARASS:
+				boolean attacking = attackSomething();
+				if(!attacking)
+				{
+					// avoid towers
+					RobotInfo[] friends = rc.senseNearbyRobots(3, myTeam);
+					if(friends.length>=1)
+						myAggression = UnitAggression.NO_TOWERS;
+					else
+						myAggression = UnitAggression.NEVER_MOVE_INTO_RANGE;
+					supplyFactor = harassSupplyFactor;
+					// acquire target destination
+					scoutTarget = enemyHQ; // for now
+
+					// harass code!!!!!!!!!!!!!!!!!!
+					if(rc.isCoreReady()){
+						MapLocation here = myLocation;
+
+						// check if we should be harassing launchers
+						launcherID = rc.readBroadcast(launcherIDchan);
+						if(launcherID!=0 && rc.canSenseRobot(launcherID))
+						{
+							scoutState = ScoutState.LAUNCHER_BLITZ;
+							facing = here.directionTo(rc.senseRobot(launcherID).location);
+							tryMove(facing, 0, myAggression);
+						}
+						else
+							rc.broadcast(launcherIDchan, 0); // that launcher is dead, nullify it
+
+						// local variables
+						boolean threatened = false;
+						boolean launcher = false;
+						int dx = 0; // direction of pull toward targets
+						int dy = 0; // "
+						int evadeX = 0; // direction of best escape from enemy range
+						int evadeY = 0; // "
+
+						// find out who and what is around
+						MapLocation enemyHQ = rc.senseEnemyHQLocation();
+						RobotInfo enemies[] = rc.senseNearbyRobots(here,24,enemyTeam);
+						int scale=0;
+						for(RobotInfo ri: enemies){
+							// go toward targets, take note of powerful enemies
+							int dist = here.distanceSquaredTo(ri.location);
+							if(dist>myType.attackRadiusSquared)
+								scale = dist-myType.attackRadiusSquared;
+							else if(ri.type.attackRadiusSquared>dist)
+								scale = ri.type.attackRadiusSquared-dist;
+							int x = (ri.location.x - here.x)*scale;
+							int y = (ri.location.y - here.y)*scale;
+							if(ri.type==RobotType.TANK)// || ri.type==RobotType.COMMANDER)
+							{
+								threatened = true;
+							}
+							else if(ri.type==RobotType.LAUNCHER || ri.type==RobotType.COMMANDER) // for now, blitz the commander too, can change this
+							{
+								launcher = true;
+								launcherID = ri.ID;
+							}
+							else
+							{
+								dx += 2 * Consts.droneUnitAtt[ri.type.ordinal()] * x;
+								dy += 2 * Consts.droneUnitAtt[ri.type.ordinal()] * y;
+							}
+							evadeX -= Consts.unitVals[ri.type.ordinal()] * x;
+							evadeY -= Consts.unitVals[ri.type.ordinal()] * y;
+						}
+						rc.setIndicatorString(2, "scale = " + scale + ", (dx, dy) = (" + (int)dx + ", " + (int)dy + "), and (evadeX, evadeY) = (" + (int)evadeX + ", " + (int)evadeY + ")");
+						rc.setIndicatorString(1, "drone harass, launcher = " + launcher);
+						if(launcher) // go for a launcher if possible
+						{
+							scoutState = ScoutState.LAUNCHER_BLITZ;
+							rc.broadcast(launcherIDchan,launcherID);
+							facing = here.directionTo(rc.senseRobot(launcherID).location);
+							tryMove(facing, 0, myAggression);
+						}
+						// make sure we're not taking too much damage
+						if( rc.getHealth()<=6 ){ // arbitrary danger level
+							// run away and scout the map, since i'm basically as good as dead!
+							scoutState = ScoutState.SCOUT;
+						}
+						// if facing a big threat or if health is low, get away
+						else if(threatened)
+						{
+							rc.setIndicatorString(0, "Evade!" + "(" + evadeX + ", " + evadeY + ")");
+							facing = here.directionTo(here.add(evadeX,evadeY));
+							tryMove(facing, 0, myAggression);
+						}
+						// if not, follow pulls and pushes of enemies
+						else if(!(dx==0 && dy==0)){
+							rc.setIndicatorString(0, "Attack!" + "(" + dx + ", " + dy + ")");
+							facing = here.directionTo(here.add( dx + evadeX, dy + evadeY ));
+							tryMove(facing, 0, myAggression);
+						}
+						// if no one to attack, move toward enemy HQ, generally, but look around too
+						else
+						{
+							t += 1;
+							if(t%5 == 0) // go straight 10ish rounds, then turn
+							{
+								if(rand.nextDouble()<0.9)
+								{
+									if(rand.nextDouble()<0.1)
+										facing = getRandomDirection();
+									else
+										facing = here.directionTo(enemyHQ); // 90% of the time
+								}
+							}
+							tryMove(facing, 0, myAggression);
+						}
+					}
+				}
+				break;
+
+			case SCOUT: // you're basically dead, avoid everything and explore map
+				// avoid towers
+				myAggression = UnitAggression.NEVER_MOVE_INTO_RANGE;
+				supplyFactor = 0.001; // keep supply
+				// explore using a Levy flight
+				if(rc.isCoreReady())
+				{
+					t += 1; // add to counter
+					if(t%5 == 0) // every fifth move... sort of
+					{
+						if(rand.nextDouble()<0.8)
+						{
+							facing = getRandomDirection(); // make a random turn
+						}
+					}
+					tryMove(facing, 0, myAggression); // try to continue straight
+				}
+				break;
+
+			case LAUNCHER_BLITZ:
+				// rush launchers
+				myAggression = UnitAggression.NO_TOWERS;
+				supplyFactor = 1;
+				// check if we should be harassing launchers
+				if(!rc.canSenseRobot(launcherID)) // check my local launcher ID first, if i saw one
+					launcherID = rc.readBroadcast(launcherIDchan); // if not, get global
+				if(launcherID!=0 && rc.canSenseRobot(launcherID))
+				{
+					facing = myLocation.directionTo(rc.senseRobot(launcherID).location);
+					tryMove(facing, 0, myAggression);
+				}
+				else
+				{
+					rc.broadcast(launcherIDchan, 0); // that launcher is dead, nullify it
+					scoutState = ScoutState.HARASS; // go back to general harass mode
+				}
+				attackSomething();
+				break;
+
 			}
-			rc.setIndicatorString(0, "Scout State = " + toString(scoutState));
-			rc.setIndicatorString(2, "Supply Factor = " + supplyFactor);		
+			rc.setIndicatorString(0, "Scout State = " + toString(scoutState) + ", Supply Factor = " + supplyFactor);		
 		} catch (Exception e) {
 			System.out.println("Drone Exception");
 			e.printStackTrace();
@@ -1857,7 +1996,7 @@ public class RobotPlayer {
 
 	static void miningDuties() throws GameActionException
 	{
-		oreHere = rc.senseOre(myLocation);
+		double oreHere = rc.senseOre(myLocation);
 		int oreMiningCriterion = rc.readBroadcast(bestOrePatchAvg);
 		//System.out.println("Ore mining criterion = " + oreMiningCriterion);
 		double[] localOre = mineScore();
@@ -3509,12 +3648,13 @@ public class RobotPlayer {
 		double supplyFactor = 1/supplyUrgency;
 		double nearbyUrgency = supplyUrgency;
 		double globalMaxUrgency = rc.readBroadcast(supplyUrgencyChan);
+		MapLocation myLocation = rc.getLocation();
 		int supplyLookupRadiusSquared = 49;
-		
+
 		// only request supplies if you have less than 10 turns of supply.
 		if (supplyUrgency > (rc.getType().supplyUpkeep/10))
 		{
-			
+
 			RobotInfo[] friendlyRobots = rc.senseNearbyRobots(supplyLookupRadiusSquared, myTeam);
 			for (RobotInfo b: friendlyRobots)
 			{
@@ -3524,8 +3664,7 @@ public class RobotPlayer {
 			if (nearbyUrgency > globalMaxUrgency){
 				rc.broadcast(supplyUrgencyChan,(int)nearbyUrgency);
 				rc.setIndicatorDot(myLocation, 0, 0, 255); // put blue dot at location
-				rc.broadcast(supplyRequestXChan, myLocation.x);
-				rc.broadcast(supplyRequestYChan, myLocation.y);
+				rc.broadcast(supplyRequestID, rc.getID()); // my ID
 			}
 
 			rc.setIndicatorString(2, "supply factor = " + supplyFactor + " nearby supply urgency = " + nearbyUrgency);
