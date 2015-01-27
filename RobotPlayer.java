@@ -1,4 +1,4 @@
-package rAAAge_5_4;
+package rAAAge_5_5;
 
 import battlecode.common.*;
 
@@ -58,7 +58,7 @@ class RobotConsts
 	int TOWER_REMOVE_ROUND = 1500;
 	
 	// # of units per supply depot
-	double DEPOT_UNIT_RATIO = 15;
+	double DEPOT_UNIT_RATIO = 5;
 	
 	/* Ordinal unit weight array */
 	int[] friendWeights = {
@@ -379,11 +379,9 @@ public class RobotPlayer {
 	
 	
 	// update frequencies
-	static final int NUM_GRIDS = 8;
+	static final int NUM_GRIDS = 6;
 	
-	static int GRID_DIFFUSE_FREQ = 20;
 	static int GRID_CONNECTIVITY_FREQ = 8;
-	static int GRID_UPDATE_FREQ = 6;
 	static int GRID_ORE_FREQ = 6;
 	static int GRID_MINING_FREQ = 6;
 	static int GRID_RR_FREQ = 4;
@@ -396,13 +394,6 @@ public class RobotPlayer {
 	static final int gridNextIDBase = curChan; static {curChan+=GRID_NUM;}
 	static final int gridNextIDChan = curChan++;	
 
-	// FRIEND-ENEMY GRID TOTALS
-	static final int gridLastUpdateChan = curChan++;
-	static final int gridUpdatePtrChan = curChan++;
-	// AND THEIR VALUES
-	static final int gridFriendBase = curChan; static {curChan+=GRID_NUM;}
-	static final int gridEnemyBase = curChan; static {curChan+=GRID_NUM;}
-
 	// ORE GRID TOTALS
 	static final int gridLastOreChan = curChan++;
 	static final int gridOrePtrChan = curChan++;
@@ -411,15 +402,7 @@ public class RobotPlayer {
 	//static final int gridEnemyBase = curChan; static {curChan+=GRID_NUM;}
 	
 	
-	// THE "POTENTIAL" DIFFUSIVE GRID VALUES & LOOP
-	static final int gridLastPotentialChan = curChan++;
-	static final int gridPotentialPtrChan = curChan++;
-	static final int gridPotentialTotalChan = curChan++;
-	static final int gridPotentialOffsetChan = curChan++;
-	static final int gridPotentialBase = curChan; static {curChan+=GRID_NUM;}
-	
 	// MINING-ORE GRID
-	// THE "POTENTIAL" DIFFUSIVE GRID VALUES & LOOP
 	static final int gridLastMiningChan = curChan++;
 	static final int gridMiningPtrChan = curChan++;
 	static final int gridMiningBase = curChan; static {curChan+=GRID_NUM;}
@@ -486,7 +469,6 @@ public class RobotPlayer {
 	{
 		NEVER_MOVE_INTO_RANGE,
 		NO_TOWERS,
-		NO_RESTRICTIONS,
 		CHARGE
 	}
 
@@ -696,6 +678,7 @@ public class RobotPlayer {
 	static int numSoldiers = 10;
 	static int numDrones = 20;
 	static int numTanks = 999;
+	static int numComputers = 10;
 
 	static RobotConsts Consts = new RobotConsts();
 	
@@ -784,10 +767,8 @@ public class RobotPlayer {
 				rc.broadcast(gridTowerPtrChan, ptr);
 				
 				rc.broadcast(gridOrePtrChan, ptr);
-				rc.broadcast(gridUpdatePtrChan, ptr);
 				
 				rc.broadcast(gridMiningPtrChan, ptr);
-				rc.broadcast(gridPotentialPtrChan, ptr);
 				
 				rc.broadcast(gridRRPtrChan, ptr);
 				rc.broadcast(gridODPtrChan, ptr);
@@ -812,6 +793,11 @@ public class RobotPlayer {
 					scoutState= ScoutState.FLYOVER; // first 5 drones do a quick map fly over
 				else
 					scoutState= ScoutState.LOAD; // initially drones are loading
+				break;
+			case SOLDIER:
+			case TANK:
+				// perma-harass soldiers
+				myState = UnitState.ATTACK_MOVE;
 				break;
 			}
 		} catch (Exception e) {
@@ -867,6 +853,12 @@ public class RobotPlayer {
 				break;
 			case TANKFACTORY:
 				doTankFactory();
+				break;
+			case TECHNOLOGYINSTITUTE:
+				doTech();
+				break;
+			case COMPUTER:
+				doComputer();
 				break;
 			}
 			
@@ -937,30 +929,22 @@ public class RobotPlayer {
 					validgrids &= ~(1<<gridindex);
 				break;
 			case 1:
-				//if (!gridDiffuse())
-					validgrids &= ~(1<<gridindex);
-				break;
-			case 2:
-				if (!gridUpdate())
-					validgrids &= ~(1<<gridindex);
-				break;
-			case 3:
 				if (!gridOre())
 					validgrids &= ~(1<<gridindex);
 				break;
-			case 4:
+			case 2:
 				if (!gridMining())
 					validgrids &= ~(1<<gridindex);
 				break;
-			case 5:
+			case 3:
 				if (!gridRageRally())
 					validgrids &= ~(1<<gridindex);
 				break;
-			case 6:
+			case 4:
 				if (!gridTowers())
 					validgrids &= ~(1<<gridindex);
 				break;
-			case 7:
+			case 5:
 				if (!gridOffenseDefense())
 					validgrids &= ~(1<<gridindex);
 				break;
@@ -1212,7 +1196,7 @@ public class RobotPlayer {
 			
 			// and if number of towers is > 1, set it to a tower that just cycles through
 			if (lastTowerCount > 1)
-				rc.broadcast(offenseBuildingChan,1+((Clock.getRoundNum()/400)%lastTowerCount));
+				rc.broadcast(offenseBuildingChan,1);//+((Clock.getRoundNum()/400)%lastTowerCount));
 			else
 				rc.broadcast(offenseBuildingChan,0);
 			
@@ -1314,6 +1298,25 @@ public class RobotPlayer {
 					spawnUnit(RobotType.DRONE);
 				
 			}
+		} catch (Exception e) {
+			System.out.println("Helipad Exception");
+			e.printStackTrace();
+		}
+	}
+	
+	static void doTech()
+	{
+		try {
+			RobotInfo[] units = rc.senseNearbyRobots(10000,myTeam);
+			int d = 0;
+			for(RobotInfo b: units)
+			{
+				if(b.type==RobotType.COMPUTER)
+					d++;
+			}
+			if(d<numComputers)
+				spawnUnit(RobotType.COMPUTER);
+			
 		} catch (Exception e) {
 			System.out.println("Helipad Exception");
 			e.printStackTrace();
@@ -1534,6 +1537,8 @@ public class RobotPlayer {
 					supplyFactor = harassSupplyFactor;
 					// acquire target destination
 					scoutTarget = enemyHQ; // for now
+					
+					//rageUpdateTarget();
 
 					// harass code!!!!!!!!!!!!!!!!!!
 					if(rc.isCoreReady()){
@@ -1704,6 +1709,19 @@ public class RobotPlayer {
 			movePotential();
 			supplyFactor = 0.5;
 
+		} catch (Exception e) {
+			System.out.println("Basher Exception");
+			e.printStackTrace();
+		}
+	}
+	
+	static void doComputer()
+	{
+		try {
+			if (myLocation.distanceSquaredTo(myHQ) > 81)
+				tryMove(myLocation.directionTo(myHQ),0,UnitAggression.NEVER_MOVE_INTO_RANGE);
+			else if (rand.nextInt(20) < 3)
+				tryMove(myLocation.directionTo(enemyHQ).opposite(),0,UnitAggression.NEVER_MOVE_INTO_RANGE);
 		} catch (Exception e) {
 			System.out.println("Basher Exception");
 			e.printStackTrace();
@@ -1968,7 +1986,7 @@ public class RobotPlayer {
 		case STANDARD:		
 			// this list defines the build order. make sure you don't mess up building prereqs.
 			// terminate preset build order with a 1;
-			int[] stdBuildOrder = {8, 4, 5, 7, 7, 2, 7, 1};
+			int[] stdBuildOrder = {8, 4, 5, 7, 3, 2, 7, 2, 2, 7, 1};
 			buildOrder = stdBuildOrder;
 		
 			break;
@@ -2266,7 +2284,7 @@ public class RobotPlayer {
 				rc.setIndicatorString(0,"Mining");
 				miningDuties();
 			}
-			defenseUpdate();
+			//defenseUpdate();
 			
 		} catch (Exception e) {
 			System.out.println("Miner Exception");
@@ -2281,7 +2299,11 @@ public class RobotPlayer {
 		if (Clock.getRoundNum() < 300)
 			GRID_OD_FREQ = 2;
 		else
-			GRID_OD_FREQ = 5;
+			GRID_OD_FREQ = 2;
+		
+		// linearly decrease number from 20 initially to 0 at t=N
+		numSoldiers = Math.max((600-Clock.getRoundNum())/30,0);
+		numDrones = Math.max((1000-Clock.getRoundNum())/100,2);
 		
 		// check if we're relatively far along and can't path to the enemy HQ
 		/*if (Clock.getRoundNum() > 600)
@@ -2324,13 +2346,13 @@ public class RobotPlayer {
 			break;
 		case EXPLORING:
 			rc.setIndicatorDot(myLocation.add(1,0), 255,255,255); // white dots on explorers
-			if(rc.senseOre(myLocation)>=oreMiningCriterion/2 || rc.senseOre(myLocation)>=10)
+			if(rc.senseOre(myLocation)>=oreMiningCriterion || rc.senseOre(myLocation)>=10)
 			{
 				if(rc.canMine())
 					rc.mine();
 				minerState = MinerState.SEARCHING;
 			}
-			else if(mineScore>2*oreMiningCriterion)
+			else if(mineScore>5*oreMiningCriterion)
 			{
 				minerState = MinerState.SEARCHING;
 				mineLocally(localOre, oreMiningCriterion);
@@ -2349,8 +2371,8 @@ public class RobotPlayer {
 	}
 
 	static double[] mineScore() throws GameActionException {
-		int[] x = {0,-1, 0, 0, 1,-1,-1, 1, 1,-2, 0, 0, 2,-2,-2, 2, 2};
-		int[] y = {0, 0,-1, 1, 0,-1, 1,-1, 1, 0,-2, 2, 0,-2, 2,-2, 2};
+		final int[] x = {0,-1, 0, 0, 1,-1,-1, 1, 1,-2, 0, 0, 2,-2,-2, 2, 2};
+		final int[] y = {0, 0,-1, 1, 0,-1, 1,-1, 1, 0,-2, 2, 0,-2, 2,-2, 2};
 		double[] localOre = vectorSumOre(x,y);
 		return localOre;
 	}
@@ -2375,7 +2397,7 @@ public class RobotPlayer {
 	static void mineLocally(double[] localOre, int oreMiningCriterion) throws GameActionException {
 		double oreHere = rc.senseOre(myLocation);
 		if(oreHere>=10 || oreHere>=oreMiningCriterion/2){ //there is plenty of ore, so try to mine
-			if(rand.nextDouble()<0.958){ // mine 98% of time we can collect max
+			if(rand.nextDouble()<0.98){ // mine 98% of time we can collect max
 				if(rc.isCoreReady()&&rc.canMine()){
 					rc.mine();
 					rc.setIndicatorString(1, "Mining good stuff");
@@ -2386,7 +2408,7 @@ public class RobotPlayer {
 			}
 			
 		}else if(oreHere>0.8){ //there is a bit of ore, so maybe try to mine, maybe move on (suppliers don't mine)
-			if(rand.nextDouble()<0.7){ // mine
+			if(rand.nextDouble()<0.4){ // mine
 				if(rc.isCoreReady()&&rc.canMine()){
 					rc.mine();
 					rc.setIndicatorString(1, "Mining suboptimal area");
@@ -2395,7 +2417,7 @@ public class RobotPlayer {
 				facing = minerLocalOreDirection(localOre, oreMiningCriterion);
 				tryMove(facing, 0, UnitAggression.NO_TOWERS);
 			}
-		}else if(localOre[2]>2*oreMiningCriterion){ // still look locally
+		}else if(localOre[2]>5*oreMiningCriterion){ // still look locally
 			facing = minerLocalOreDirection(localOre, oreMiningCriterion);
 			tryMove(facing, 0, UnitAggression.NO_TOWERS);
 		}else{ //no ore, so look for more
@@ -2450,10 +2472,7 @@ public class RobotPlayer {
 		MapLocation here = rc.getLocation();
 		for(int a=0; a<x.length; a++){
 			MapLocation loc = myLocation.add(x[a],y[a]);
-			if(isSafeDirection(loc.add(0,1),loc.add(0,1).directionTo(loc)))
-				sensingRegion[a] = loc;
-			else
-				sensingRegion[a] = null; // neglects spots we can't go
+			sensingRegion[a] = loc;
 		}
 		double ore = 0;
 		int i=0;
@@ -2462,18 +2481,15 @@ public class RobotPlayer {
 		double mineScore = 0;
 		
 		// go through and look at ore
-		for(MapLocation m: sensingRegion){
+		for(MapLocation m: sensingRegion)
+		{
 			if(m!=null) // put in to neglect spots we can't go
 			{
 				ore = rc.senseOre(m);
-				TerrainTile tile = rc.senseTerrainTile(m);
-				RobotInfo bot = rc.senseRobotAtLocation(m);
 				mineScore += ore;
 				double d2 = Math.max(1, here.distanceSquaredTo(m));
-				if(tile.isTraversable() && bot==null){
-					potentialX += ore*(double)x[i]/d2;
-					potentialY += ore*(double)y[i]/d2;
-				}
+				potentialX += ore*(double)x[i]/d2;
+				potentialY += ore*(double)y[i]/d2;
 			}
 			i++;
 		}
@@ -2486,6 +2502,7 @@ public class RobotPlayer {
 		// rage if there is anything nearby to rage at
 		MapLocation here = rc.getLocation();
 		MapLocation target = chooseEnemyTarget(minerRageTargets, 15); // (list, max distance)
+		
 		if(target==null)
 		{
 			// if we didn't acquire a target, check our surroundings
@@ -2777,14 +2794,26 @@ public class RobotPlayer {
 			targetLoc = rageTarget.location;
 		}
 		
-		// if we're close to our rage target, unconditionally move towards it
+		// if we're close to our rage target and we can take it on, move towards it
 		int targetDist = 0;
 		if (targetLoc != null)
 			targetDist = myLocation.distanceSquaredTo(targetLoc);
 		
 		if (rageTarget != null && targetDist < Consts.RAGE_DIST)
 		{
-			microAttackMove(rageTarget);
+			rc.setIndicatorString(1, "Rage Leader, Offense grid: " + myGrid.readValue(gridOffenseBase));
+			
+			if (myType.attackRadiusSquared <= rageTarget.type.attackRadiusSquared)
+			{
+				attackMove(rageTarget);
+			}
+			else
+			{
+				// screw this, we're ditching this battle
+				// ok, if we don't have a target, or we're somehow too far from it, just walk towards the enemy
+				int bitdir = gridPathfind(myLocation,gridOffenseBase,true);
+				tryMove(myLocation.directionTo(enemyHQ),bitdir,myAggression);
+			}
 			return;
 		}
 		
@@ -2804,6 +2833,7 @@ public class RobotPlayer {
 			if (leaderLoc != null && myLocation.distanceSquaredTo(leaderLoc) < Consts.RAGE_DIST)
 			{
 				tryMove(myLocation.directionTo(leaderLoc),0,myAggression);
+				rc.setIndicatorString(1, "Closing in on rage leader");
 				return;
 			}
 			
@@ -3300,204 +3330,6 @@ public class RobotPlayer {
 		
 		return true;
 	}
-
-	
-	static boolean gridUpdate() throws GameActionException
-	{
-		// 100 bytecodes for preamble
-		// 100 bytecodes for senseRobots
-		// ~100 bytecodes/robot
-		// 100 bytecodes for broadcasts
-		
-		int bc = Clock.getBytecodeNum();
-
-		GridComponent grid = new GridComponent(rc.readBroadcast(gridUpdatePtrChan));
-		if (!grid.isValid()) grid.initialize();
-		
-		// check if we made it all the way around
-		if (grid.isFirst())
-		{
-			int curround = Clock.getRoundNum();
-			int lastup = rc.readBroadcast(gridLastUpdateChan);
-			// recently updated, don't run again
-			if (curround - lastup < GRID_UPDATE_FREQ)
-				return false;
-
-			// broadcast the start of the last update
-			rc.broadcast(gridLastUpdateChan,curround);
-			System.out.println("Potentials update @ " + curround);
-		}
-		
-		
-		// advance the pointer
-		rc.broadcast(gridUpdatePtrChan,grid.nextCCPointer());
-		
-		MapLocation loc = grid.getCenter();
-
-		MapLocation ul = loc.add(-GRID_SPC/2,-GRID_SPC/2);
-				
-		// gridid now contains id of relevant connected component, is what we want to read/write
-		// so figure out which regions belong to it
-		int pathable = grid.readValue(gridPathableBase);
-		// ignore unknowns, because we literally can't sense anything there
-		
-		// now sense frienemies in all grid cells
-		RobotInfo[] bots = new RobotInfo[0];
-		if (grid.getFlag(STATUS_SEEN))
-			bots = rc.senseNearbyRobots(loc,GRID_SENSE,null);
-		
-		int prevFriend = grid.readValue(gridFriendBase);
-		int prevEnemy = grid.readValue(gridFriendBase);
-		
-		int gridFriend = 0;
-		int gridEnemy = 0;
-		
-		for (RobotInfo ri : bots)
-		{
-			// get pathable index
-			int pathind = (1<<((ri.location.x-ul.x)+GRID_SPC*(ri.location.y-ul.y)));
-			
-			// if it doesn't belong to this connected component, continue
-			if ((pathind&pathable)==0 && ri.type != RobotType.DRONE)
-				continue;
-			
-			if (ri.team == myTeam)
-				gridFriend += Consts.friendWeights[ri.type.ordinal()];
-			else
-				gridEnemy += Consts.enemyWeights[ri.type.ordinal()];
-		}
-		
-		// relax enemy value to 0
-//		if (Math.abs(gridEnemy) < Math.abs(prevEnemy))
-//			gridEnemy = prevEnemy+Consts.ENEMY_DECAY_RATE*(prevEnemy>0?-1:1);
-		
-		// quick check for myself. if my gridID equals this one, I'm here
-		if (myGrid.gridID == grid.gridID && myGrid.isValid())
-			gridFriend += Consts.friendWeights[myType.ordinal()];
-		
-		//Clock.getRoundNum();
-		//System.out.print("");
-		//if (gridind == 1328+52*1)
-		//	System.out.println("#######1328 etc, " + Clock.getRoundNum() + " called senseNearbyRobots at " + loc + " in radius " + GRID_SENSE + " and found " + nunits + " units" + 
-		//" my location: " + myLocation + "{}{}{}{}{}" + gridFriend);
-
-		
-		// and rebroadcast the values
-		if (gridFriend != prevFriend)
-			grid.writeValue(gridFriendBase, gridFriend);
-
-		if (gridEnemy != prevEnemy)
-			grid.writeValue(gridEnemyBase, gridEnemy);
-		
-		//System.out.println("Update time (" + bots.length + "): " + (Clock.getBytecodeNum()-bc));
-		
-		return true;
-	}
-	
-	static boolean gridDiffuse() throws GameActionException
-	{
-		int bc = Clock.getBytecodeNum();
-
-		GridComponent grid = new GridComponent(rc.readBroadcast(gridPotentialPtrChan));
-		if (!grid.isValid()) grid.initialize();
-		
-		// check if we made it all the way around
-		if (grid.isFirst())
-		{
-			int curround = Clock.getRoundNum();
-			int lastup = rc.readBroadcast(gridLastPotentialChan);
-			// recently updated, don't run again
-			if (curround - lastup < GRID_DIFFUSE_FREQ)
-				return false;
-
-			// broadcast the start of the last update
-			rc.broadcast(gridLastPotentialChan,curround);
-			System.out.println("Diffusion update @ " + curround);
-
-			System.out.println("Total: " + rc.readBroadcast(gridPotentialTotalChan) + ", offset:" + rc.readBroadcast(gridPotentialOffsetChan) );
-
-			
-			// and, let's go for another round
-			int offset = rc.readBroadcast(gridPotentialTotalChan);
-			// divide total by # of live grid cells
-			offset /= rc.readBroadcast(gridNextIDChan);
-			// and save it as the offset (negating as we go)
-			rc.broadcast(gridPotentialOffsetChan,-offset);
-			rc.broadcast(gridPotentialTotalChan, 0);
-		}
-		
-		
-		// advance the pointer
-		rc.broadcast(gridPotentialPtrChan,grid.nextCCPointer());		
-		// # of grid squares to closest friendly unit
-				
-		// source term for potential is difference between friend and enemy squares
-		int gridval = grid.readValue(gridPotentialBase);
-		
-		int source = grid.readValue(gridFriendBase) + grid.readValue(gridEnemyBase);		
-		
-		if (grid.getFlag(STATUS_HQ))
-			source += Consts.WEIGHT_ENEMY_HQ;
-		//else if ((gridinfo&STATUS_TOWER)>0)
-		//	source += Consts.WEIGHT_ENEMY_TOWER;
-
-		
-		// get our square's pathable U unknown, and see what it connects to...
-		int pathable = grid.getMaybes();
-		
-		// now, let's loop through each adjacent direction & their gridids
-
-		int newval = 0;
-		
-		for (int dir=0; dir<4; dir++)
-		{
-			GridComponent adjgrid = grid.offsetTo(dir);
-
-			int dirval = 0;
-			int diradd = 0;
-			while (adjgrid.isValid())
-			{
-				int edges = adjgrid.readValue(edgeChans[dir]);
-				
-				// possibly connected?
-				if ((edges&pathable&bitEdge[dir]) > 0) // add adjacent value
-					dirval += adjgrid.readValue(gridPotentialBase);
-				else // insulating boundary, add my value
-					dirval += gridval;
-				diradd++;
-				// and cycle on to the next connected component
-				adjgrid.nextComponent();
-			}
-			
-			if (adjgrid.gridNCC > 0)
-				dirval /= diradd;//adjgrid.gridNCC;
-			else
-				dirval = gridval;
-			
-			newval += dirval;
-		}
-		
-		// and take the average
-		newval = newval / 4;
-		
-		newval += source;
-		
-		// shift the potential by the offset
-		newval += rc.readBroadcast(gridPotentialOffsetChan);
-		
-		//if (grid.getFlag(STATUS_HQ))
-		//	newval = Consts.WEIGHT_ENEMY_HQ;
-		
-		// and add the value we're writing to the accumulating total
-		rc.broadcast(gridPotentialTotalChan, newval+rc.readBroadcast(gridPotentialTotalChan));
-		
-		grid.writeValue(gridPotentialBase, newval);
-		//rc.broadcast(gridPotentialPtrChan,(ptr+1)%gridn);
-		//System.out.println("Diffuse time: " + (Clock.getBytecodeNum()-bc));
-		
-		return true;
-	}
-	
 	
 	static boolean gridMining() throws GameActionException
 	{
@@ -3581,23 +3413,23 @@ public class RobotPlayer {
 
 		// now find the rally target
 		int rallyLeader = rc.readBroadcast(rallyLeaderChan);
-		int rallyval = grid.readValue(gridRallyBase) + Consts.GRID_DECAY;
+		int rallyval = grid.readValue(gridRallyBase);
 		if (rc.canSenseRobot(rallyLeader))
 		{
 			RobotInfo ri = rc.senseRobot(rallyLeader);
 			if (ri.location.distanceSquaredTo(grid.getCenter()) <= GRID_SENSE && grid.isInMaybe(ri.location))
-				rallyval = Consts.GRID_BASE;
+				rallyval = Consts.GRID_BASE+10*Clock.getRoundNum();
 		}
 		
 		int rageLeader = rc.readBroadcast(rageLeaderChan);
-		int rageval = grid.readValue(gridRageBase) + Consts.GRID_DECAY;
+		int rageval = grid.readValue(gridRageBase);
 		if (rc.canSenseRobot(rageLeader))
 		{
 			RobotInfo ri = rc.senseRobot(rageLeader);
 			if (ri.location.distanceSquaredTo(grid.getCenter()) <= GRID_SENSE && grid.isInMaybe(ri.location))
 			{
 				// set gridval to a large value
-				rageval = Consts.GRID_BASE;
+				rageval = Consts.GRID_BASE+10*Clock.getRoundNum();
 			}
 		}
 		
@@ -3658,54 +3490,44 @@ public class RobotPlayer {
 		rc.broadcast(gridODPtrChan,grid.nextCCPointer());		
 				
 		// ok, get the base value for this grid square
-		int defval = grid.readValue(gridDefenseBase)+Consts.GRID_DECAY;
-		int offval = grid.readValue(gridOffenseBase)+Consts.GRID_DECAY;
+		int defval = grid.readValue(gridDefenseBase);
+		int offval = grid.readValue(gridOffenseBase);
 		
 		// make sure the values are initialized
-		if (defval == Consts.GRID_DECAY)
+		if (defval == 0)
 		{
 			MapLocation gridcenter = grid.getCenter();
 			int disttohq = Math.abs(gridcenter.x-myHQ.x)/5+Math.abs(gridcenter.y-myHQ.y)/5;
-			defval = Consts.GRID_INIT_BASE-disttohq;
+			defval = Consts.GRID_BASE-disttohq;
 		}
-		if (offval == Consts.GRID_DECAY)
+		if (offval == 0)
 		{
 			MapLocation gridcenter = grid.getCenter();
 			int disttohq = Math.abs(gridcenter.x-enemyHQ.x)/5+Math.abs(gridcenter.y-enemyHQ.y)/5;
-			offval = Consts.GRID_INIT_BASE-disttohq;
+			offval = Consts.GRID_BASE-disttohq;
 		}
 		
-		// check offensive tower/HQ target
-		int offensetarget = rc.readBroadcast(offenseBuildingChan);
-		if (offensetarget > enemyTowers.length)
-			offensetarget = enemyTowers.length;
-		MapLocation offenseloc = (offensetarget==0)?enemyHQ:enemyTowers[offensetarget-1];
-
 		// get our square's pathable U unknown, and see what it connects to...
 		int pathable = grid.getMaybes();
 		
 		// first, are we set to HQ? then just check...
-		if (offensetarget == 0 && GridComponent.indexFromLocation(enemyHQ) == grid.gridIndex && grid.isInMaybe(enemyHQ))
-		{
-			offval = Consts.GRID_BASE;
-		}
-		else if (grid.getCenter().distanceSquaredTo(offenseloc) <= 55)
-		{
-			// is this possibly in range of this grid?
+		if (GridComponent.indexFromLocation(enemyHQ) == grid.gridIndex && grid.isInMaybe(enemyHQ))
+			offval = Consts.GRID_BASE + 10*Clock.getRoundNum();
 
+		int towermask = grid.readProperty(gridTowerBase);
+		
+		if (towermask > 0)
+		{
 			// now check masking, briefly, relaxed
-			int towermask = relaxGrid(grid.readProperty(gridTowerBase),GRID_MASK);
+			towermask = relaxGrid(towermask,GRID_MASK);
 			// any norm/unknown squares connecting to it? then set as offensive target
 			if ((towermask&grid.getFastMaybes()) > 0 || towermask == GRID_MASK)
-			{
-				offval = Consts.GRID_BASE;
-				debug_drawGridMask(grid.getCenter(),towermask,255,0,255);
-			}
+				offval = Consts.GRID_BASE + 10*Clock.getRoundNum();
 		}
 		
 		if (GridComponent.indexFromLocation(myHQ) == grid.gridIndex && grid.isInMaybe(myHQ))
 		{
-			defval = Consts.GRID_BASE;
+			defval = Consts.GRID_BASE + 10*Clock.getRoundNum();
 		}
 		
 		
@@ -4032,27 +3854,6 @@ public class RobotPlayer {
 			}
 		}
 	}
-
-	
-	static boolean isSafeDirection(MapLocation myLocation, Direction dir) throws GameActionException
-	{
-		// checks if the facing direction is safe from towers
-		MapLocation tileInFront = myLocation.add(dir);
-		boolean goodSpace = true;
-		//check that the direction in front is not a tile that can be attacked by the enemy towers
-		MapLocation[] enemyTowers = rc.senseEnemyTowerLocations();
-		for(MapLocation m: enemyTowers){
-			if(m.distanceSquaredTo(tileInFront)<=RobotType.TOWER.attackRadiusSquared){
-				goodSpace = false; //space in range of enemy towers
-				break;
-			}
-		}
-		if(tileInFront.distanceSquaredTo(rc.senseEnemyHQLocation())<=RobotType.HQ.attackRadiusSquared){
-			goodSpace = false; //space in range of enemy towers
-		}
-		return goodSpace;
-	}
-
 	
 	static void moveStraight() throws GameActionException {
 		if(isGoodMovementDirection()){
@@ -4233,71 +4034,13 @@ public class RobotPlayer {
 		float potential[] = {potentialX, potentialY, mineScore};
 		return potential;
 	}
-		
-	
-	// Move Around: random moves; go left if hitting barrier; avoid towers
-	static void moveAround() throws GameActionException 
-	{
-		if(rand.nextDouble()<0.05){
-			if(rand.nextDouble()<0.5){
-				facing = facing.rotateLeft();
-			}else{
-				facing = facing.rotateRight();
-			}
-		}
-		MapLocation tileInFront = rc.getLocation().add(facing);
-		
-		//check that the direction in front is not a tile that can be attacked by the enemy towers
-		MapLocation[] enemyTowers = rc.senseEnemyTowerLocations();
-		boolean tileInFrontSafe = true;
-		for(MapLocation m: enemyTowers){
-			if(m.distanceSquaredTo(tileInFront)<=RobotType.TOWER.attackRadiusSquared){
-				tileInFrontSafe = false;
-				break;
-			}
-		}
-
-		//check that we are not facing off the edge of the map
-		if(rc.senseTerrainTile(tileInFront)!=TerrainTile.NORMAL||!tileInFrontSafe){
-			facing = facing.rotateLeft();
-		}else{
-			//try to move in the facing direction
-			if(rc.isCoreReady()&&rc.canMove(facing)){
-				rc.move(facing);
-			}
-		}
-	}
-	
-	// Aggressive Move (does not avoid towers)
-	/*static void aggMove() throws GameActionException {
-
-        facing = rc.getLocation().directionTo(myTarget);
-        
-		if(rand.nextDouble()<0.15){
-			if(rand.nextDouble()<0.5){
-				facing = facing.rotateLeft();
-			}else{
-				facing = facing.rotateRight();
-			}
-		}
-		
-		MapLocation tileInFront = rc.getLocation().add(facing);
-
-		//check that we are not facing off the edge of the map
-		if(rc.senseTerrainTile(tileInFront)!=TerrainTile.NORMAL){
-			facing = facing.rotateLeft();
-		}else{
-			//try to move in the facing direction
-			if(rc.isCoreReady()&&rc.canMove(facing)){
-				rc.move(facing);
-			}
-		}
-    }*/
 	
 	// decide whether or not to move closer to a target based on strength calculations
 	// (this returns our decision as if our core delay was 0)
-	static boolean microAttackMove(RobotInfo target) throws GameActionException
+	static boolean attackMove(RobotInfo target) throws GameActionException
 	{
+		// run away from outranged enemies
+		
 		// try to move towards the enemy safely, if we're out of attack range
 		int dist2enemy = myLocation.distanceSquaredTo(target.location);
 		boolean inattack = (dist2enemy <= target.type.attackRadiusSquared);
@@ -4445,14 +4188,11 @@ public class RobotPlayer {
 		rc.setIndicatorLine(myLocation, myLocation.add((int)forceX,(int)forceY), 0,
 				255, 255); // indicator line along preferred direction
 
-
-
-
 		return;
 
 	}
 
-// this method will attempt to move towards d, preferentially using bitmoves, using specified aggression
+	// this method will attempt to move towards d, preferentially using bitmoves, using specified aggression
 	static boolean tryMove(Direction d, int bitmoves, UnitAggression agg) throws GameActionException
 	{
 		// can't move, don't do anything
@@ -4465,14 +4205,17 @@ public class RobotPlayer {
 		switch (agg)
 		{
 		case CHARGE:
-		case NO_RESTRICTIONS:
 			// they're all safe
 			safemoves = 0x1FF;
 			break;
 		case NO_TOWERS:
-			safemoves = 0x1FF&(~getTowerMoves());
+			// only towers *and outrange*
+			safemoves = ~getTowerMoves();
+			safemoves &= ~getEnemyOutrangeMoves();
+			safemoves &= 0x1FF;
 			break;
 		case NEVER_MOVE_INTO_RANGE:
+			// all enemies dangerous
 			safemoves = ~getTowerMoves();
 			safemoves &= ~getEnemyMoves();
 			safemoves &= 0x1FF;
@@ -4545,14 +4288,17 @@ public class RobotPlayer {
 		switch (agg)
 		{
 		case CHARGE:
-		case NO_RESTRICTIONS:
 			// they're all safe
 			safemoves = 0x1FF;
 			break;
 		case NO_TOWERS:
-			safemoves = 0x1FF&(~getTowerMoves());
+			// only towers *and outrange*
+			safemoves = ~getTowerMoves();
+			safemoves &= ~getEnemyOutrangeMoves();
+			safemoves &= 0x1FF;
 			break;
 		case NEVER_MOVE_INTO_RANGE:
+			// all enemies dangerous
 			safemoves = ~getTowerMoves();
 			safemoves &= ~getEnemyMoves();
 			safemoves &= 0x1FF;
@@ -4563,7 +4309,7 @@ public class RobotPlayer {
 		bitmoves &= safemoves;
 		
 		// check which directions we can move in
-		int canmoves = 0;
+		int canmoves = 0x100;
 		for (int i=0; i<8; i++)
 		{
 			if (rc.canMove(Direction.values()[i]))
@@ -4589,7 +4335,13 @@ public class RobotPlayer {
 		// do we check preferred directions in the other way?
 		boolean tryopposite = rand.nextBoolean();
 		
-		for (int i=0; i<3; i++)
+		// this only tests directions towards enemy
+		int dirmax = 3;
+		// but if we somehow ended up on an unsafe square, we want to move away
+		if ((safemoves&0x100)==0)
+			dirmax = 8;
+		
+		for (int i=0; i<dirmax; i++)
 		{
 			int dir = tryopposite?(dirint+Consts.dirOffsets[i])&7:
 				(dirint+16-Consts.dirOffsets[i])&7;
@@ -4659,11 +4411,32 @@ public class RobotPlayer {
 			bitmoves |= (Consts.attackMask[ind]>>(9*Consts.unitRanges[ri.type.ordinal()]));
 		}
 		
-		/*for (int i=0; i<8; i++)
+		// and return lowest 9 bits
+		return (int)(bitmoves&0x1FF);
+	}
+	
+	static int getEnemyOutrangeMoves()
+	{
+		RobotInfo[] bots = rc.senseNearbyRobots(myType.sensorRadiusSquared, enemyTeam);
+		MapLocation myloc = rc.getLocation();
+		
+		// 0...8 bits determine which squares are dangerous
+		long bitmoves = 0;
+		
+		// by definition, if inside sensor radius, will be on array
+		for (RobotInfo ri : bots)
+		{
+			if (ri.type.attackRadiusSquared <= myType.attackRadiusSquared)
+				continue;
+			int ind = (ri.location.x-myloc.x+6) + 13*(ri.location.y-myloc.y+6);
+			bitmoves |= (Consts.attackMask[ind]>>(9*Consts.unitRanges[ri.type.ordinal()]));
+		}
+		
+		for (int i=0; i<8; i++)
 		{
 			if ((bitmoves&(1<<i)) > 0)
-				rc.setIndicatorDot(myloc.add(Direction.values()[i]), 255, 255, 255);
-		}*/
+				rc.setIndicatorDot(myloc.add(Direction.values()[i]), 255, 0, 255);
+		}
 		
 		// and return lowest 9 bits
 		return (int)(bitmoves&0x1FF);
@@ -4899,7 +4672,7 @@ public class RobotPlayer {
 				if (Clock.getRoundNum()%50 < 15)
 					debug_drawConnections(grid);
 				
-				debug_drawBestDirection(grid,gridRageBase);
+				debug_drawBestDirection(grid,gridOffenseBase);
 				//debug_drawBestDirection(grid,gridDefenseBase);
 				//debug_drawBestDirection(grid,gridRallyBase);
 //				System.out.println(grid.readValue(gridPotentialBase));
