@@ -1,4 +1,4 @@
-package rAAAge_5_3;
+package rAAAge_5_4;
 
 import battlecode.common.*;
 
@@ -56,6 +56,9 @@ class RobotConsts
 	int ATTACK_ROUND = 1700;
 	
 	int TOWER_REMOVE_ROUND = 1500;
+	
+	// # of units per supply depot
+	double DEPOT_UNIT_RATIO = 15;
 	
 	/* Ordinal unit weight array */
 	int[] friendWeights = {
@@ -1927,9 +1930,11 @@ public class RobotPlayer {
 	}
 
 	
-	private static void decideNextBuilds() throws GameActionException {
+	static void decideNextBuilds() throws GameActionException
+	{
 		double[] numUnits = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 		int toBuild = 0;
+		int numNonBuildings = 0;
 		// count up all units
 		RobotInfo[] ourTeam = rc.senseNearbyRobots(100000, rc.getTeam());
 		for(RobotInfo ri: ourTeam)
@@ -1937,6 +1942,8 @@ public class RobotPlayer {
 			numUnits[ri.type.ordinal()] += 1;
 			if (ri.builder == null)
 				numUnits[ri.type.ordinal()] += .001; // this tells us a building is done!
+			if (ri.type.ordinal() > RobotType.AEROSPACELAB.ordinal())
+				numNonBuildings++;
 		}
 					
 		rc.setIndicatorString(1, "numUnits = " + Arrays.toString(numUnits));
@@ -1944,6 +1951,18 @@ public class RobotPlayer {
 		int[] buildOrder = {}; // initialize build order
 		double[] spawnPriorities = {}; // initialize spawn priorities
 		
+		// 0 - HQ 
+		// 1 - TOWER
+		// 2 - SUPPLYDEPOT
+		// 3 - TECHNOLOGYINSTITUTE
+		// 4 - BARRACKS
+		// 5 - HELIPAD
+		// 6 - TRAININGFIELD
+		// 7 - TANKFACTORY
+		// 8 - MINERFACTORY
+		// 9 - HANDWASHSTATION
+		// 10 - AEROSPACELAB
+
 		switch (myBuild)
 		{
 		case STANDARD:		
@@ -1994,12 +2013,15 @@ public class RobotPlayer {
 			}
 		}	
 		
-		// if build complete, build SD's.  If too much ore, build TF's!
+		// if build complete, build a supply depot if we need one, else build a tank factory
 		if (buildComplete)
 		{
-			toBuild = 2;
-			rc.broadcast(firstBeaverChan,toBuild);			
-			if (rc.getTeamOre() > RobotType.TANKFACTORY.oreCost+1)
+			if (numUnits[RobotType.SUPPLYDEPOT.ordinal()]*Consts.DEPOT_UNIT_RATIO < numNonBuildings)
+			{
+				toBuild = 2;
+				rc.broadcast(firstBeaverChan,toBuild);
+			}
+			else if (rc.getTeamOre() > RobotType.TANKFACTORY.oreCost+1)
 			{
 				toBuild = 7;
 				rc.broadcast(firstBeaverChan,toBuild);
@@ -2562,8 +2584,7 @@ public class RobotPlayer {
 			}
 			
 			rc.setIndicatorString(0, "CONVOY, Leader: " + rallyID + ", strength " + rc.readBroadcast(rallyStrengthChan));
-	
-			// get the location. this is always valid thanks to the above line
+			
 			myTarget = rc.senseRobot(rallyID).location;
 	
 			// if we made it to where we're going, switch to HOLD
@@ -2601,8 +2622,6 @@ public class RobotPlayer {
 			
 			rc.setIndicatorString(0, "HOLD, Leader: " + rallyID + ", strength " + rc.readBroadcast(rallyStrengthChan));
 	
-			myTarget = rc.senseRobot(rallyID).location;
-			
 			// and then move toward rally location
 			rallyMove();
 			break;
@@ -2619,14 +2638,14 @@ public class RobotPlayer {
 				rc.broadcast(rageLeaderChan,rageLeader);
 			}
 			
-			rc.setIndicatorString(0, "RAGE, Leader: " + rageLeader + ", val: " + myGrid.readValue(gridRageBase));
+			rc.setIndicatorString(0, "RAGE, Leader: " + rageLeader + ", val: " + myGrid.readValue(gridRageBase) + ", target: " + rc.readBroadcast(rageTargetChan));
 			myAggression = UnitAggression.NO_TOWERS;
 			rageUpdateTarget();
 			rageMove();
 			break;
 		}
 	}
-		
+	
 	// moves toward rally target if not the squad leader with simple move potential
 	// or other stuff if we are the squad leader
 	static void rallyMove() throws GameActionException
@@ -2737,7 +2756,6 @@ public class RobotPlayer {
 		}
 	}
 	
-	
 	static void rageMove() throws GameActionException
 	{
 		// if we can't move, meh
@@ -2749,16 +2767,24 @@ public class RobotPlayer {
 		
 		MapLocation leaderLoc = null;
 		MapLocation targetLoc = null;
+		RobotInfo rageTarget = null;
 		
 		if (rc.canSenseRobot(rageLeaderID))
 			leaderLoc = rc.senseRobot(rageLeaderID).location;
 		if (rc.canSenseRobot(rageTargetID))
-			targetLoc = rc.senseRobot(rageTargetID).location;
+		{
+			rageTarget = rc.senseRobot(rageTargetID);
+			targetLoc = rageTarget.location;
+		}
 		
 		// if we're close to our rage target, unconditionally move towards it
-		if (targetLoc != null && myLocation.distanceSquaredTo(targetLoc) < Consts.RAGE_DIST)
+		int targetDist = 0;
+		if (targetLoc != null)
+			targetDist = myLocation.distanceSquaredTo(targetLoc);
+		
+		if (rageTarget != null && targetDist < Consts.RAGE_DIST)
 		{
-			tryMove(myLocation.directionTo(targetLoc),0,myAggression);
+			microAttackMove(rageTarget);
 			return;
 		}
 		
@@ -2789,7 +2815,6 @@ public class RobotPlayer {
 				tryMove(Direction.NONE,bitdir,myAggression);
 		}
 	}
-	
 	
 
 	static void defenseMove(boolean enemiesInSight) throws GameActionException
@@ -4269,265 +4294,380 @@ public class RobotPlayer {
 		}
     }*/
 	
+	// decide whether or not to move closer to a target based on strength calculations
+	// (this returns our decision as if our core delay was 0)
+	static boolean microAttackMove(RobotInfo target) throws GameActionException
+	{
+		// try to move towards the enemy safely, if we're out of attack range
+		int dist2enemy = myLocation.distanceSquaredTo(target.location);
+		boolean inattack = (dist2enemy <= target.type.attackRadiusSquared);
+		// is the enemy within our attack radius?
+		boolean canattack = (dist2enemy <= myType.attackRadiusSquared);
+		
+		// if we can, don't do nuthin, unless it's a tower, in which case we just try to move towards it
+		if (target.type == RobotType.TOWER || target.type == RobotType.HQ)
+			return tryMoveTowards(myLocation.directionTo(target.location),0,UnitAggression.CHARGE);
+		
+		// otherwise, if we can attack, just don't move
+		if (canattack)
+			return false;
+		
+		// if we're outside the attack radius, try to move towards them safely
+		if (tryMoveTowards(myLocation.directionTo(target.location),0,UnitAggression.NEVER_MOVE_INTO_RANGE))
+				return true;
+		
+		// otherwise, we can attack the target, or we couldn't move towards them safely
+		// in which case, we only move towards them if we have at least one other unit within just out of range
+		double attackRadius = Math.sqrt(target.type.attackRadiusSquared);
+		int radsquared = (int)((attackRadius+1.2)*(attackRadius+1.2));
+		// get all the nearby robots for both teams
+		RobotInfo[] nearbyRobotsOut = rc.senseNearbyRobots(target.location, radsquared, myTeam);
+		
+		// and see if we oughta move in range
+		if (nearbyRobotsOut.length > 2)
+			return tryMoveTowards(myLocation.directionTo(target.location),0,UnitAggression.NO_TOWERS);
+		
+		return false;
+	}
 	
 	// Potential field move
-		static void movePotential() throws GameActionException {
+	static void movePotential() throws GameActionException {
 
-			float forceX = 0.0f;
-			float forceY = 0.0f;
+		float forceX = 0.0f;
+		float forceY = 0.0f;
 
-			float fDest = 10.0f;
-			float fBored = 0.0f; // off for now
-			float fFormation = 3.0f;
-			float qFriendly = 0.0f; // off for now repel, goes as 1/r
+		float fDest = 10.0f;
+		float fBored = 0.0f; // off for now
+		float fFormation = 3.0f;
+		float qFriendly = 0.0f; // off for now repel, goes as 1/r
 
-			float fSticky = 0.0f; //off for now. goes as 1/r
-			float fBinding = 1.0f;
-			float fNoiseMax = 0.0f;// off for now
-			float fEnemySighted = 10.0f;
-			float qEnemyInRange = -15.0f; //is multiplied by attack strength
-			//float aggCoef = 0.8f;
-			float fNoise = 0.0f;
-			
-			float strengthBal = 0;
-			
-			/*
-			// get list of nearby robots
-			RobotInfo[] friendlyRobots = rc.senseNearbyRobots(
-					myType.sensorRadiusSquared, myTeam);
-			RobotInfo[] enemyRobots = rc.senseNearbyRobots(
-					myType.sensorRadiusSquared, myTeam.opponent());
-			for (RobotInfo bot : friendlyRobots) strengthBal += unitVal[bot.type.ordinal()];
-			for (RobotInfo bot : enemyRobots) strengthBal -= unitVal[bot.type.ordinal()];
-			//rc.setIndicatorString(2, "StrengthBal = " + strengthBal);
-			*/
-			
-			// attracted to squad target, far away, const fDest
-			if (myTarget !=null){
-				int destX = (myTarget.x - myLocation.x);
-				int destY = (myTarget.y - myLocation.y);
-
-				float d2dest = (float) Math.sqrt(destX * destX + destY * destY);
-
-
-				forceX =  destX / d2dest;
-				forceY =  destY / d2dest;
-			}
-
-			/*
-				int engageDirOrd = rc.readBroadcast(engageDirChan); 
-
-				//rotate basis to point along engageDir
-				float forceEx = Consts.cos[engageDirOrd]*forceX - Consts.sin[engageDirOrd]*forceY;
-				float forceEy = Consts.sin[engageDirOrd]*forceX + Consts.cos[engageDirOrd]*forceY;
-
-				// elongate along Ey
-				forceEx *= 50;
-
-				//rotate back to XY coordinates
-				forceX = Consts.cos[engageDirOrd]*forceEx + Consts.sin[engageDirOrd]*forceEy;
-				forceY = -Consts.sin[engageDirOrd]*forceEx + Consts.cos[engageDirOrd]*forceEy;
-			*/
-			/*
-			for (RobotInfo bot : friendlyRobots) {
-				// doesn't apply to towers and HQ
-				if (bot.type == RobotType.TOWER || bot.type == RobotType.HQ)
-					continue;
-
-				int vecx = bot.location.x - myLocation.x;
-				int vecy = bot.location.y - myLocation.y;
-				int d2 = bot.location.distanceSquaredTo(myLocation);
-				float id = invSqrt[d2];
-
-				// weakly attract, constant normalized to unitVal 
-				forceX += unitVal[bot.type.ordinal()] * fSticky *id * vecx; // constant
-				forceY += unitVal[bot.type.ordinal()] * fSticky *id* vecy;	
+		float fSticky = 0.0f; //off for now. goes as 1/r
+		float fBinding = 1.0f;
+		float fNoiseMax = 0.0f;// off for now
+		float fEnemySighted = 10.0f;
+		float qEnemyInRange = -15.0f; //is multiplied by attack strength
+		//float aggCoef = 0.8f;
+		float fNoise = 0.0f;
 		
-				// don't get too close, at close range, as -1/r
-				forceX += qFriendly * id * id*vecx;
-				forceY += qFriendly * id * id*vecy;	
-			}
-
-			for (RobotInfo bot : enemyRobots) {
-				// dangerous ones, dealt with in tryMove
-				if (bot.type == RobotType.TOWER || bot.type == RobotType.HQ)
-					continue;
-
-				int vecx = bot.location.x - myLocation.x;
-				int vecy = bot.location.y - myLocation.y;
-				int d2 = bot.location.distanceSquaredTo(myLocation);
-
-
-				float id = invSqrt[d2];
-
-				// attract to enemy units, adjusted for strength balance, constant
-				forceX += strengthBal * fEnemySighted * unitAtt[bot.type.ordinal()] * id  * vecx ; // constant 
-				forceY += strengthBal * fEnemySighted * unitAtt[bot.type.ordinal()] * id  * vecy ;
-
-
-				// enemies in range, 1/r
-				forceX += unitVal[bot.type.ordinal()] * qEnemyInRange * id*id * vecx; // constant
-				forceY += unitVal[bot.type.ordinal()] * qEnemyInRange * id *id * vecy;	
+		float strengthBal = 0;
 		
-			}
-				*/
+		/*
+		// get list of nearby robots
+		RobotInfo[] friendlyRobots = rc.senseNearbyRobots(
+				myType.sensorRadiusSquared, myTeam);
+		RobotInfo[] enemyRobots = rc.senseNearbyRobots(
+				myType.sensorRadiusSquared, myTeam.opponent());
+		for (RobotInfo bot : friendlyRobots) strengthBal += unitVal[bot.type.ordinal()];
+		for (RobotInfo bot : enemyRobots) strengthBal -= unitVal[bot.type.ordinal()];
+		//rc.setIndicatorString(2, "StrengthBal = " + strengthBal);
+		*/
+		
+		// attracted to squad target, far away, const fDest
+		if (myTarget !=null){
+			int destX = (myTarget.x - myLocation.x);
+			int destY = (myTarget.y - myLocation.y);
 
-			// get direction of force
-			
-			Direction dir = myLocation.directionTo(myLocation.add((int)(10*forceX),(int)(10*forceY)));
+			float d2dest = (float) Math.sqrt(destX * destX + destY * destY);
 
 
-			// only move if nonzero force
-			if(forceX*forceX + forceY*forceY > 0){ 
-				tryMove(dir,0,myAggression);
-			}		
-
-			rc.setIndicatorLine(myLocation, myLocation.add((int)forceX,(int)forceY), 0,
-					255, 255); // indicator line along preferred direction
-
-
-
-
-			return;
-
+			forceX =  destX / d2dest;
+			forceY =  destY / d2dest;
 		}
+
+		/*
+			int engageDirOrd = rc.readBroadcast(engageDirChan); 
+
+			//rotate basis to point along engageDir
+			float forceEx = Consts.cos[engageDirOrd]*forceX - Consts.sin[engageDirOrd]*forceY;
+			float forceEy = Consts.sin[engageDirOrd]*forceX + Consts.cos[engageDirOrd]*forceY;
+
+			// elongate along Ey
+			forceEx *= 50;
+
+			//rotate back to XY coordinates
+			forceX = Consts.cos[engageDirOrd]*forceEx + Consts.sin[engageDirOrd]*forceEy;
+			forceY = -Consts.sin[engageDirOrd]*forceEx + Consts.cos[engageDirOrd]*forceEy;
+		*/
+		/*
+		for (RobotInfo bot : friendlyRobots) {
+			// doesn't apply to towers and HQ
+			if (bot.type == RobotType.TOWER || bot.type == RobotType.HQ)
+				continue;
+
+			int vecx = bot.location.x - myLocation.x;
+			int vecy = bot.location.y - myLocation.y;
+			int d2 = bot.location.distanceSquaredTo(myLocation);
+			float id = invSqrt[d2];
+
+			// weakly attract, constant normalized to unitVal 
+			forceX += unitVal[bot.type.ordinal()] * fSticky *id * vecx; // constant
+			forceY += unitVal[bot.type.ordinal()] * fSticky *id* vecy;	
 	
-	// this method will attempt to move towards d, preferentially using bitmoves, using specified aggression
-		static boolean tryMove(Direction d, int bitmoves, UnitAggression agg) throws GameActionException
-		{
-			// can't move, don't do anything
-			if (!rc.isCoreReady())
-				return false;
-
-			// take into account enemies of particular types
-			int safemoves = 0;
-			
-			switch (agg)
-			{
-			case CHARGE:
-			case NO_RESTRICTIONS:
-				// they're all safe
-				safemoves = 0x1FF;
-				break;
-			case NO_TOWERS:
-				safemoves = 0x1FF&(~getTowerMoves());
-				break;
-			case NEVER_MOVE_INTO_RANGE:
-				safemoves = ~getTowerMoves();
-				safemoves &= ~getEnemyMoves();
-				safemoves &= 0x1FF;
-				break;
-			}
-
-			// now mask it by moves we deem safe
-			bitmoves &= safemoves;
-			
-			// check which directions we can move in
-			int canmoves = 0;
-			for (int i=0; i<8; i++)
-			{
-				if (rc.canMove(Direction.values()[i]))
-					canmoves |= (1<<i);
-			}
-			
-			// now only move in directions we can move
-			bitmoves &= canmoves;
-			
-			if (bitmoves == 0)
-			{
-				// if we're here, it means we said to move, but we can't move anywhere
-				// that we specified with bitmoves
-				// so we just pick a random safe direction instead, if possible
-				bitmoves = (canmoves&safemoves);
-				if (bitmoves == 0)
-					return false;
-			}
-
-			// now pick by starting in direction d and moving out
-			int dirint = d.ordinal();
-			
-			// do we check preferred directions in the other way?
-			boolean tryopposite = rand.nextBoolean();
-			
-			for (int i=0; i<8; i++)
-			{
-				int dir = tryopposite?(dirint+Consts.dirOffsets[i])&7:
-					(dirint+16-Consts.dirOffsets[i])&7;
-				// can we move here/do we want to move here?
-				if ((bitmoves&(1<<dir))==0)
-					continue;
-				
-				// ok, so now we can and do want to, double check and then do it
-				Direction dd = Direction.values()[dir];
-
-				// already checked this with canmoves, but best to double-check...
-				if (!rc.canMove(dd))
-					continue;
-				
-				rc.move(dd);
-				return true;
-			}
-			
-			return false;
+			// don't get too close, at close range, as -1/r
+			forceX += qFriendly * id * id*vecx;
+			forceY += qFriendly * id * id*vecy;	
 		}
 
-		static int getTowerMoves()
+		for (RobotInfo bot : enemyRobots) {
+			// dangerous ones, dealt with in tryMove
+			if (bot.type == RobotType.TOWER || bot.type == RobotType.HQ)
+				continue;
+
+			int vecx = bot.location.x - myLocation.x;
+			int vecy = bot.location.y - myLocation.y;
+			int d2 = bot.location.distanceSquaredTo(myLocation);
+
+
+			float id = invSqrt[d2];
+
+			// attract to enemy units, adjusted for strength balance, constant
+			forceX += strengthBal * fEnemySighted * unitAtt[bot.type.ordinal()] * id  * vecx ; // constant 
+			forceY += strengthBal * fEnemySighted * unitAtt[bot.type.ordinal()] * id  * vecy ;
+
+
+			// enemies in range, 1/r
+			forceX += unitVal[bot.type.ordinal()] * qEnemyInRange * id*id * vecx; // constant
+			forceY += unitVal[bot.type.ordinal()] * qEnemyInRange * id *id * vecy;	
+	
+		}
+			*/
+
+		// get direction of force
+		
+		Direction dir = myLocation.directionTo(myLocation.add((int)(10*forceX),(int)(10*forceY)));
+
+
+		// only move if nonzero force
+		if(forceX*forceX + forceY*forceY > 0){ 
+			tryMove(dir,0,myAggression);
+		}		
+
+		rc.setIndicatorLine(myLocation, myLocation.add((int)forceX,(int)forceY), 0,
+				255, 255); // indicator line along preferred direction
+
+
+
+
+		return;
+
+	}
+
+// this method will attempt to move towards d, preferentially using bitmoves, using specified aggression
+	static boolean tryMove(Direction d, int bitmoves, UnitAggression agg) throws GameActionException
+	{
+		// can't move, don't do anything
+		if (!rc.isCoreReady())
+			return false;
+
+		// take into account enemies of particular types
+		int safemoves = 0;
+		
+		switch (agg)
 		{
-			MapLocation myloc = rc.getLocation();
-			
-			long bitmoves = 0;
-			
-			if (Math.abs(myloc.x-enemyHQ.x)<7 && Math.abs(myloc.y-enemyHQ.y)<7)
-			{
-				int ind = (enemyHQ.x-myloc.x+6) + 13*(enemyHQ.y-myloc.y+6);
-				if (enemyTowers.length>1) // use range 35
-					bitmoves |= (Consts.attackMask[ind]>>(9*Consts.unitRanges[0]));
-				else // use 24
-					bitmoves |= (Consts.attackMask[ind]>>(9*Consts.unitRanges[1]));;
-			}
-			
-			for (MapLocation t : enemyTowers)
-			{
-				if (Math.abs(myloc.x-t.x)>=6 || Math.abs(myloc.y-t.y)>=6)
-					continue;
-					
-				int ind = (t.x-myloc.x+6) + 13*(t.y-myloc.y+6);
-				bitmoves |= (Consts.attackMask[ind]>>(9*Consts.unitRanges[1]));;
-			}
-			
-			/*for (int i=0; i<8; i++)
-			{
-				if ((bitmoves&(1<<i)) > 0)
-					rc.setIndicatorDot(myloc.add(Direction.values()[i]), 255, 0, 255);
-			}*/
-			
-			return (int)(bitmoves&0x1FF);
+		case CHARGE:
+		case NO_RESTRICTIONS:
+			// they're all safe
+			safemoves = 0x1FF;
+			break;
+		case NO_TOWERS:
+			safemoves = 0x1FF&(~getTowerMoves());
+			break;
+		case NEVER_MOVE_INTO_RANGE:
+			safemoves = ~getTowerMoves();
+			safemoves &= ~getEnemyMoves();
+			safemoves &= 0x1FF;
+			break;
+		}
+
+		// now mask it by moves we deem safe
+		bitmoves &= safemoves;
+		
+		// check which directions we can move in
+		int canmoves = 0;
+		for (int i=0; i<8; i++)
+		{
+			if (rc.canMove(Direction.values()[i]))
+				canmoves |= (1<<i);
 		}
 		
-		static int getEnemyMoves()
+		// now only move in directions we can move
+		bitmoves &= canmoves;
+		
+		if (bitmoves == 0)
 		{
-			RobotInfo[] bots = rc.senseNearbyRobots(myType.sensorRadiusSquared, enemyTeam);
-			MapLocation myloc = rc.getLocation();
-			
-			// 0...8 bits determine which squares are dangerous
-			long bitmoves = 0;
-			
-			// by definition, if inside sensor radius, will be on array
-			for (RobotInfo ri : bots)
-			{
-				int ind = (ri.location.x-myloc.x+6) + 13*(ri.location.y-myloc.y+6);
-				bitmoves |= (Consts.attackMask[ind]>>(9*Consts.unitRanges[ri.type.ordinal()]));
-			}
-			
-			/*for (int i=0; i<8; i++)
-			{
-				if ((bitmoves&(1<<i)) > 0)
-					rc.setIndicatorDot(myloc.add(Direction.values()[i]), 255, 255, 255);
-			}*/
-			
-			// and return lowest 9 bits
-			return (int)(bitmoves&0x1FF);
+			// if we're here, it means we said to move, but we can't move anywhere
+			// that we specified with bitmoves
+			// so we just pick a random safe direction instead, if possible
+			bitmoves = (canmoves&safemoves);
+			if (bitmoves == 0)
+				return false;
 		}
+
+		// now pick by starting in direction d and moving out
+		int dirint = d.ordinal();
+		
+		// do we check preferred directions in the other way?
+		boolean tryopposite = rand.nextBoolean();
+		
+		for (int i=0; i<8; i++)
+		{
+			int dir = tryopposite?(dirint+Consts.dirOffsets[i])&7:
+				(dirint+16-Consts.dirOffsets[i])&7;
+			// can we move here/do we want to move here?
+			if ((bitmoves&(1<<dir))==0)
+				continue;
+			
+			// ok, so now we can and do want to, double check and then do it
+			Direction dd = Direction.values()[dir];
+
+			// already checked this with canmoves, but best to double-check...
+			if (!rc.canMove(dd))
+				continue;
+			
+			rc.move(dd);
+			return true;
+		}
+		
+		return false;
+	}
+
+	// this method will attempt to move towards d, preferentially using bitmoves, using specified aggression
+	// but it'll only move if it can move directly towards the target
+	static boolean tryMoveTowards(Direction d, int bitmoves, UnitAggression agg) throws GameActionException
+	{
+		// can't move, don't do anything
+		if (!rc.isCoreReady())
+			return false;
+
+		// take into account enemies of particular types
+		int safemoves = 0;
+		
+		switch (agg)
+		{
+		case CHARGE:
+		case NO_RESTRICTIONS:
+			// they're all safe
+			safemoves = 0x1FF;
+			break;
+		case NO_TOWERS:
+			safemoves = 0x1FF&(~getTowerMoves());
+			break;
+		case NEVER_MOVE_INTO_RANGE:
+			safemoves = ~getTowerMoves();
+			safemoves &= ~getEnemyMoves();
+			safemoves &= 0x1FF;
+			break;
+		}
+
+		// now mask it by moves we deem safe
+		bitmoves &= safemoves;
+		
+		// check which directions we can move in
+		int canmoves = 0;
+		for (int i=0; i<8; i++)
+		{
+			if (rc.canMove(Direction.values()[i]))
+				canmoves |= (1<<i);
+		}
+		
+		// now only move in directions we can move
+		bitmoves &= canmoves;
+		
+		if (bitmoves == 0)
+		{
+			// if we're here, it means we said to move, but we can't move anywhere
+			// that we specified with bitmoves
+			// so we just pick a random safe direction instead, if possible
+			bitmoves = (canmoves&safemoves);
+			if (bitmoves == 0)
+				return false;
+		}
+
+		// now pick by starting in direction d and moving out
+		int dirint = d.ordinal();
+		
+		// do we check preferred directions in the other way?
+		boolean tryopposite = rand.nextBoolean();
+		
+		for (int i=0; i<3; i++)
+		{
+			int dir = tryopposite?(dirint+Consts.dirOffsets[i])&7:
+				(dirint+16-Consts.dirOffsets[i])&7;
+			// can we move here/do we want to move here?
+			if ((bitmoves&(1<<dir))==0)
+				continue;
+			
+			// ok, so now we can and do want to, double check and then do it
+			Direction dd = Direction.values()[dir];
+
+			// already checked this with canmoves, but best to double-check...
+			if (!rc.canMove(dd))
+				continue;
+			
+			rc.move(dd);
+			return true;
+		}
+		
+		return false;
+	}
+	
+	static int getTowerMoves()
+	{
+		MapLocation myloc = rc.getLocation();
+		
+		long bitmoves = 0;
+		
+		if (Math.abs(myloc.x-enemyHQ.x)<7 && Math.abs(myloc.y-enemyHQ.y)<7)
+		{
+			int ind = (enemyHQ.x-myloc.x+6) + 13*(enemyHQ.y-myloc.y+6);
+			if (enemyTowers.length>1) // use range 35
+				bitmoves |= (Consts.attackMask[ind]>>(9*Consts.unitRanges[0]));
+			else // use 24
+				bitmoves |= (Consts.attackMask[ind]>>(9*Consts.unitRanges[1]));;
+		}
+		
+		for (MapLocation t : enemyTowers)
+		{
+			if (Math.abs(myloc.x-t.x)>=6 || Math.abs(myloc.y-t.y)>=6)
+				continue;
+				
+			int ind = (t.x-myloc.x+6) + 13*(t.y-myloc.y+6);
+			bitmoves |= (Consts.attackMask[ind]>>(9*Consts.unitRanges[1]));;
+		}
+		
+		/*for (int i=0; i<8; i++)
+		{
+			if ((bitmoves&(1<<i)) > 0)
+				rc.setIndicatorDot(myloc.add(Direction.values()[i]), 255, 0, 255);
+		}*/
+		
+		return (int)(bitmoves&0x1FF);
+	}
+	
+	static int getEnemyMoves()
+	{
+		RobotInfo[] bots = rc.senseNearbyRobots(myType.sensorRadiusSquared, enemyTeam);
+		MapLocation myloc = rc.getLocation();
+		
+		// 0...8 bits determine which squares are dangerous
+		long bitmoves = 0;
+		
+		// by definition, if inside sensor radius, will be on array
+		for (RobotInfo ri : bots)
+		{
+			int ind = (ri.location.x-myloc.x+6) + 13*(ri.location.y-myloc.y+6);
+			bitmoves |= (Consts.attackMask[ind]>>(9*Consts.unitRanges[ri.type.ordinal()]));
+		}
+		
+		/*for (int i=0; i<8; i++)
+		{
+			if ((bitmoves&(1<<i)) > 0)
+				rc.setIndicatorDot(myloc.add(Direction.values()[i]), 255, 255, 255);
+		}*/
+		
+		// and return lowest 9 bits
+		return (int)(bitmoves&0x1FF);
+	}
 
 	// This method will attempt to spawn in the given direction (or as close to it as possible)
 	static boolean trySpawn(Direction d, RobotType type) throws GameActionException
