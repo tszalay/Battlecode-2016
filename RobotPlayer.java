@@ -1,4 +1,4 @@
-package rAAAge_1002;
+package rAAAge_1003;
 
 import battlecode.common.*;
 
@@ -697,6 +697,8 @@ public class RobotPlayer {
 			
 			init();
 			
+			strategyCheck();
+			
 			switch (myType)
 			{
 			case HQ:
@@ -739,8 +741,10 @@ public class RobotPlayer {
 				break;
 			case SOLDIER:
 			case TANK:
-				// perma-harass soldiers
 				myState = UnitState.ATTACK_MOVE;
+				// start in rally if we're on a large map against launchers, at least at first
+//				if (myBuild == BuildOrder.HELIPAD && Clock.getRoundNum() < 1000)
+//					myState = UnitState.CONVOY;
 				break;
 			}
 		} catch (Exception e) {
@@ -1142,6 +1146,7 @@ public class RobotPlayer {
 				rc.broadcast(towerCountChan, towers.length);
 			}
 			
+			// do rally strength calculation
 			int rallyID = rc.readBroadcast(rallyLeaderChan);
 			if (rc.canSenseRobot(rallyID))
 			{
@@ -1158,7 +1163,10 @@ public class RobotPlayer {
 					}
 					else if (b.team == enemyTeam)
 					{
-	
+						// if there is a launcher or missile, boom, insta-rage
+						if (b.type == RobotType.MISSILE || b.type == RobotType.LAUNCHER)
+							holdStrengthBal = 10000;
+						
 						holdStrengthBal -= Consts.unitVals[b.type.ordinal()]; // subtract units to strength bal
 						//enemyMapSumX += unitVal[b.type.ordinal()]*b.location.x;
 						//enemyMapSumY += unitVal[b.type.ordinal()]*b.location.y;
@@ -2168,11 +2176,8 @@ public class RobotPlayer {
 		}
 		else
 		{
-			myBuild = BuildOrder.STANDARD;
 			if (Consts.LAUNCHER_ENEMY && Clock.getRoundNum() < 800) // only change build early in the game
-			{
 				myBuild = BuildOrder.HELIPAD;
-			}
 		}
 		
 		if (Clock.getRoundNum() < 800)
@@ -2481,7 +2486,6 @@ public class RobotPlayer {
 		case HOLD:
 			// switch to attack if our entire squad is strong enough
 			int rallyStrength = rc.readBroadcast(rallyStrengthChan);
-			
 			if (rallyStrength > Consts.RALLY_STRENGTH_THRESH)
 			{
 				if (rallyID == rc.getID())
@@ -2543,26 +2547,15 @@ public class RobotPlayer {
 		
 		if (rc.getID() == rc.readBroadcast(rallyLeaderChan))
 		{
-			// descend the defensive grid if we're not too far already
 			int defval = myGrid.readValue(gridDefenseBase);
-			//rc.setIndicatorString(1, "LEADER! defense val: " + defval + ", offense: " + myGrid.readValue(gridOffenseBase) + ", ID: " + myGrid.gridID);
-			if (defval < (Consts.GRID_BASE-6))
+			if (defval < (Consts.GRID_BASE-10))
 				return;
-			//int bitmoves = gridPathfind(myLocation,gridRageBase,true);
 			
 			//move at half speed so others can catch up
 			if(rand.nextDouble()<0.5)
 			{	
-			// follow to best mining loc	
-				
-	
-				// int bitdir = gridPathfind(myLocation, gridMiningBase, true);
-				//tryMove(bitdir);
-				
-				//Direction dir = myLocation.directionTo(myHQ); // for now
 				int bitdir = gridPathfind(myLocation, gridOffenseBase, true);
 				tryMove(myLocation.directionTo(enemyHQ),bitdir,myAggression);
-				//tryMove(myLocation.directionTo(enemyHQ),bitmoves);
 			}
 			return;
 		}
@@ -3520,7 +3513,7 @@ public class RobotPlayer {
 		rc.broadcast(gridODPtrChan,grid.nextCCPointer());		
 				
 		// ok, get the base value for this grid square
-		int defval = grid.readValue(gridDefenseBase);
+		int defval = grid.readValue(gridDefenseBase) + Consts.GRID_DECAY;
 		int offval = grid.readValue(gridOffenseBase);
 		
 		// make sure the values are initialized
@@ -3557,7 +3550,7 @@ public class RobotPlayer {
 		
 		if (lastTowerCount < 2 && GridComponent.indexFromLocation(myHQ) == grid.gridIndex && grid.isInMaybe(myHQ))
 		{
-			defval = Consts.GRID_BASE + 10*Clock.getRoundNum();
+			defval = Consts.GRID_BASE;// + 10*Clock.getRoundNum();
 		}
 		
 		
