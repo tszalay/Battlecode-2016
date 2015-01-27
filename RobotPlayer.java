@@ -1,4 +1,4 @@
-package rAAAge_1001;
+package rAAAge_1002;
 
 import battlecode.common.*;
 
@@ -58,6 +58,8 @@ class RobotConsts
 	int HQ_TOWER_THRESH = 3;
 	
 	int RAGE_MIN_PRIORITY = 0;
+	
+	boolean LAUNCHER_ENEMY = false;
 	
 	// # of units per supply depot
 	double DEPOT_UNIT_RATIO = 15;
@@ -183,8 +185,8 @@ class RobotConsts
 	};
 	
 	int[] ragePriorities = {
-		   6, // HQ 
-		   6, // TOWER
+		   9, // HQ 
+		   9, // TOWER
 		   5, // SUPPLYDEPOT
 		   5, // TECHNOLOGYINSTITUTE
 		   5, // BARRACKS
@@ -202,8 +204,8 @@ class RobotConsts
 		   1, // DRONE
 		   3, // TANK
 		   6, // COMMANDER
-		   3, // LAUNCHER
-		   0  // MISSILE
+		   8, // LAUNCHER
+		   7  // MISSILE
 	};
 }
 
@@ -428,26 +430,10 @@ public class RobotPlayer {
 	static enum BuildOrder
 	{
 		STANDARD,
-		LARGE_MAP,
-		SMALL_MAP
+		SMALL_MAP,
+		HELIPAD
 	}
 	static BuildOrder myBuild = BuildOrder.STANDARD;
-	static String toString(BuildOrder myBuild) {
-		String ans = null;
-		switch(myBuild)
-		{
-		case STANDARD:
-			ans =  "STANDARD";
-			break;
-		case LARGE_MAP:
-			ans = "LARGE_MAP";
-			break;
-		case SMALL_MAP:
-			ans =  "SMALL_MAP";
-			break;
-		}
-		return ans;
-	}
 
 	//===============================================================================================================
 	
@@ -623,6 +609,9 @@ public class RobotPlayer {
 	
 	// agg coefficient
 	static float aggCoef = 0.8f;
+	
+	// bloop
+	static int launcherEnemyChan = curChan++;
 
 	//===========================================================================================
 	
@@ -700,10 +689,10 @@ public class RobotPlayer {
 	{
 		rc = robotc;
 		
-		//while (lastTowers == 0)
-		//	rc.yield();
-		//System.out.println(java.util.Arrays.asList(RobotType.values()));
-		// Initialization code
+		long[] mem = rc.getTeamMemory();
+		if (mem[0] > 0)
+			Consts.LAUNCHER_ENEMY = true;
+		
 		try {
 			
 			init();
@@ -1860,9 +1849,9 @@ public class RobotPlayer {
 			buildOrder = stdBuildOrder;
 		
 			break;
-		case LARGE_MAP:
+		case HELIPAD:
 			// this list defines the build order. make sure you don't mess up building prereqs.
-			int[] lgBuildOrder = {8, 4, 5, 7, 8, 7, 2, 7, 2, 7, 2, 2, 7, 7, 7, 7, 7, 1};
+			int[] lgBuildOrder = {8, 4, 5, 7, 3, 2, 7, 2, 2, 7, 1};
 			buildOrder = lgBuildOrder;	
 			break;	
 			
@@ -2165,16 +2154,26 @@ public class RobotPlayer {
 	// does various sanity checks as a function of in-game status
 	static void strategyCheck() throws GameActionException
 	{		
-		// linearly decrease number from 20 initially to 0 at t=N
-		numSoldiers = Math.max((600-Clock.getRoundNum())/30,0);
-		numDrones = Math.max((1000-Clock.getRoundNum())/100,2);
+		// not many soldiers
+		numSoldiers = Math.max((600-Clock.getRoundNum())/80,0);
+		// fixed number of drones for harass, but we only build a helipad 
+		numDrones = 10;
+		
+		if (!Consts.LAUNCHER_ENEMY)
+			Consts.LAUNCHER_ENEMY = rc.readBroadcast(launcherEnemyChan)>0;
 		
 		if (gridNum*25 < 60*60)
+		{
 			myBuild = BuildOrder.SMALL_MAP;
-		else if (gridNum*25 < 80*80)
-			myBuild = BuildOrder.STANDARD;
+		}
 		else
-			myBuild = BuildOrder.LARGE_MAP;
+		{
+			myBuild = BuildOrder.STANDARD;
+			if (Consts.LAUNCHER_ENEMY && Clock.getRoundNum() < 800) // only change build early in the game
+			{
+				myBuild = BuildOrder.HELIPAD;
+			}
+		}
 		
 		if (Clock.getRoundNum() < 800)
 			Consts.RAGE_MIN_PRIORITY = 0;
@@ -2826,8 +2825,27 @@ public class RobotPlayer {
 		if (rc.getID() == rageLeaderID)
 		{
 			// ok, if we don't have a target, or we're somehow too far from it, just walk towards the enemy
-			int bitdir = gridPathfind(myLocation,gridOffenseBase,true);
-			tryMove(myLocation.directionTo(enemyHQ),bitdir,myAggression);
+			// stay more clumped if we're fighting launchers
+			if (Consts.LAUNCHER_ENEMY)
+			{
+				int nclose = rc.senseNearbyRobots(myLocation,15,myTeam).length;
+				// if there's nobody around, back up
+				if (nclose < 5)
+				{
+					int bitdir = gridPathfind(myLocation,gridOffenseBase,false);
+					tryMove(enemyHQ.directionTo(myLocation),bitdir,myAggression);
+				}
+				else
+				{
+					int bitdir = gridPathfind(myLocation,gridOffenseBase,true);
+					tryMove(myLocation.directionTo(enemyHQ),bitdir,myAggression);
+				}
+			}
+			else
+			{
+				int bitdir = gridPathfind(myLocation,gridOffenseBase,true);
+				tryMove(myLocation.directionTo(enemyHQ),bitdir,myAggression);
+			}
 			return;
 		}
 		else
@@ -2862,8 +2880,8 @@ public class RobotPlayer {
 		// is the enemy within our attack radius?
 		boolean canattack = (dist2enemy <= myType.attackRadiusSquared);
 		
-		// if we can, don't do nuthin, unless it's a tower, in which case we just try to move towards it
-		if (target.type == RobotType.TOWER || target.type == RobotType.HQ)
+		// if we can, don't do nuthin, unless it's a tower or launcher or missile, in which case we just try to move towards it
+		if (target.type == RobotType.TOWER || target.type == RobotType.HQ || target.type == RobotType.MISSILE || target.type == RobotType.LAUNCHER)
 			return tryMoveTowards(myLocation.directionTo(target.location),0,UnitAggression.CHARGE);
 		
 		// otherwise, we can attack the target, or we couldn't move towards them safely
@@ -2875,24 +2893,11 @@ public class RobotPlayer {
 		
 		// if we can attack, don't move, unless too many enemies, then try to run away
 		if (rc.senseNearbyRobots(myLocation,myType.attackRadiusSquared,enemyTeam).length > 0)
-		{
-			// count up robots fairly close
-/*			int enemyStrength = 0;
-			RobotInfo[] enemyBots = rc.senseNearbyRobots(target.location,15,enemyTeam);
-			// add up friendly strength
-			for (RobotInfo ri : enemyBots)
-				enemyStrength += Consts.unitVals[ri.type.ordinal()];
-			
-			if (myRageFriendStrength < 24 && enemyStrength > 16)
-				tryMove(myLocation.directionTo(target.location).opposite(),0,UnitAggression.NEVER_MOVE_INTO_RANGE);
-	*/			
 			return false;
-		}
 		
 		// if we're outside the attack radius, try to move towards them safely
 		if (tryMoveTowards(myLocation.directionTo(target.location),0,UnitAggression.NEVER_MOVE_INTO_RANGE))
 				return true;
-		
 
 		
 		// and see if we oughta move in range
@@ -3898,6 +3903,12 @@ public class RobotPlayer {
 			{
 				minhealth = en.health;
 				minloc = en.location;
+			}
+			if (!Consts.LAUNCHER_ENEMY && (en.type == RobotType.LAUNCHER || en.type == RobotType.MISSILE))
+			{
+				Consts.LAUNCHER_ENEMY = true;
+				rc.setTeamMemory(0, 1);
+				rc.broadcast(launcherEnemyChan, 1);
 			}
 		}
 		if (rc.canAttackLocation(minloc))
