@@ -1,4 +1,4 @@
-package rAAAge_1000;
+package rAAAge_1001;
 
 import battlecode.common.*;
 
@@ -52,8 +52,6 @@ class RobotConsts
 	
 	int HOLD_DISTANCE = 24;
 	int RALLY_STRENGTH_THRESH = 47;
-	
-	int ATTACK_ROUND = 1700;
 	
 	int TOWER_REMOVE_ROUND = 1800;
 	
@@ -408,10 +406,6 @@ public class RobotPlayer {
 	static final int rallyStrengthChan = curChan++;
 	static final int rageStrengthChan = curChan++;
 
-	// which offensive building is set as the global target, this is set by HQ
-	// (0 is HQ, rest are towers)
-	static final int offenseBuildingChan = curChan++;
-
 	
 	static enum UnitState
 	{
@@ -556,8 +550,8 @@ public class RobotPlayer {
 	static int minersSupplying = curChan++;
 	static int minersSearching = curChan++;
 	static int minersLeading = curChan++;
-	static int minerRageTarget = curChan++;
-	static int minerRageTarget2 = curChan++;
+	//static int minerRageTarget = curChan++;
+	//static int minerRageTarget2 = curChan++;
 	
 	// Keep track of global best ore on map so far
 	static int bestOrePatchAvg = curChan++;
@@ -1158,20 +1152,6 @@ public class RobotPlayer {
 				rc.broadcast(gridTowerDoneChan, towerstatus);
 				rc.broadcast(towerCountChan, towers.length);
 			}
-			
-			// and if number of towers is > 1, set it to a tower that just cycles through
-			if (lastTowerCount > 1)
-				rc.broadcast(offenseBuildingChan,1);//+((Clock.getRoundNum()/400)%lastTowerCount));
-			else
-				rc.broadcast(offenseBuildingChan,0);
-			
-			// and check if we want to remove all towers from the map
-			/*if (Clock.getRoundNum() > Consts.TOWER_REMOVE_ROUND)
-			{
-				int towerstatus = rc.readBroadcast(gridTowerDoneChan);
-				if (towerstatus < 3)
-					rc.broadcast(towerstatus, 3);
-			}*/
 			
 			int rallyID = rc.readBroadcast(rallyLeaderChan);
 			if (rc.canSenseRobot(rallyID))
@@ -1875,7 +1855,8 @@ public class RobotPlayer {
 		case STANDARD:		
 			// this list defines the build order. make sure you don't mess up building prereqs.
 			// terminate preset build order with a 1;
-			int[] stdBuildOrder = {8, 4, 5, 7, 3, 2, 7, 2, 2, 7, 1};
+			//int[] stdBuildOrder = {8, 4, 5, 7, 3, 2, 7, 2, 2, 7, 1};
+			int[] stdBuildOrder = {8, 4, 7, 3, 2, 7, 2, 2, 7, 1};
 			buildOrder = stdBuildOrder;
 		
 			break;
@@ -2200,9 +2181,9 @@ public class RobotPlayer {
 		else if (Clock.getRoundNum() < 1000)
 			Consts.RAGE_MIN_PRIORITY = 3;
 		else if (Clock.getRoundNum() < 1500)
-			Consts.RAGE_MIN_PRIORITY = 4;
-		else
 			Consts.RAGE_MIN_PRIORITY = 5;
+		else
+			Consts.RAGE_MIN_PRIORITY = 6;
 	}
 
 	static void miningDuties() throws GameActionException
@@ -2641,6 +2622,22 @@ public class RobotPlayer {
 			}
 		}
 		
+		// now check if we pull from miner list, only if we have literally no targets
+		if (ragePriority == 0)
+		{
+			for (int chan : minerRageTargets)
+			{
+				int id = rc.readBroadcast(chan);
+				if (rc.canSenseRobot(id))
+				{
+					RobotInfo ri = rc.senseRobot(id);
+					ragePriority = Consts.ragePriorities[ri.type.ordinal()];
+					curTargetID = ri.ID;
+					rageset = true;
+				}
+			}
+		}
+		
 		// and if we changed rage targets, broadcast our ID and the target ID
 		if (rageset)
 		{
@@ -2692,7 +2689,7 @@ public class RobotPlayer {
 				
 				// and check if we move towards the hq
 				// which will automatically make it the rage target due to priorities
-				if (myRageFriendStrength > 50 && enemyStrength < 40)
+				if (myRageFriendStrength > 50 && enemyStrength < 24)
 					if (tryMove(myLocation.directionTo(t),0,UnitAggression.CHARGE))
 						return;
 			}
@@ -2783,7 +2780,7 @@ public class RobotPlayer {
 				rc.broadcast(rageLeaderChan, rageLeaderID);
 			}
 		}
-		else if (canLead && rageLeaderID != rc.getID())
+		else if (canLead && rageLeaderID != rc.getID() && myRageFriendStrength > 40)
 		{
 			// if we're more offensive than current leader, become leader
 			int myoffval = myGrid.readValue(gridOffenseBase);
@@ -4635,7 +4632,7 @@ public class RobotPlayer {
 			return;
 		
 		System.out.println(s);
-		rc.breakpoint();
+		//rc.breakpoint();
 		throw new GameActionException(GameActionExceptionType.CANT_DO_THAT_BRO,s);
 	}
 }
@@ -4868,7 +4865,10 @@ class GridComponent
 		{
 			gridID = nextid;
 			//System.out.println("Initial gridID set to " + nextid + " for " + gridIndex);
-			RobotPlayer.debug_assert((gridInfo>>16)==0,"New block on bad cell");
+			//RobotPlayer.debug_assert((gridInfo>>16)==0,"New block on bad cell");
+			if ((gridInfo>>16)>0)
+				return;
+			
 			// or it is the first, so set base info
 			gridInfo = (gridInfo&65535) | (gridID<<16);
 			// this is the first block, so we just added it, so set the edges to 0, since unknown
