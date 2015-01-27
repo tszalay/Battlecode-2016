@@ -1,10 +1,9 @@
-package rAAAge_5_1;
+package rAAAge_5_2;
 
 import battlecode.common.*;
 
 import java.util.*;
 import java.lang.*;
-
 
 /* Sensing location defines etc */
 class RobotConsts
@@ -55,6 +54,8 @@ class RobotConsts
 	int RALLY_STRENGTH_THRESH = 47;
 	
 	int ATTACK_ROUND = 1700;
+	
+	int TOWER_REMOVE_ROUND = 1500;
 	
 	/* Ordinal unit weight array */
 	int[] friendWeights = {
@@ -464,6 +465,10 @@ public class RobotPlayer {
 	// um duhh
 	static final int rallyStrengthChan = curChan++;
 	static final int rageStrengthChan = curChan++;
+
+	// which offensive building is set as the global target, this is set by HQ
+	// (0 is HQ, rest are towers)
+	static final int offenseBuildingChan = curChan++;
 
 	
 	static enum UnitState
@@ -1187,6 +1192,20 @@ public class RobotPlayer {
 					towerstatus = 0;
 				rc.broadcast(gridTowerDoneChan, towerstatus);
 				rc.broadcast(towerCountChan, towers.length);
+			}
+			
+			// and if number of towers is > 1, set it to a tower that just cycles through
+			if (lastTowerCount > 1)
+				rc.broadcast(offenseBuildingChan,1+((Clock.getRoundNum()/400)%lastTowerCount));
+			else
+				rc.broadcast(offenseBuildingChan,0);
+			
+			// and check if we want to remove all towers from the map
+			if (Clock.getRoundNum() > Consts.TOWER_REMOVE_ROUND)
+			{
+				int towerstatus = rc.readBroadcast(gridTowerDoneChan);
+				if (towerstatus < 3)
+					rc.broadcast(towerstatus, 3);
 			}
 			
 			int rallyID = rc.readBroadcast(rallyLeaderChan);
@@ -3088,7 +3107,7 @@ public class RobotPlayer {
 		// are we under tower influence, or were we?
 		if (towermask > 0 || flagset == true)
 		{
-			debug_drawGridMask(gridloc,towermask,255,255,255);
+			//debug_drawGridMask(gridloc,towermask,255,255,255);
 			// we have towers, let's make sure we re-path it
 			if (towermask > 0)
 				grid.setFlag(STATUS_TOWER);
@@ -3108,6 +3127,10 @@ public class RobotPlayer {
 			grid.writeProperty(gridNormalBase,norms);
 			grid.writeProperty(gridVoidBase,voids);
 			grid.writeProperty(gridKnownBase,known);
+			
+			// save it to a value for later use for this grid index (not ID)
+			grid.writeProperty(gridTowerBase,towermask);
+			
 			// and reset it, so that we recalculate the path/connected components
 			grid.reset();
 		}
@@ -3572,18 +3595,39 @@ public class RobotPlayer {
 			offval = Consts.GRID_INIT_BASE-disttohq;
 		}
 		
-		// check HQs
-		if (GridComponent.indexFromLocation(enemyHQ) == grid.gridIndex)// && grid.isInMaybe(enemyHQ))
+		// check offensive tower/HQ target
+		int offensetarget = rc.readBroadcast(offenseBuildingChan);
+		if (offensetarget > enemyTowers.length)
+			offensetarget = enemyTowers.length;
+		MapLocation offenseloc = (offensetarget==0)?enemyHQ:enemyTowers[offensetarget-1];
+
+		// get our square's pathable U unknown, and see what it connects to...
+		int pathable = grid.getMaybes();
+		
+		// first, are we set to HQ? then just check...
+		if (offensetarget == 0 && GridComponent.indexFromLocation(enemyHQ) == grid.gridIndex && grid.isInMaybe(enemyHQ))
 		{
 			offval = Consts.GRID_BASE;
 		}
+		else if (grid.getCenter().distanceSquaredTo(offenseloc) <= 55)
+		{
+			// is this possibly in range of this grid?
+
+			// now check masking, briefly, relaxed
+			int towermask = relaxGrid(grid.readProperty(gridTowerBase),GRID_MASK);
+			// any norm/unknown squares connecting to it? then set as offensive target
+			if ((towermask&grid.getFastMaybes()) > 0 || towermask == GRID_MASK)
+			{
+				offval = Consts.GRID_BASE;
+				debug_drawGridMask(grid.getCenter(),towermask,255,0,255);
+			}
+		}
+		
 		if (GridComponent.indexFromLocation(myHQ) == grid.gridIndex && grid.isInMaybe(myHQ))
 		{
 			defval = Consts.GRID_BASE;
 		}
 		
-		// get our square's pathable U unknown, and see what it connects to...
-		int pathable = grid.getMaybes();
 		
 		// now, let's loop through each adjacent direction & their gridids
 		for (int dir=0; dir<4; dir++)
