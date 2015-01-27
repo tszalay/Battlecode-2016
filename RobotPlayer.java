@@ -1,4 +1,4 @@
-package rAAAge_5_0;
+package rAAAge_5_1;
 
 import battlecode.common.*;
 
@@ -2389,7 +2389,7 @@ public class RobotPlayer {
 	{
 		// rage if there is anything nearby to rage at
 		MapLocation here = rc.getLocation();
-		MapLocation target = chooseEnemyTarget(minerRageTargets, 10); // (list, max distance)
+		MapLocation target = chooseEnemyTarget(minerRageTargets, 15); // (list, max distance)
 		if(target==null)
 		{
 			// if we didn't acquire a target, check our surroundings
@@ -2445,6 +2445,7 @@ public class RobotPlayer {
 					rc.setIndicatorString(0,"Attacking enemy " + enemyRobots[0].ID);
 					rc.setIndicatorString(1,"Strength balance = " + strengthBal);
 					addEnemyToTargets(minerRageTargets,enemyRobots[0].ID);
+					tryMove(here.directionTo(enemyRobots[0].location), 0, UnitAggression.NO_TOWERS);
 				}
 				return true; // evading, but enemies in sight
 			}
