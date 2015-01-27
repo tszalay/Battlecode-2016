@@ -46,6 +46,9 @@ class RobotConsts
 	
 	int GRID_DECAY = -1;
 	int GRID_BASE = 1000;
+	int GRID_INIT_BASE = 500;
+	
+	int RAGE_DIST = 49;
 	
 	int HOLD_DISTANCE = 24;
 	int RALLY_STRENGTH_THRESH = 47;
@@ -172,8 +175,6 @@ class RobotConsts
 			1  // MISSILE
 	};
 
-	// Unit Ranges
-    /* Ordinal unit weight array */
 	int[] unitRanges = {
 		   3, // HQ 
 		   2, // TOWER
@@ -195,6 +196,30 @@ class RobotConsts
 		   1, // TANK
 		   1, // COMMANDER
 		   4, // LAUNCHER
+		   0  // MISSILE
+	};
+	
+	int[] ragePriorities = {
+		   0, // HQ 
+		   0, // TOWER
+		   5, // SUPPLYDEPOT
+		   5, // TECHNOLOGYINSTITUTE
+		   5, // BARRACKS
+		   5, // HELIPAD
+		   5, // TRAININGFIELD
+		   5, // TANKFACTORY
+		   5, // MINERFACTORY
+		   5, // HANDWASHSTATION
+		   5, // AEROSPACELAB
+		   4, // BEAVER
+		   2, // COMPUTER
+		   2, // SOLDIER
+		   2, // BASHER
+		   4, // MINER
+		   1, // DRONE
+		   3, // TANK
+		   6, // COMMANDER
+		   3, // LAUNCHER
 		   0  // MISSILE
 	};
 }
@@ -404,17 +429,16 @@ public class RobotPlayer {
 	
 	//===============================================================================================================
 	
+	
 	// rage and defense targets
-	static int TARGET_NUM = 4;
-	
-	static final int rageIDBase = curChan; static {curChan+=TARGET_NUM;}
-	static final int defenseIDBase = curChan; static {curChan+=TARGET_NUM;}
-	
-	//===========================================================================================	
-
-	static final int rageLeaderChan = curChan++;
+	static final int rageTargetChan = curChan++;
+	static final int defenseTargetChan = curChan++;
+	// and leaders
 	static final int rallyLeaderChan = curChan++;
+	static final int rageLeaderChan = curChan++;
+	// um duhh
 	static final int rallyStrengthChan = curChan++;
+	static final int rageStrengthChan = curChan++;
 
 	
 	static enum UnitState
@@ -598,12 +622,12 @@ public class RobotPlayer {
     static int numMinerFactories = 1;
     static int numMiners = 40;
     static int numBarracks = 2;
-    static int numSoldiers = 50;
+    static int numSoldiers = 0;
     static int numHelipads = 1;
     static int numDrones = 5;
 	static int numSupplyDepots = 0;
 	static int numTankFactories = 5;
-	static int numTanks = 0;
+	static int numTanks = 50;
 
 	
 	
@@ -941,6 +965,8 @@ public class RobotPlayer {
 		int ntowers = rc.readBroadcast(towerCountChan);
 		if (ntowers != lastTowerCount)
 			enemyTowers = rc.senseEnemyTowerLocations();
+		
+		strategyCheck();
 	}
 	
 	
@@ -1084,8 +1110,6 @@ public class RobotPlayer {
 		{
 			if (rc.isWeaponReady())
 				attackSomething();
-			
-			strategyCheck();
 			
 			// initialize number of supply scouts loading
 			rc.broadcast(supplyLoadingChan,0);
@@ -1304,7 +1328,7 @@ public class RobotPlayer {
 		double deliverSupplyFactor = 10;
 		double harassSupplyFactor = 10; // this needs to be low bc sometimes new drones come out and push loading ones into harass state.
 		try {
-			rageUpdate();
+			//rageUpdate();
 
 			switch (scoutState)
 			{
@@ -1461,136 +1485,11 @@ public class RobotPlayer {
 	static void doTank()
 	{
 		try {
-				// always attack if you can
-				attackSomething();
-				
-				// check enemies in sight
-				RobotInfo[] enemyRobots = rc.senseNearbyRobots(myType.sensorRadiusSquared, enemyTeam);
-				boolean enemiesInSight = enemyRobots.length > 0;
-			
-				defenseUpdate(); // add to defense list if see enemies
-				int rallyID = rc.readBroadcast(rallyLeaderChan);
-				
-				switch (myState)
-				{
-				case CONVOY: 
-	
-					// if no hold leader, become the hold leader
-					if (!rc.canSenseRobot(rallyID))
-					{
-						rallyID = rc.getID();
-						rc.broadcast(rallyLeaderChan, rallyID);
-						myState = UnitState.HOLD;
-						myAggression = UnitAggression.NO_TOWERS;
-					}
-					
-					rc.setIndicatorString(0, "CONVOY, Leader: " + rallyID + ", strength " + rc.readBroadcast(rallyStrengthChan));
-
-					// set myTarget for leaders and others
-					if (rc.getID() == rc.readBroadcast(rallyLeaderChan)){ // if leader
-						myTarget = center; 
-					}else{
-						myTarget = rc.senseRobot(rallyID).location;
-					}
-					// if we've caught up with leader, switch to HOLD
-					if (myLocation.distanceSquaredTo(myTarget) < Consts.HOLD_DISTANCE)
-					{
-						myState = UnitState.HOLD; // switch to HOLD state
-						myAggression = UnitAggression.NO_TOWERS;
-						
-						int rallyStrength = rc.readBroadcast(rallyStrengthChan);
-						
-						/*
-						// if hold group is strong enough, go directly to attackmove.
-						if (rallyStrength > Consts.RALLY_STRENGTH_THRESH)
-						{
-							myState = UnitState.ATTACK_MOVE;
-							myAggression = UnitAggression.NO_TOWERS;
-							break;
-						}
-						*/
-						break;
-					}
-					
-					defenseMove(enemiesInSight);
-					break;
-					
-				case HOLD:
-					//defenseUpdate();  holding units don't add to defense list
-	
-					MapLocation targetLoc = null;
-		
-					// or, still holding....
-					if (!rc.canSenseRobot(rallyID))
-					{
-						// become the new squad leader
-						rallyID = rc.getID();
-						rc.broadcast(rallyLeaderChan, rallyID);
-						myAggression = UnitAggression.NEVER_MOVE_INTO_RANGE;
-					}
-					
-					rc.setIndicatorString(0, "HOLD, Leader: " + rallyID + ", strength " + rc.readBroadcast(rallyStrengthChan));
-					myTarget = rc.senseRobot(rallyID).location;
-					
-					if (rc.getID() == rc.readBroadcast(rallyLeaderChan)) // if leader
-						myTarget = center; //for now
-					
-					// and then move toward rally location
-					defenseMove(enemiesInSight);
-					
-					// switch to attack if our entire squad is strong enough
-					int rallyStrength = rc.readBroadcast(rallyStrengthChan);
-					if (rallyStrength > Consts.RALLY_STRENGTH_THRESH)
-					{
-						myState = UnitState.ATTACK_MOVE;
-						myAggression = UnitAggression.NO_TOWERS;
-						break;
-					}
-					
-					break;
-					
-				case ATTACK_MOVE:
-					// JUST RAAAAAAAAAAAAAAAAAAAAAAGE
-					// (check to make sure our ID isn't set as a leader)
-					if (rallyID == rc.getID())
-						rc.broadcast(rallyLeaderChan, 0);
-					
-					int rageLeaderID = rc.readBroadcast(rageLeaderChan);
-					// do we become the rage leader?
-					if (!rc.canSenseRobot(rageLeaderID))
-					{
-						// instantly become rage leader
-						rageLeaderID = rc.getID();
-						rc.broadcast(rageLeaderChan, rageLeaderID);
-						// and act aggressive
-						myAggression = UnitAggression.NO_TOWERS;		
-					}
-					
-					
-					//rc.setIndicatorString(0, "RAGING, Leader: " + rageLeaderID + ", strength " + rc.readBroadcast(rallyStrengthChan));
-					myTarget = rc.senseRobot(rageLeaderID).location;
-					
-					myAggression = UnitAggression.NO_TOWERS;
-					rageUpdate();
-					rageMove();
-					break;
-				}
-				
+			// always attack if you can
+			attackSomething();
+			doRageRally();
 			
 			supplyFactor = requestSupplies();
-
-			
-			/*
-			//this is Stephen scout attack
-			boolean attacking = attackWithScout();
-			// clump in middle
-			if(!attacking)
-			{
-				myTarget = center;
-				movePotential();
-			}
-			break;
-			*/
 			
 		} catch (Exception e) {
 			System.out.println("Tank Exception");
@@ -1603,184 +1502,16 @@ public class RobotPlayer {
 		try 
 		{
 			attackSomething();
+			doRageRally();
+
+			supplyFactor = requestSupplies();
 			
-			RobotInfo[] enemyRobots = rc.senseNearbyRobots(myType.sensorRadiusSquared, enemyTeam);
-			
-			// get the ID of the robot we're rallying around
-			// (this only matters for hold/convoy)
-
-			int rallyID = rc.readBroadcast(rallyLeaderChan);
-
-			switch (myState)
-			{
-			case CONVOY:
-				// switch to HOLD if we made it to the squad leader
-
-				// do we become the conservative squad leader?
-				if (enemyRobots.length !=0 || !rc.canSenseRobot(rallyID))
-				{
-					// instantly become squad leader
-					rallyID = rc.getID();
-					rc.broadcast(rallyLeaderChan, rallyID);
-					// and act defensive
-					myAggression = UnitAggression.NEVER_MOVE_INTO_RANGE;
-				}
-				
-				rc.setIndicatorString(0, "CONVOY, Leader: " + rallyID + ", strength " + rc.readBroadcast(rallyStrengthChan));
-
-				// get the location. this is always valid thanks to the above line
-				myTarget = rc.senseRobot(rallyID).location;
-
-				// if we made it to where we're going, switch to HOLD
-				if (myLocation.distanceSquaredTo(myTarget) < Consts.HOLD_DISTANCE)
-				{
-					myState = UnitState.HOLD; // switch to HOLD state
-					myAggression = UnitAggression.NO_TOWERS;
-				}
-				rallyMove();
-				break;
-				
-			case HOLD:
-				// switch to attack if our entire squad is strong enough
-				int rallyStrength = rc.readBroadcast(rallyStrengthChan);
-				
-				if (rallyStrength > Consts.RALLY_STRENGTH_THRESH)
-				{
-					myState = UnitState.ATTACK_MOVE;
-					myAggression = UnitAggression.NO_TOWERS;
-					break;
-				}
-				
-				// or, still holding....
-				if (!rc.canSenseRobot(rallyID))
-				{
-					// become the new squad leader
-					rallyID = rc.getID();
-					rc.broadcast(rallyLeaderChan, rallyID);
-					myAggression = UnitAggression.NEVER_MOVE_INTO_RANGE;
-				}
-				
-				rc.setIndicatorString(0, "HOLD, Leader: " + rallyID + ", strength " + rc.readBroadcast(rallyStrengthChan));
-
-				myTarget = rc.senseRobot(rallyID).location;
-				
-				// and then move toward rally location
-				rallyMove();
-				break;
-				
-			case ATTACK_MOVE:
-				// JUST RAAAAAAAAAAAAAAAAAAAAAAGE
-				// (check to make sure our ID isn't set as a leader)
-				if (rallyID == rc.getID())
-					rc.broadcast(rallyLeaderChan, 0);
-				rc.setIndicatorString(0, "RAAAAGING");
-				myAggression = UnitAggression.NO_TOWERS;
-				rc.setIndicatorString(1, "RAGE! rage val: " + myGrid.readValue(gridRageBase));
-				rageUpdate();
-				rageMove();
-				break;
-			}
-			
-			//updateSquadInfo();
-			/*if (Clock.getRoundNum()<1800) {
-				myTarget = rc.senseEnemyHQLocation();
-			}
-
-			else{
-				aggCoef = 1000;
-				MapLocation towers[] = rc.senseEnemyTowerLocations();
-				MapLocation closest = rc.senseEnemyHQLocation();
-				for(MapLocation loc: towers){
-					if(myLocation.distanceSquaredTo(loc)<myLocation.distanceSquaredTo(closest))
-						closest = loc;
-				myTarget = closest;
-				}
-			}*/
-			
-			
-			//rc.setIndicatorLine(myLocation, myLocation.add(d,3), 0, 255, 255);
-			
-			//rc.setIndicatorString(0, "Rage: " + ((gridRageBase)&65535) + " | Target: " + ((gridRageBase)>>16));
-
 		} catch (Exception e) {
 			System.out.println("Soldier Exception");
 			e.printStackTrace();
 		}
 	}
 	
-	// moves toward rally target if not the squad leader with simple move potential
-	// or other stuff if we are the squad leader
-	static void rallyMove() throws GameActionException
-	{
-		if (!rc.isCoreReady())
-			return;
-		
-		if (rc.getID() == rc.readBroadcast(rallyLeaderChan))
-		{
-			// descend the defensive grid if we're not too far already
-			int defval = myGrid.readValue(gridDefenseBase);
-			rc.setIndicatorString(1, "LEADER! defense val: " + defval + ", offense: " + myGrid.readValue(gridOffenseBase) + ", ID: " + myGrid.gridID);
-			if (defval < (Consts.GRID_BASE-6))
-				return;
-			//int bitmoves = gridPathfind(myLocation,gridRageBase,true);
-			
-			//move at half speed so others can catch up
-			if(rand.nextDouble()<0.5)
-			{	
-			// follow to best mining loc	
-				
-	
-				// int bitdir = gridPathfind(myLocation, gridMiningBase, true);
-				//tryMove(bitdir);
-				
-				//Direction dir = myLocation.directionTo(myHQ); // for now
-				int bitdir = gridPathfind(myLocation, gridOffenseBase, true);
-				tryMove(myLocation.directionTo(enemyHQ),bitdir,myAggression);
-				//tryMove(myLocation.directionTo(enemyHQ),bitmoves);
-			}
-			return;
-		}
-		
-		if (myTarget != null)
-		{
-			if (myTarget.equals(myLocation))
-				return;
-			
-			//rc.setIndicatorDot(myTarget.add(Direction.NORTH), 255, 255, 255);
-			// see if we're close, move straight towards it
-			if (myLocation.distanceSquaredTo(myTarget)<=24)
-			{
-				tryMove(myLocation.directionTo(myTarget),0,myAggression);
-				return;
-			}
-			else
-			{
-				int bitdir = gridPathfind(myLocation,gridRallyBase,true);
-				tryMove(myLocation.directionTo(myTarget),bitdir,myAggression);
-				return;
-			}
-		}
-		// not close, or no target, just go in the general direction
-		int bitdir = gridPathfind(myLocation,gridOffenseBase,true);
-		if (myTarget != null)
-			tryMove(myLocation.directionTo(myTarget),bitdir,myAggression);
-	}
-	
-	static void gridDefenseDescend() throws GameActionException
-	{
-		if (!rc.isCoreReady())
-			return;
-		// descend the defensive grid if we're not too far already
-		int defval = (gridDefenseBase);
-		if (defval < 995)
-			return;
-		int bitmoves = gridPathfind(myLocation,gridRageBase,true);
-		tryMove(myLocation.directionTo(enemyHQ),bitmoves,myAggression);
-		return;
-
-	}
-
-
 	static void doBeaver()
 	{
 		try {
@@ -2110,7 +1841,7 @@ public class RobotPlayer {
 			GRID_OD_FREQ = 5;
 		
 		// check if we're relatively far along and can't path to the enemy HQ
-		if (Clock.getRoundNum() > 600)
+		/*if (Clock.getRoundNum() > 600)
 		{
 			// check the enemy HQ's grid values
 			GridComponent engrid = new GridComponent(enemyHQ);
@@ -2121,7 +1852,7 @@ public class RobotPlayer {
 				// oh shit oh shit man, this removes towers as "no-fly zones" from grid
 				rc.broadcast(gridTowerDoneChan, 3);
 			}
-		}
+		}*/
 	}
 
 	static void miningDuties() throws GameActionException
@@ -2381,76 +2112,192 @@ public class RobotPlayer {
 		}
 	}
 
-	
-//=============================================================================================
-	
-	static void rageSetTarget(RobotInfo target, int ind) throws GameActionException
-	{
-		// we can add it
-		rc.broadcast(rageIDBase+ind, target.ID);
-	}
-	
-	static void defenseSetTarget(RobotInfo target, int ind) throws GameActionException
-	{
-		// we can add it
-		rc.broadcast(defenseIDBase+ind, target.ID);
-	}
-	
-	
-	static int rageOpenSlots() throws GameActionException
-	{
-		int rageslots = 0;
-		
-		for (int i=0; i<TARGET_NUM; i++)
-		{
-			int targetID = rc.readBroadcast(rageIDBase+i);
-			// is this rage target taken/valid?
-			if (!rc.canSenseRobot(targetID))
-			{
-				rageslots |= (1<<i);
-				rc.broadcast(rageIDBase+i, 0);
-			}
-		}
-		
-		return rageslots;
-	}
+	//=============================================================================================
 
-	static int defenseOpenSlots() throws GameActionException
+	// sets the state machine for what we're doing right now
+	static void doRageRally() throws GameActionException
 	{
-		int defenseSlots = 0;
+		RobotInfo[] enemyRobots = rc.senseNearbyRobots(myType.sensorRadiusSquared, enemyTeam);
 		
-		for (int i=0; i<TARGET_NUM; i++)
+		// get the ID of the robot we're rallying around
+		// (this only matters for hold/convoy)
+	
+		int rallyID = rc.readBroadcast(rallyLeaderChan);
+	
+		switch (myState)
 		{
-			int targetID = rc.readBroadcast(defenseIDBase+i);
-			// is this rage target taken/valid?
-			if (!rc.canSenseRobot(targetID))
+		case CONVOY:
+			// switch to HOLD if we made it to the squad leader
+	
+			// do we become the conservative squad leader?
+			if (enemyRobots.length != 0 || !rc.canSenseRobot(rallyID))
 			{
-				defenseSlots |= (1<<i);
-				rc.broadcast(defenseIDBase+i, 0);
+				// instantly become squad leader
+				rallyID = rc.getID();
+				rc.broadcast(rallyLeaderChan, rallyID);
+				// and act defensive
+				myAggression = UnitAggression.NEVER_MOVE_INTO_RANGE;
 			}
+			
+			rc.setIndicatorString(0, "CONVOY, Leader: " + rallyID + ", strength " + rc.readBroadcast(rallyStrengthChan));
+	
+			// get the location. this is always valid thanks to the above line
+			myTarget = rc.senseRobot(rallyID).location;
+	
+			// if we made it to where we're going, switch to HOLD
+			if (myLocation.distanceSquaredTo(myTarget) < Consts.HOLD_DISTANCE)
+			{
+				myState = UnitState.HOLD; // switch to HOLD state
+				myAggression = UnitAggression.NO_TOWERS;
+			}
+			rallyMove();
+			break;
+			
+		case HOLD:
+			// switch to attack if our entire squad is strong enough
+			int rallyStrength = rc.readBroadcast(rallyStrengthChan);
+			
+			if (rallyStrength > Consts.RALLY_STRENGTH_THRESH)
+			{
+				if (rallyID == rc.getID())
+				{
+					rc.broadcast(rallyLeaderChan, 0);
+				}
+				myState = UnitState.ATTACK_MOVE;
+				myAggression = UnitAggression.NO_TOWERS;
+				break;
+			}
+			
+			// or, still holding....
+			if (!rc.canSenseRobot(rallyID))
+			{
+				// become the new squad leader
+				rallyID = rc.getID();
+				rc.broadcast(rallyLeaderChan, rallyID);
+				myAggression = UnitAggression.NEVER_MOVE_INTO_RANGE;
+			}
+			
+			rc.setIndicatorString(0, "HOLD, Leader: " + rallyID + ", strength " + rc.readBroadcast(rallyStrengthChan));
+	
+			myTarget = rc.senseRobot(rallyID).location;
+			
+			// and then move toward rally location
+			rallyMove();
+			break;
+			
+		case ATTACK_MOVE:
+			// JUST RAAAAAAAAAAAAAAAAAAAAAAGE
+			// first, check leader status
+			int rageLeader = rc.readBroadcast(rageLeaderChan);
+			// if there isn't one, we're doin' it, baby
+			if (!rc.canSenseRobot(rageLeader))
+			{
+				// set ourselves as rage leader
+				rageLeader = rc.getID();
+				rc.broadcast(rageLeaderChan,rageLeader);
+			}
+			
+			rc.setIndicatorString(0, "RAGE, Leader: " + rageLeader + ", val: " + myGrid.readValue(gridRageBase));
+			myAggression = UnitAggression.NO_TOWERS;
+			rageUpdateTarget();
+			rageMove();
+			break;
+		}
+	}
+		
+	// moves toward rally target if not the squad leader with simple move potential
+	// or other stuff if we are the squad leader
+	static void rallyMove() throws GameActionException
+	{
+		if (!rc.isCoreReady())
+			return;
+		
+		if (rc.getID() == rc.readBroadcast(rallyLeaderChan))
+		{
+			// descend the defensive grid if we're not too far already
+			int defval = myGrid.readValue(gridDefenseBase);
+			//rc.setIndicatorString(1, "LEADER! defense val: " + defval + ", offense: " + myGrid.readValue(gridOffenseBase) + ", ID: " + myGrid.gridID);
+			if (defval < (Consts.GRID_BASE-6))
+				return;
+			//int bitmoves = gridPathfind(myLocation,gridRageBase,true);
+			
+			//move at half speed so others can catch up
+			if(rand.nextDouble()<0.5)
+			{	
+			// follow to best mining loc	
+				
+	
+				// int bitdir = gridPathfind(myLocation, gridMiningBase, true);
+				//tryMove(bitdir);
+				
+				//Direction dir = myLocation.directionTo(myHQ); // for now
+				int bitdir = gridPathfind(myLocation, gridOffenseBase, true);
+				tryMove(myLocation.directionTo(enemyHQ),bitdir,myAggression);
+				//tryMove(myLocation.directionTo(enemyHQ),bitmoves);
+			}
+			return;
 		}
 		
-		return defenseSlots;
+		if (myTarget != null)
+		{
+			if (myTarget.equals(myLocation))
+				return;
+			
+			//rc.setIndicatorDot(myTarget.add(Direction.NORTH), 255, 255, 255);
+			// see if we're close, move straight towards it
+			if (myLocation.distanceSquaredTo(myTarget)<=24)
+			{
+				tryMove(myLocation.directionTo(myTarget),0,myAggression);
+				return;
+			}
+			else
+			{
+				int bitdir = gridPathfind(myLocation,gridRallyBase,true);
+				tryMove(myLocation.directionTo(myTarget),bitdir,myAggression);
+				return;
+			}
+		}
+		// not close, or no target, just go in the general direction
+		int bitdir = gridPathfind(myLocation,gridOffenseBase,true);
+		if (myTarget != null)
+			tryMove(myLocation.directionTo(myTarget),bitdir,myAggression);
 	}
-	
-	static void rageUpdate() throws GameActionException
+		
+	static void rageUpdateTarget() throws GameActionException
 	{
 		// get full list of robots
 		RobotInfo[] bots = rc.senseNearbyRobots(myType.sensorRadiusSquared,myTeam.opponent());
 		
-		// and open rage target slots
-		int rageslots = rageOpenSlots();
+		int ragePriority = 0;
+		int curTargetID = rc.readBroadcast(rageTargetChan);
 		
+		// set the priority, if we know the target
+		if (rc.canSenseRobot(curTargetID))
+			ragePriority = Consts.ragePriorities[rc.senseRobot(curTargetID).type.ordinal()];
+		
+		boolean rageset = false;
+		
+		// and see if we have a better target...
 		for (RobotInfo ri : bots)
 		{
-			// can we add any?
-			if (rageslots == 0)
-				break;
-			// then add it
-			int rageind = Integer.numberOfTrailingZeros(rageslots);
-			rageSetTarget(ri,rageind);
-			// and nuke rageslots
-			rageslots &= rageslots-1;
+			int newpriority = Consts.ragePriorities[ri.type.ordinal()];
+//			if (ri.supplyLevel == 0 && ri.type.supplyUpkeep > 0)
+//				newpriority *= 2;
+			
+			if (newpriority > ragePriority)
+			{
+				// then add it, and set ourselves as leader
+				curTargetID = ri.ID;
+				ragePriority = newpriority;
+				rageset = true;
+			}
+		}
+		
+		// and if we changed rage targets, broadcast our ID and the target ID
+		if (rageset)
+		{
+			rc.broadcast(rageTargetChan, curTargetID);
+			rc.broadcast(rageLeaderChan, rc.getID());
 		}
 	}
 	
@@ -2465,95 +2312,66 @@ public class RobotPlayer {
 		for (RobotInfo ri : bots)
 		{
 			addEnemyToTargets(defenseTargetChannels, ri.ID);
-
-			/*
-			// can we add any?
-			if (defenceSlots == 0){
-				rc.setIndicatorString(2, "Enemy Spotted: no free defence slots");
-				break;
-			}
-			// then add it
-			int defenceInd = Integer.numberOfTrailingZeros(defenceSlots);
-			defenceSetTarget(ri,defenceInd);
-			// and nuke defence slots
-			defenceSlots &= defenceSlots-1;
-			
-			rc.setIndicatorString(2, "Enemy Spotted, added to defence list");
-			*/
 		}
 	}
 	
 	
 	static void rageMove() throws GameActionException
 	{
-
-		
 		// if we can't move, meh
 		if (!rc.isCoreReady())
 			return;
-			
-		// if rage leader
-		if (rc.getID() == rc.readBroadcast(rageLeaderChan))
+		
+		int rageLeaderID = rc.readBroadcast(rageLeaderChan);
+		int rageTargetID = rc.readBroadcast(rageTargetChan);
+		
+		MapLocation leaderLoc = null;
+		MapLocation targetLoc = null;
+		
+		if (rc.canSenseRobot(rageLeaderID))
+			leaderLoc = rc.senseRobot(rageLeaderID).location;
+		if (rc.canSenseRobot(rageTargetID))
+			targetLoc = rc.senseRobot(rageTargetID).location;
+		
+		// if we're close to our rage target, unconditionally move towards it
+		if (targetLoc != null && myLocation.distanceSquaredTo(targetLoc) < Consts.RAGE_DIST)
 		{
-
-			// this rage target is the index, not the ID
-			int rageVal = myGrid.readValue(gridRageBase);
-			int rageID = (rageVal>>>16);
-
-			MapLocation targetLoc = null;
-
-			// first, check if this is still a live rage target...
-			if (rc.canSenseRobot(rageID))
+			tryMove(myLocation.directionTo(targetLoc),0,myAggression);
+			return;
+		}
+		
+		// otherwise, long-range move, what do we do?
+		
+		// if rage leader
+		if (rc.getID() == rageLeaderID)
+		{
+			// ok, if we don't have a target, or we're somehow too far from it, just walk towards the enemy
+			int bitdir = gridPathfind(myLocation,gridOffenseBase,true);
+			tryMove(myLocation.directionTo(enemyHQ),bitdir,myAggression);
+			return;
+		}
+		else
+		{
+			// not rage leader, move towards rage leader
+			if (leaderLoc != null && myLocation.distanceSquaredTo(leaderLoc) < Consts.RAGE_DIST)
 			{
-				RobotInfo ri = rc.senseRobot(rageID);
-				targetLoc = ri.location;
-				rc.setIndicatorString(0,"RAGE leader. Target = " + rageID);
-				// update its grid location
-				// rc.broadcast(rageGridBase+rageTarget, rageGrid);
-				// check if we're within attack range or so
-				if (myLocation.distanceSquaredTo(ri.location) < 49)
-				{
-					// then just move directly towards the target
-					tryMove(myLocation.directionTo(ri.location),0,myAggression);
-					rc.setIndicatorDot(targetLoc.add(Direction.NORTH), 0,0, 0); // black dot
-					return;
-				}
+				tryMove(myLocation.directionTo(leaderLoc),0,myAggression);
+				return;
 			}
-
-			// otherwise, do long-range move towards target
+			
+			// otherwise, do long-range move towards leader
 			int bitdir = gridPathfind(myLocation,gridRageBase,true);
-			if (targetLoc != null)
-				tryMove(myLocation.directionTo(targetLoc),bitdir,myAggression);
+			if (leaderLoc != null)
+				tryMove(myLocation.directionTo(leaderLoc),bitdir,myAggression);
 			else
 				tryMove(Direction.NONE,bitdir,myAggression);
 		}
-		
-		// other tanks follow
-		if (myTarget != null)
-		{
-			if (myTarget.equals(myLocation))
-				return;
-			
-			rc.setIndicatorDot(myTarget, 255, 255, 255);
-			// see if we're close, move straight towards it
-			if (myLocation.distanceSquaredTo(myTarget)<=24)
-			{
-				tryMove(myLocation.directionTo(myTarget),0,myAggression);
-				return;
-			}
-		}
-		// not close, or no target, just go in the general direction
-		int bitdir = gridPathfind(myLocation,gridRageBase,true);
-		if (myTarget != null)
-			tryMove(myLocation.directionTo(myTarget),bitdir,myAggression);		
 	}
 	
 	
 
 	static void defenseMove(boolean enemiesInSight) throws GameActionException
 	{
-
-		
 		// if we can't move, meh
 		if (!rc.isCoreReady())
 			return;
@@ -2597,15 +2415,9 @@ public class RobotPlayer {
 		}
 		// not close, or no target, just go in the general direction
 		rallyMove();
-
-		
-		
-		
-		
 	}
 	
-	
-//=============================================================================================
+	//=============================================================================================
 	
 	static MapLocation gridCenter(int gridX, int gridY)
 	{
@@ -2895,7 +2707,7 @@ public class RobotPlayer {
 		}
 		
 		// advance the pointer
-		rc.broadcast(gridTowerPtrChan,grid.nextCCPointer());
+		rc.broadcast(gridTowerPtrChan,grid.nextIndexPointer());
 		
 		// ok, now let's do this
 		MapLocation[] towers = rc.senseEnemyTowerLocations();
@@ -3317,24 +3129,21 @@ public class RobotPlayer {
 		rc.broadcast(gridRRPtrChan,grid.nextCCPointer());		
 
 		// now find the rally target
-		int rallyID = rc.readBroadcast(rallyLeaderChan);
+		int rallyLeader = rc.readBroadcast(rallyLeaderChan);
 		int rallyval = grid.readValue(gridRallyBase) + Consts.GRID_DECAY;
-		if (rc.canSenseRobot(rallyID))
+		if (rc.canSenseRobot(rallyLeader))
 		{
-			RobotInfo ri = rc.senseRobot(rallyID);
-			if (grid.isInMaybe(ri.location))
+			RobotInfo ri = rc.senseRobot(rallyLeader);
+			if (ri.location.distanceSquaredTo(grid.getCenter()) <= GRID_SENSE && grid.isInMaybe(ri.location))
 				rallyval = Consts.GRID_BASE;
 		}
 		
-		int leaderid = rc.readBroadcast(rageLeaderChan);
+		int rageLeader = rc.readBroadcast(rageLeaderChan);
 		int rageval = grid.readValue(gridRageBase) + Consts.GRID_DECAY;
-		// so it's in this grid square, try to sense it
-		if (rc.canSenseRobot(leaderid))
+		if (rc.canSenseRobot(rageLeader))
 		{
-			RobotInfo ri = rc.senseRobot(leaderid);
-			
-			int ragegrid = GridComponent.indexFromLocation(ri.location);
-			if (ragegrid == grid.gridIndex && grid.isInMaybe(ri.location))
+			RobotInfo ri = rc.senseRobot(rageLeader);
+			if (ri.location.distanceSquaredTo(grid.getCenter()) <= GRID_SENSE && grid.isInMaybe(ri.location))
 			{
 				// set gridval to a large value
 				rageval = Consts.GRID_BASE;
@@ -3357,7 +3166,7 @@ public class RobotPlayer {
 				if ((edges&pathable&bitEdge[dir]) > 0) // keep largest value
 				{
 					rallyval = Math.max(rallyval,adjgrid.readValue(gridRallyBase)+Consts.GRID_DECAY);
-					rageval = Math.max(rallyval,adjgrid.readValue(gridRageBase)+Consts.GRID_DECAY);
+					rageval = Math.max(rageval,adjgrid.readValue(gridRageBase)+Consts.GRID_DECAY);
 				}
 
 				// and cycle on to the next connected component
@@ -3398,11 +3207,22 @@ public class RobotPlayer {
 		rc.broadcast(gridODPtrChan,grid.nextCCPointer());		
 				
 		// ok, get the base value for this grid square
-		//int gridfriend = grid.readValue(gridFriendBase);
-		//int gridenemy = grid.readValue(gridEnemyBase);
-		
 		int defval = grid.readValue(gridDefenseBase)+Consts.GRID_DECAY;
 		int offval = grid.readValue(gridOffenseBase)+Consts.GRID_DECAY;
+		
+		// make sure the values are initialized
+		if (defval == Consts.GRID_DECAY)
+		{
+			MapLocation gridcenter = grid.getCenter();
+			int disttohq = Math.abs(gridcenter.x-myHQ.x)/5+Math.abs(gridcenter.y-myHQ.y)/5;
+			defval = Consts.GRID_INIT_BASE-disttohq;
+		}
+		if (offval == Consts.GRID_DECAY)
+		{
+			MapLocation gridcenter = grid.getCenter();
+			int disttohq = Math.abs(gridcenter.x-enemyHQ.x)/5+Math.abs(gridcenter.y-enemyHQ.y)/5;
+			offval = Consts.GRID_INIT_BASE-disttohq;
+		}
 		
 		// check HQs
 		if (GridComponent.indexFromLocation(enemyHQ) == grid.gridIndex)// && grid.isInMaybe(enemyHQ))
@@ -4484,10 +4304,10 @@ public class RobotPlayer {
 				
 				GridComponent grid = new GridComponent(gridind);
 				
-				if (Clock.getRoundNum()%50 < 5)
+				if (Clock.getRoundNum()%50 < 15)
 					debug_drawConnections(grid);
 				
-				debug_drawBestDirection(grid,gridOffenseBase);
+				debug_drawBestDirection(grid,gridRageBase);
 				//debug_drawBestDirection(grid,gridDefenseBase);
 				//debug_drawBestDirection(grid,gridRallyBase);
 //				System.out.println(grid.readValue(gridPotentialBase));
