@@ -1,4 +1,4 @@
-package rAAAge_5_2;
+package rAAAge_5_3;
 
 import battlecode.common.*;
 
@@ -519,11 +519,12 @@ public class RobotPlayer {
 	// Scouts and Resupply
 	static enum ScoutState
 	{
-		LOAD, //
-		DELIVER,	// 
-		HARASS,	//
-		SCOUT, //
-		LAUNCHER_BLITZ,	// 
+		LOAD, // 
+		DELIVER, // deliver a supply payload
+		HARASS,	// harass
+		SCOUT, // fly around at random
+		LAUNCHER_BLITZ,	// bum rush
+		FLYOVER // initial map check
 	}
 
 	static String toString(ScoutState state) {
@@ -545,6 +546,9 @@ public class RobotPlayer {
 		case LAUNCHER_BLITZ:
 			ans =  "LAUNCHER_BLITZ";
 			break;
+		case FLYOVER:
+			ans =  "FLYOVER";
+			break;
 		}
 		return ans;
 	}
@@ -558,6 +562,8 @@ public class RobotPlayer {
 	
 	// Drones
 	static int t;
+	static int droneNumChan = curChan++;
+	static int droneNum;
 	static int launcherID;
 	static int launcherIDchan = curChan++;
 	
@@ -794,8 +800,15 @@ public class RobotPlayer {
 				minerState = MinerState.SEARCHING; // initially miners are in supply chain
 				break;
 			case DRONE:
-				scoutState= ScoutState.LOAD; // initially drones are loading
 				t = 0; // move timer for SCOUT state
+				int n = rc.readBroadcast(droneNumChan); // count drones
+				droneNum = n + 1;
+				rc.broadcast(droneNumChan, droneNum);
+				System.out.println("New drone: #" + droneNum);
+				if(droneNum <= 8)
+					scoutState= ScoutState.FLYOVER; // first 5 drones do a quick map fly over
+				else
+					scoutState= ScoutState.LOAD; // initially drones are loading
 				break;
 			}
 		} catch (Exception e) {
@@ -1406,6 +1419,48 @@ public class RobotPlayer {
 		try {
 			switch (scoutState)
 			{
+			case FLYOVER:
+				t += 1;
+				myAggression = UnitAggression.NEVER_MOVE_INTO_RANGE;
+				MapLocation corner1 = gridCenter(gridMinY * GRID_DIM + gridMinX);
+				MapLocation corner2 = gridCenter(gridMaxY * GRID_DIM + gridMaxX);
+				MapLocation dest = null;
+				switch(droneNum)
+				{
+					case 1:
+						dest = new MapLocation(corner1.x+5, corner1.y+5);
+						break;
+					case 2:
+						dest = new MapLocation(corner2.x-5, corner1.y+5);
+						break;
+					case 3:
+						dest = new MapLocation(corner1.x+5, corner2.y-5);
+						break;
+					case 4:
+						dest = new MapLocation(corner2.x-5, corner2.y-5);
+						break;
+					case 5:
+						dest = new MapLocation((corner1.x+corner2.x)/2, corner2.y-5);
+						break;
+					case 6:
+						dest = new MapLocation((corner1.x+corner2.x)/2, corner1.y+5);
+						break;
+					case 7:
+						dest = new MapLocation(corner1.x+5, (corner1.y+corner2.y)/2);
+						break;
+					case 8:
+						dest = new MapLocation(corner2.x-5, (corner1.y+corner2.y)/2);
+						break;
+				}
+				//System.out.println("droneNum = " + droneNum + ", dest = (" + dest.x + ", " + dest.y + "), corner1 = (" + corner1.x + ", " + corner1.y + "), corner2 = (" + corner2.x + ", " + corner2.y + ")");
+				if(t==2)
+					System.out.println("droneNum = " + droneNum + ", dest = (" + dest.x + ", " + dest.y + ")");
+				if(myLocation.distanceSquaredTo(dest)<5 || t>100)
+					scoutState = ScoutState.HARASS;
+				else
+					tryMove(myLocation.directionTo(dest), 0, myAggression);
+				break;
+			
 			case LOAD:
 				// stay out of enemy tower range
 				myAggression = UnitAggression.NO_TOWERS;
