@@ -1,9 +1,10 @@
-package player1;
+package rAAAge_5_0;
 
 import battlecode.common.*;
 
 import java.util.*;
 import java.lang.*;
+
 
 /* Sensing location defines etc */
 class RobotConsts
@@ -484,6 +485,30 @@ public class RobotPlayer {
 	static UnitState myState = UnitState.CONVOY;
 	static UnitAggression myAggression = UnitAggression.NEVER_MOVE_INTO_RANGE;
 	
+	static enum BuildOrder
+	{
+		STANDARD,
+		LARGE_MAP,
+		SMALL_MAP
+	}
+	static BuildOrder myBuild = BuildOrder.STANDARD;
+	static String toString(BuildOrder myBuild) {
+		String ans = null;
+		switch(myBuild)
+		{
+		case STANDARD:
+			ans =  "STANDARD";
+			break;
+		case LARGE_MAP:
+			ans = "LARGE_MAP";
+			break;
+		case SMALL_MAP:
+			ans =  "SMALL_MAP";
+			break;
+		}
+		return ans;
+	}
+
 	//===============================================================================================================
 	
 	// Scouts and Resupply
@@ -553,6 +578,10 @@ public class RobotPlayer {
 	static int rallyYChan = curChan++;
 	static int engageDirChan = curChan++;
 
+	// build order chans
+	static int firstBeaverChan = curChan++;
+	static int nextSpawnChan = curChan++;
+	
 	//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 	// enemy tower bookkeeping
@@ -1141,6 +1170,9 @@ public class RobotPlayer {
 			if (rc.isWeaponReady())
 				attackSomething();
 			
+			// initialize first beaver flag
+			rc.broadcast(firstBeaverChan,0);
+			
 			// initialize number of supply scouts loading
 			rc.broadcast(supplyLoadingChan,0);
 			supplyFactor = 1000; // HQ always giving away supply
@@ -1233,6 +1265,12 @@ public class RobotPlayer {
 	static void doHelipad()
 	{
 		try {
+			int nextSpawn = rc.readBroadcast(nextSpawnChan);
+		rc.setIndicatorString(0,"Next Spawn = " + RobotType.values()[nextSpawn]);
+		
+		if (nextSpawn == RobotType.DRONE.ordinal())
+			spawnUnit(RobotType.DRONE);
+			/*
 			if(rand.nextInt(100) < 20)
 			{
 				RobotInfo[] units = rc.senseNearbyRobots(10000,myTeam);
@@ -1244,7 +1282,8 @@ public class RobotPlayer {
 				}
 				if(d<numDrones)
 					spawnUnit(RobotType.DRONE);
-			}
+				
+			}*/
 		} catch (Exception e) {
 			System.out.println("Helipad Exception");
 			e.printStackTrace();
@@ -1254,6 +1293,12 @@ public class RobotPlayer {
 	static void doMinerFactory()
 	{
 		try {
+			int nextSpawn = rc.readBroadcast(nextSpawnChan);
+		rc.setIndicatorString(0,"Next Spawn = " + RobotType.values()[nextSpawn]);
+		
+		if (nextSpawn == RobotType.MINER.ordinal())
+			spawnUnit(RobotType.MINER);
+			/*
 			RobotInfo[] bots = rc.senseNearbyRobots(99999, myTeam);
 			int nmine = 0;
 			for (RobotInfo b: bots)
@@ -1264,6 +1309,7 @@ public class RobotPlayer {
 			{
 				spawnUnit(RobotType.MINER);
 			}
+			*/
 		} catch (Exception e) {
 			System.out.println("Miner Factory Exception");
 			e.printStackTrace();
@@ -1274,7 +1320,19 @@ public class RobotPlayer {
 	static void doBarracks()
 	{
 		try {
+			int nextSpawn = rc.readBroadcast(nextSpawnChan);
+			rc.setIndicatorString(0,"Next Spawn = " + RobotType.values()[nextSpawn]);
+		
+			if (nextSpawn == RobotType.SOLDIER.ordinal())
+			spawnUnit(RobotType.SOLDIER);
+		
+			if (nextSpawn == RobotType.BASHER.ordinal())
+			spawnUnit(RobotType.BASHER);
+			
+			
+			/*
 			RobotInfo[] bots = rc.senseNearbyRobots(99999, myTeam);
+		
 			int soldiers = 0;
 			for (RobotInfo b: bots)
 			{
@@ -1287,7 +1345,7 @@ public class RobotPlayer {
 			{
 				trySpawn(facing,RobotType.SOLDIER);
 			}
-			/*RobotInfo[] bots = rc.senseNearbyRobots(99999, myTeam);
+			RobotInfo[] bots = rc.senseNearbyRobots(99999, myTeam);
 			for (RobotInfo b: bots)
 				if (b.type == RobotType.SOLDIER)
 
@@ -1297,8 +1355,8 @@ public class RobotPlayer {
 			else if(r<0.75)
 				trySpawn(facing,RobotType.BASHER);
 									return;
-			 */
-			/*RobotInfo[] bots = rc.senseNearbyRobots(99999, myTeam);
+			 
+			RobotInfo[] bots = rc.senseNearbyRobots(99999, myTeam);
 			for (RobotInfo b: bots)
 				if (b.type == RobotType.SOLDIER)
 					return;
@@ -1602,6 +1660,12 @@ public class RobotPlayer {
 	static void doTankFactory()
 	{
 		try {
+			int nextSpawn = rc.readBroadcast(nextSpawnChan);
+			rc.setIndicatorString(0,"Next Spawn = " + RobotType.values()[nextSpawn]);
+			
+			if (nextSpawn == RobotType.TANK.ordinal())
+				spawnUnit(RobotType.TANK);
+			/*
 			RobotInfo[] bots = rc.senseNearbyRobots(99999, myTeam);
 			int tanks = 0;
 			for (RobotInfo b: bots)
@@ -1615,6 +1679,7 @@ public class RobotPlayer {
 			{
 				trySpawn(facing,RobotType.TANK);
 			}
+			*/
 		} catch (Exception e) {
 			System.out.println("Tank Factory Exception");
 			e.printStackTrace();
@@ -1655,8 +1720,238 @@ public class RobotPlayer {
 	{
 		try {
 			defenseUpdate();
+			myAggression = UnitAggression.NEVER_MOVE_INTO_RANGE;
+			attackSomething();
+			defenseUpdate();
+
 			
+			// move off of directly diag squares to HQ
+			int distSq = myLocation.distanceSquaredTo(myHQ);
+	
+			if (distSq == 2)
+			{
+				Direction moveDir = myHQ.directionTo(myLocation).rotateRight();	
+					tryMove(moveDir,0,myAggression);
+				
+			}
+
+			// read build order instructions
+			int toBuild = rc.readBroadcast(firstBeaverChan);
+			//rc.setIndicatorString(1, "toBuild = " + toBuild);
 			
+			if (toBuild == 0) // 1st beaver to move thinks, deciding builds
+			{
+				int[] numUnits = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+
+				// count up all units
+				RobotInfo[] ourTeam = rc.senseNearbyRobots(100000, rc.getTeam());
+				for(RobotInfo ri: ourTeam)
+					numUnits[ri.type.ordinal()] += 1;			
+				rc.setIndicatorString(1, "numUnits = " + Arrays.toString(numUnits));
+
+				int[] buildOrder = {}; // initialize build order
+				int[] spawnPriorities = {}; // initialize spawn priorities
+				
+				switch (myBuild)
+				{
+				case STANDARD:		
+					// this list defines the build order. make sure you don't mess up building prereqs.
+					int[] stdBuildOrder = {8, 5, 4, 7, 8, 7, 2, 7, 2, 7, 2, 2, 7, 7, 7, 7, 7, 7};
+					buildOrder = stdBuildOrder;
+					
+					// this list defines spawn priorities
+				    /* Ordinal unit spawn priorities */
+					int[] stdSpawnPriorities = {
+						   0, // HQ 
+						   0, // TOWER
+						   0, // SUPPLYDEPOT
+						   0, // TECHNOLOGYINSTITUTE
+						   0, // BARRACKS
+						   0, // HELIPAD
+						   0, // TRAININGFIELD
+						   0, // TANKFACTORY
+						   0, // MINERFACTORY
+						   0, // HANDWASHSTATION
+						   0, // AEROSPACELAB
+						   80, // BEAVER
+						   0, // COMPUTER
+						   0, // SOLDIER
+						   0, // BASHER
+						   400, // MINER
+						   200, // DRONE
+						   600, // TANK
+						   0, // COMMANDER
+						   0, // LAUNCHER
+						   0  // MISSILE
+					};
+					spawnPriorities = stdSpawnPriorities;
+					
+					break;
+				case LARGE_MAP:
+					// this list defines the build order. make sure you don't mess up building prereqs.
+					int[] lgBuildOrder = {8, 5, 4, 7, 8, 7, 2, 7, 2, 7, 2, 2, 7, 7, 7, 7, 7, 7};
+					buildOrder = lgBuildOrder;
+					
+					// this list defines spawn priorities
+				    /* Ordinal unit spawn priorities */
+					int[] lgSpawnPriorities = {
+						   0, // HQ 
+						   0, // TOWER
+						   0, // SUPPLYDEPOT
+						   0, // TECHNOLOGYINSTITUTE
+						   0, // BARRACKS
+						   0, // HELIPAD
+						   0, // TRAININGFIELD
+						   0, // TANKFACTORY
+						   0, // MINERFACTORY
+						   0, // HANDWASHSTATION
+						   0, // AEROSPACELAB
+						   80, // BEAVER
+						   0, // COMPUTER
+						   0, // SOLDIER
+						   0, // BASHER
+						   400, // MINER
+						   200, // DRONE
+						   600, // TANK
+						   0, // COMMANDER
+						   0, // LAUNCHER
+						   0  // MISSILE
+					};
+					spawnPriorities = lgSpawnPriorities;
+					break;	
+					
+				case SMALL_MAP:
+					// this list defines the build order. make sure you don't mess up building prereqs.
+					int[] smBuildOrder = {8, 5, 4, 7, 8, 7, 2, 7, 2, 7, 2, 2, 7, 7, 7, 7, 7, 7};
+					buildOrder = smBuildOrder;
+					int[] smSpawnPriorities = {
+							   0, // HQ 
+							   0, // TOWER
+							   0, // SUPPLYDEPOT
+							   0, // TECHNOLOGYINSTITUTE
+							   0, // BARRACKS
+							   0, // HELIPAD
+							   0, // TRAININGFIELD
+							   0, // TANKFACTORY
+							   0, // MINERFACTORY
+							   0, // HANDWASHSTATION
+							   0, // AEROSPACELAB
+							   80, // BEAVER
+							   0, // COMPUTER
+							   0, // SOLDIER
+							   0, // BASHER
+							   400, // MINER
+							   200, // DRONE
+							   400, // TANK
+							   0, // COMMANDER
+							   0, // LAUNCHER
+							   0  // MISSILE
+					};
+					spawnPriorities = smSpawnPriorities;
+					break;
+
+				}
+
+				// decide next spawn
+				int nextSpawn = 0; 
+				int topSpawnPriority = 0;
+				
+				if (numUnits[8]>0 && spawnPriorities[15]/(numUnits[15]+1) > topSpawnPriority)
+				{
+					nextSpawn = 15; //miner needs mine fact
+					topSpawnPriority = spawnPriorities[15]/(numUnits[15]+1);
+				}
+				if (numUnits[5]>0 && spawnPriorities[16]/(numUnits[16]+1) > topSpawnPriority)
+				{
+					nextSpawn = 16; //drone needs helipad
+					topSpawnPriority = spawnPriorities[16]/(numUnits[16]+1);
+				}
+				if (numUnits[4]>0 && spawnPriorities[13]/(numUnits[13]+1) > topSpawnPriority)
+				{
+					nextSpawn = 13; //soldier needs barracks
+					topSpawnPriority = spawnPriorities[13]/(numUnits[13]+1);
+				}
+				
+				if (numUnits[4]>0 && spawnPriorities[14]/(numUnits[14]+1) > topSpawnPriority)
+				{
+					nextSpawn = 14; //basher needs barracks
+					topSpawnPriority = spawnPriorities[14]/(numUnits[14]+1);
+				}
+				if (numUnits[7]>0 && spawnPriorities[17]/(numUnits[17]+1) > topSpawnPriority)
+				{
+					nextSpawn = 17; //tank needs tank fact
+					topSpawnPriority = spawnPriorities[17]/(numUnits[17]+1);
+				}
+				if (numUnits[10]>0 && spawnPriorities[19]/(numUnits[19]+1) > topSpawnPriority)
+				{
+					nextSpawn = 19; //launcher needs aero lab
+					topSpawnPriority = spawnPriorities[19]/(numUnits[19]+1);
+				}
+				if (numUnits[6]>0 && spawnPriorities[18]/(numUnits[18]+1) > topSpawnPriority)
+				{
+					nextSpawn = 18; // commander needs training field
+					topSpawnPriority = spawnPriorities[18]/(numUnits[18]+1);
+				}
+
+
+				rc.broadcast(nextSpawnChan, nextSpawn);
+				//rc.setIndicatorString(1, "Next Spawn = " + nextSpawn);
+				
+				// execute build order
+				boolean spaceToBuild = true; // initialize ok to build
+				int[] buildTotals = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+
+				// check to see where we are in the build. will fill in holes if things were destroyed
+				int currentBuild = 0;
+				for (int i=0; i<buildOrder.length; i++)
+				{
+					buildTotals[buildOrder[i]] += 1;
+					if (buildTotals[buildOrder[i]]>numUnits[buildOrder[i]])
+					{
+						currentBuild = i;
+						toBuild = buildOrder[i];
+						rc.broadcast(firstBeaverChan,toBuild); // broadcast next build
+						rc.setIndicatorString(0, "Current Build Index = " + currentBuild);
+						break;
+					}
+				}	
+				rc.setIndicatorString(2, "buildTotals = " + Arrays.toString(buildTotals));
+
+
+				// build next building, give other beavers a chance to do it
+				if (rand.nextDouble()< 0.3)
+				{
+					spaceToBuild = buildUnitParity(RobotType.values()[buildOrder[currentBuild]]);
+					rc.broadcast(firstBeaverChan,-toBuild); // negative means done
+				}
+				
+				if (!spaceToBuild) // if trouble building, probably because no space, move away from HQ
+				{
+					tryMove(myHQ.directionTo(myLocation),0,myAggression);
+					rc.broadcast(firstBeaverChan,toBuild); // positive means didn't build
+				}
+
+			}
+			else if (toBuild > 0)
+			{
+				boolean spaceToBuild = buildUnitParity(RobotType.values()[toBuild]);
+				if (rand.nextDouble()< 0.3 && spaceToBuild && rc.getTeamOre()>RobotType.values()[toBuild].oreCost && rc.isCoreReady())
+					rc.broadcast(firstBeaverChan,-toBuild); // flag it as done
+				else if (!spaceToBuild) // if no space to build, try going farther away.
+					tryMove(myHQ.directionTo(myLocation),0,myAggression);
+			}
+			else
+			{ // otherwise, try to get close to HQ
+				tryMove(myLocation.directionTo(myHQ),0,myAggression);
+			}
+
+			// mine in place
+			if(rc.isCoreReady()&&rc.canMine()){
+				rc.mine();
+			}
+
+			supplyFactor = 1;
+			/*
 			facing = myLocation.directionTo(rc.senseEnemyHQLocation());
 			RobotInfo[] ourTeam = rc.senseNearbyRobots(100000, rc.getTeam());
 			int n = 0; // current number of miner factories
@@ -1689,7 +1984,7 @@ public class RobotPlayer {
 					rc.mine();
 				}
 			}
-			/*
+
 			else if (o<1)
 			{
 				tryBuild(facing.opposite(),RobotType.HELIPAD);
@@ -1705,7 +2000,7 @@ public class RobotPlayer {
 					rc.mine();
 				}
 			}
-			*/
+		
 			else
 			{
 				if(n < numMinerFactories && (n == o)) 
@@ -1735,12 +2030,15 @@ public class RobotPlayer {
 			}
 			
 			supplyFactor = 0.5;
-			
+			*/
 		} catch (Exception e) {
 			System.out.println("Beaver Exception");
 			e.printStackTrace();
 		}
 	}
+
+	
+	
 	
 	//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  All you do is call attackWithScout() instead of attackSomething()
 	
@@ -4261,27 +4559,32 @@ public class RobotPlayer {
 		}
 	}
 	
-	static void buildUnitParity(RobotType type) throws GameActionException
+	static boolean buildUnitParity(RobotType type) throws GameActionException
 	{
+		boolean spaceToBuild = true; 
 		if(rc.getTeamOre()>type.oreCost && rc.isCoreReady())
 		{
-			Direction buildDir = getRandomDirection();
+			spaceToBuild = false; //if doesn't build it was bc no space
+			Direction buildDir = myLocation.directionTo(myHQ);
 			for (int i=0; i<8; i++)
 			{
-				MapLocation buildLoc = rc.getLocation().add(buildDir);
-
+				MapLocation buildLoc = myLocation.add(buildDir);
 				int sameX = (myHQ.x + buildLoc.x) % 2; // 0 if same
 				int sameY = (myHQ.y + buildLoc.y) % 2; // 0 if same
 				
 				int okParity = (sameX+sameY)%2; // 0 if ok
+				
 				if(rc.canBuild(buildDir, type) && okParity == 0)
 				{
 					rc.build(buildDir, type);
-					return;
+					spaceToBuild = true;
+					break;
 				}
 				buildDir = buildDir.rotateLeft();
-			}
+			}	
+			
 		}
+		return spaceToBuild;
 	}
 
 	static void spawnUnit(RobotType type) throws GameActionException
