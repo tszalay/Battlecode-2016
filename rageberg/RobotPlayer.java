@@ -21,10 +21,6 @@ class RobotConsts
 					    0,   0,   0,   0,   0 };
 
 	/* Grid weight values */
-	int WEIGHT_ENEMY_HQ = 1000;
-	int WEIGHT_ENEMY_TOWER = 1000;
-	int ENEMY_DECAY_RATE = 10;
-	
 	int MINING_DECAY = -20; // additive factor for neighboring grid squares
 	int MINING_GRID_MAX = 500; // all squares in 5x5 grid having 20 ore
 	int MINING_OFFSET = 1000;
@@ -35,108 +31,10 @@ class RobotConsts
 	int GRID_BASE = 1000;
 	int GRID_INIT_BASE = 500;
 	
-	int RAGE_DIST = 49;
-	
 	int HQ_TOWER_THRESH = 3;
 	
 	// # of units per supply depot
 	double DEPOT_UNIT_RATIO = 15;
-	
-	int[] unitVals = {
-			0, // HQ 
-			0, // TOWER
-			0, // SUPPLYDEPOT
-			0, // TECHNOLOGYINSTITUTE
-			0, // BARRACKS
-			0, // HELIPAD
-			0, // TRAININGFIELD
-			0, // TANKFACTORY
-			0, // MINERFACTORY
-			0, // HANDWASHSTATION
-			0, // AEROSPACELAB
-			0, // BEAVER
-			0, // COMPUTER
-			8, // SOLDIER
-			0, // BASHER
-			0, // MINER
-			2, // DRONE
-			8, // TANK
-			8, // COMMANDER
-			0, // LAUNCHER
-			0  // MISSILE
-	};
-	
-	int[] minerUnitVals = {
-			100, // HQ 
-			100, // TOWER
-			0, // SUPPLYDEPOT
-			0, // TECHNOLOGYINSTITUTE
-			0, // BARRACKS
-			0, // HELIPAD
-			0, // TRAININGFIELD
-			0, // TANKFACTORY
-			0, // MINERFACTORY
-			0, // HANDWASHSTATION
-			0, // AEROSPACELAB
-			1, // BEAVER
-			0, // COMPUTER
-			1, // SOLDIER
-			2, // BASHER
-			1, // MINER
-			1, // DRONE
-			5, // TANK
-			5, // COMMANDER
-			8, // LAUNCHER
-			0  // MISSILE
-	};
-
-	int[] unitRanges = {
-		   3, // HQ 
-		   2, // TOWER
-		   4, // SUPPLYDEPOT
-		   4, // TECHNOLOGYINSTITUTE
-		   4, // BARRACKS
-		   4, // HELIPAD
-		   4, // TRAININGFIELD
-		   4, // TANKFACTORY
-		   4, // MINERFACTORY
-		   4, // HANDWASHSTATION
-		   4, // AEROSPACELAB
-		   0, // BEAVER
-		   4, // COMPUTER
-		   0, // SOLDIER
-		   0, // BASHER
-		   0, // MINER
-		   0, // DRONE
-		   1, // TANK
-		   1, // COMMANDER
-		   4, // LAUNCHER
-		   0  // MISSILE
-	};
-	
-	int[] ragePriorities = {
-		   9, // HQ 
-		   9, // TOWER
-		   7, // SUPPLYDEPOT
-		   7, // TECHNOLOGYINSTITUTE
-		   7, // BARRACKS
-		   7, // HELIPAD
-		   7, // TRAININGFIELD
-		   7, // TANKFACTORY
-		   7, // MINERFACTORY
-		   7, // HANDWASHSTATION
-		   8, // AEROSPACELAB
-		   6, // BEAVER
-		   2, // COMPUTER
-		   2, // SOLDIER
-		   2, // BASHER
-		   6, // MINER
-		   1, // DRONE
-		   3, // TANK
-		   8, // COMMANDER
-		   5, // LAUNCHER
-		   4  // MISSILE
-	};
 }
 
 public class RobotPlayer {
@@ -194,8 +92,6 @@ public class RobotPlayer {
 	static int myRounds = 0;
 	
 	
-	static final int CID_NUM = 2000;
-	
 	// grid, not map
 	// how many map elements per grid element?
 	static final int GRID_SPC = 5;
@@ -213,7 +109,7 @@ public class RobotPlayer {
 	static final int GRID_MASK = (1<<25)-1;
 	static final int EDGE_MASK = (1<<5)-1;
 	// bitmask for center of each edge
-	static final int GRID_EDGE_CENTERS = (1<<2)|(1<<22)|(1<<10)|(1<<14);
+	static final int GRID_EDGE_CENTERS = (1<<2)|(1<<22)|(1<<10)|(1<<14)|(1<<0)|(1<<4)|(1<<24)|(1<<20);
 	// number of subgrid cells
 	static final int GRID_N = GRID_SPC*GRID_SPC;
 
@@ -231,6 +127,8 @@ public class RobotPlayer {
 	static final int STATUS_PATHED = (1<<6);
 	// contains a tower or HQ
 	static final int STATUS_TARGET = (1<<7);
+	// started connectivity calc
+	static final int STATUS_UPDATING = (1<<8);
 	
 	static final int STATUS_NORTH=0;
 	static final int STATUS_SOUTH=3;
@@ -243,9 +141,7 @@ public class RobotPlayer {
 	
 	static int curChan = 0;
 	
-	/* Contig ID counting, to use for enemies and friends */
-	static final int nextCIDChan = curChan++;
-	static final int cidBase = curChan; static {curChan += CID_NUM;}
+	static final int unitNum = curChan++;
 		
 	/* Map info */
 	// encodes known/unknown map symmetry
@@ -257,13 +153,11 @@ public class RobotPlayer {
 	
 	
 	// update frequencies
-	static final int NUM_GRIDS = 6;
+	static final int NUM_GRIDS = 3;
 	
-	static int GRID_CONNECTIVITY_FREQ = 8;
-	static int GRID_ORE_FREQ = 6;
-	static int GRID_MINING_FREQ = 6;
-	static int GRID_RR_FREQ = 4;
-	static int GRID_OD_FREQ = 4;
+	static int GRID_ORE_FREQ = 15;
+	static int GRID_MINING_FREQ = 15;
+	static int GRID_TARGET_FREQ = 2;
 	
 	
 	// map array of basic grid square status
@@ -304,9 +198,7 @@ public class RobotPlayer {
 	
 	static final int[] gridTargetBases = {gridTarget0Base,gridTarget1Base,gridTarget2Base,gridTarget3Base,gridTarget4Base,gridTarget5Base,gridTarget6Base};
 	
-	// THE CONNECTIVITY GRID LOOP
-	static final int gridLastConnectivityChan = curChan++;
-	static final int gridConnectivityPtrChan = curChan++;
+	// THE CONNECTIVITY GRID
 	// these ones are indexed by location "properties"
 	static final int gridNormalBase = curChan; static {curChan+=GRID_NUM;}
 	static final int gridKnownBase = curChan; static {curChan+=GRID_NUM;}
@@ -315,6 +207,17 @@ public class RobotPlayer {
 	static final int gridPathableBase = curChan; static {curChan+=GRID_NUM;}
 	static final int gridEdgesNSBase = curChan; static {curChan+=GRID_NUM;}
 	static final int gridEdgesEWBase = curChan; static {curChan+=GRID_NUM;}
+	static final int gridUpdateBase = curChan; static {curChan+=GRID_NUM;}
+	
+	
+	static final int mapMinXChan = curChan++;
+	static final int mapMinYChan = curChan++;
+	static final int mapMaxXChan = curChan++;
+	static final int mapMaxYChan = curChan++;
+	
+	static final int hqExceptionChan = curChan++;
+	
+	static MapLocation[] myTargetLocs = null;
 
 	//===============================================================================================================
 	
@@ -386,18 +289,16 @@ public class RobotPlayer {
 
 	static enum UnitAggression
 	{
-		NEVER_MOVE_INTO_RANGE,
 		NO_TOWERS,
 		CHARGE
 	}
 
-	static UnitAggression myAggression = UnitAggression.NEVER_MOVE_INTO_RANGE;
+	static UnitAggression myAggression = UnitAggression.NO_TOWERS;
 
 	
 	// Adjustable parameters
     static int numBeavers = 2;
-    static int maxMiners = 40;
-	static int numSoldiers = 10;
+    static int maxMiners = 30;
 	static int numTanks = 999;
 	static int numComputers = 10;
 	
@@ -440,7 +341,6 @@ public class RobotPlayer {
 				// initialize pointers
 				rc.broadcast(gridNextIDChan, 1);
 				int ptr = gridMinX+gridMinY*GRID_DIM;
-				rc.broadcast(gridConnectivityPtrChan, ptr);
 				rc.broadcast(gridOrePtrChan, ptr);
 				rc.broadcast(gridMiningPtrChan, ptr);
 				rc.broadcast(gridTargetPtrChan, ptr);
@@ -479,23 +379,17 @@ public class RobotPlayer {
 			case TOWER:
 				doTower();
 				break;
-			case BARRACKS:
-				doBarracks();
-				break;
 			case MINERFACTORY:
 				doMinerFactory();
 				break;
 			case MINER:
 				doMiner();
 				break;
-			case SOLDIER:
-				doUnit();
-				break;
 			case BEAVER:
 				doBeaver();
 				break;
-			case TANK:
-				doUnit();
+			case BARRACKS:
+				doBarracks();
 				break;
 			case TANKFACTORY:
 				doTankFactory();
@@ -506,20 +400,20 @@ public class RobotPlayer {
 			case COMPUTER:
 				doComputer();
 				break;
+
+			case TANK:
+			case SOLDIER:
+				doUnit();
+				break;
 			}
 			
-			int bytecodesLeft = Clock.getBytecodesLeft();
-			if(bytecodesLeft>1200) // if you try to transfer supply and are out of bytecodes, you will queue a transfer to a location that might not be valid next round.  things move.
+			try 
 			{
-				try
-				{
-				} catch (Exception e) {
-					System.out.println("Supply exception: " + myType.toString() + ".  " + bytecodesLeft + " bytecodes before transferSupplies() call.");
-					e.printStackTrace();
-				}
+				transferSupplies();
 			}
-			
-			//==========================================================================================================================================
+			catch (Exception e)
+			{
+			}
 			
 			try 
 			{
@@ -539,10 +433,13 @@ public class RobotPlayer {
 	// what to do in extra cycles
 	static void spare() throws GameActionException
 	{
+		// not tanks
+		if (myType == RobotType.TANK)
+			return;
 		// which grids still require computing?
 		int validgrids = (1<<NUM_GRIDS)-1;
 		
-		while (Clock.getBytecodesLeft() > 1500 && Clock.getRoundNum() == curRound)
+		while (Clock.getBytecodesLeft() > 2000 && Clock.getRoundNum() == curRound)
 		{
 			int ngrids = Integer.bitCount(validgrids);
 			
@@ -558,18 +455,14 @@ public class RobotPlayer {
 			switch (gridindex)
 			{
 			case 0:
-				if (!gridConnectivity())
-					validgrids &= ~(1<<gridindex);
-				break;
-			case 1:
 				if (!gridOre())
 					validgrids &= ~(1<<gridindex);
 				break;
-			case 2:
+			case 1:
 				if (!gridMining())
 					validgrids &= ~(1<<gridindex);
 				break;
-			case 3:
+			case 2:
 				if (!gridTargets())
 					validgrids &= ~(1<<gridindex);
 				break;
@@ -593,10 +486,43 @@ public class RobotPlayer {
 
 		facing = getRandomDirection();
 		
-		myTarget = rc.getID()%7;
+		myTarget = 0;
+		
+		myTargetLocs = new MapLocation[7];
+		for (int i=0; i<7; i++)
+			myTargetLocs[i] = new MapLocation(rc.readBroadcast(gridTargetXBase+i),rc.readBroadcast(gridTargetYBase+i));
+		
+		if (myType == RobotType.TANK || myType == RobotType.SOLDIER)
+		{
+			int nunits = rc.readBroadcast(unitNum);
+			if (nunits < 7)
+			{
+				// send the first few guys out and about
+				myTarget = nunits;
+			}
+			else
+			{
+				// later, focus on HQ etc.
+				int validTargets = rc.readBroadcast(gridTargetValidChan);
+				if (Integer.bitCount(validTargets) > 4) // more than 3 towers?
+				{
+					myTarget = 0;
+					// pick the closest tower and go for that
+					for (int i=1; i<7; i++)
+					{
+						if ((validTargets&(1<<i)) == 0)
+							continue;
+						if (myTarget == 0 || rc.getLocation().distanceSquaredTo(myTargetLocs[myTarget]) < rc.getLocation().distanceSquaredTo(myTargetLocs[myTarget]))
+							myTarget = i;
+					}
+				}
+			}
+				
+			rc.broadcast(unitNum, nunits+1);
+		}
 		
 		// load map extents
-		getExtents();
+		getExtents();		
 	}
 	
 	static void update() throws GameActionException
@@ -629,11 +555,16 @@ public class RobotPlayer {
 			}
 			
 			myGrid.findComponent(myLocation);
+			
+			int startdir = rand.nextInt(8);
+			for (int dir=0; dir<8; dir++)
+			{
+				if (Clock.getRoundNum() != curRound)
+					break;
+				gridConnectivity(myGrid.offsetTo((dir+startdir)&7));
+			}
 		}
 		
-		MapLocation[] foo = {new MapLocation(2,3),new MapLocation(4,5)};
-		
-		System.out.println(new MapLocation(4,5) == new MapLocation(4,5));
 		// and every once in a while, update enemy tower locations
 		MapLocation[] towers = rc.senseEnemyTowerLocations();
 		if (towers.length != lastTowerCount)
@@ -641,9 +572,12 @@ public class RobotPlayer {
 			// globally update tower list/validity list
 			if (myType == RobotType.HQ)
 			{
-				MapLocation[] targetlocs = new MapLocation[7];
-				for (int i=0; i<7; i++)
-					targetlocs[i] = new MapLocation(rc.readBroadcast(gridTargetXBase+i),rc.readBroadcast(gridTargetYBase+i));
+				List<MapLocation> towerlist = Arrays.asList(towers);
+				int isvalid = 1; // HQ always valid
+				for (int i=1; i<7; i++)
+					if (towerlist.contains(myTargetLocs[i]))
+						isvalid |= (1<<i);
+				rc.broadcast(gridTargetValidChan, isvalid);
 			}
 			enemyTowers = towers;
 			if (enemyTowers == null) enemyTowers = new MapLocation[0];
@@ -671,6 +605,10 @@ public class RobotPlayer {
 		}
 		
 		rc.broadcast(gridTargetValidChan, targetValid);
+		
+		myTargetLocs = new MapLocation[7];
+		for (int i=0; i<7; i++)
+			myTargetLocs[i] = new MapLocation(rc.readBroadcast(gridTargetXBase+i),rc.readBroadcast(gridTargetYBase+i));
 		
 		// get min and max bounds of visible buildings
 		Arrays.sort(myblds, new Comparator<MapLocation>() {
@@ -770,15 +708,13 @@ public class RobotPlayer {
 	{
 		try
 		{
-			debug_drawGridVals();
-			
 			if (rc.isWeaponReady())
 				attackSomething();
 			
 			// initialize first beaver flag
 			rc.broadcast(firstBeaverChan,0);
 			
-			RobotInfo[] ourTeam = rc.senseNearbyRobots(1000, rc.getTeam());
+			RobotInfo[] ourTeam = rc.senseNearbyRobots(10000, rc.getTeam());
 			int n = 0; // current number of beavers
 			int mf = 0; // current number of miner factories
 			for(RobotInfo ri: ourTeam){ // count up beavers
@@ -807,9 +743,8 @@ public class RobotPlayer {
 	{
 		try {
 			if (rc.isWeaponReady())
-			{
 				attackSomething();
-			}
+
 		} catch (Exception e) {
 			System.out.println("Tower Exception");
 			e.printStackTrace();
@@ -871,43 +806,42 @@ public class RobotPlayer {
 	}
 
 	
-	static void doBarracks()
-	{
-		try {
-			RobotInfo[] bots = rc.senseNearbyRobots(99999, myTeam);
-		
-			int soldiers = 0;
-			for (RobotInfo b: bots)
-			{
-				if (b.type == RobotType.SOLDIER)
-				{
-					soldiers++;
-				}
-			}
-			
-			if (soldiers < numSoldiers)
-			{
-				trySpawn(facing,RobotType.SOLDIER);
-			}
-		} catch (Exception e) {
-			System.out.println("Barracks Exception");
-			e.printStackTrace();
-		}
-	}
-
 	static void doComputer()
 	{
 		try {
 			if (myLocation.distanceSquaredTo(myHQ) > 81)
-				tryMove(myLocation.directionTo(myHQ),0,UnitAggression.NEVER_MOVE_INTO_RANGE);
+				tryMove(myLocation.directionTo(myHQ),0,myAggression);
 			else if (rand.nextInt(20) < 3)
-				tryMove(myLocation.directionTo(enemyHQ).opposite(),0,UnitAggression.NEVER_MOVE_INTO_RANGE);
+				tryMove(myLocation.directionTo(enemyHQ).opposite(),0,myAggression);
 		} catch (Exception e) {
 			System.out.println("Basher Exception");
 			e.printStackTrace();
 		}
 	}
 
+	static void doBarracks()
+	{
+		try {
+			RobotInfo[] bots = rc.senseNearbyRobots(99999, myTeam);
+			int tanks = 0;
+			int soldiers = 0;
+			for (RobotInfo b: bots)
+			{
+				if (b.type == RobotType.TANK)
+					tanks++;
+				else if (b.type == RobotType.SOLDIER)
+					soldiers++;
+			}
+			
+			if (tanks < 5 && soldiers < 5)
+				trySpawn(facing,RobotType.SOLDIER);
+			
+		} catch (Exception e) {
+			System.out.println("Tank Factory Exception");
+			e.printStackTrace();
+		}
+	}
+	
 	static void doTankFactory()
 	{
 		try {
@@ -1079,57 +1013,13 @@ public class RobotPlayer {
 		}
 		
 	}
-
-	static MapLocation chooseEnemyTarget(int[] channels, int limit) throws GameActionException
-	{
-		MapLocation targetLoc = null;
-		// choose a target from the hit list
-		for(int i: channels)
-		{
-			int targetID = rc.readBroadcast(i);
-			if(targetID!=0)
-			{
-				if(rc.canSenseRobot(targetID))
-				{
-					MapLocation thisTarget = rc.senseRobot(targetID).location;
-					int dist = myLocation.distanceSquaredTo(thisTarget);
-					if(dist<limit)
-					{
-						targetLoc = thisTarget;
-						return targetLoc;
-					}
-				}
-			}
-		}
-		return targetLoc;
-	}
-	
-	static void addEnemyToTargets(int[] channels, int ID) throws GameActionException {
-		// adds an enemy ID to a list of targets, if that list is not full
-		for(int i: channels)
-		{
-			int enemyID = rc.readBroadcast(i);
-			if(!rc.canSenseRobot(enemyID))
-			{
-				rc.broadcast(i,ID);
-				return;
-			}
-		}
-	}
-
-	
-	//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	
 //===========================================================================================
 	
 	static void doMiner()
 	{
 		try {
-			rc.setIndicatorString(2, toString(minerState));
-			rc.setIndicatorString(2, "gridOreBase = " + myGrid.readValue(gridOreBase) + ", gridMiningBase = "+ myGrid.readValue(gridMiningBase) + " ");
-			miningDuties();
-			//defenseUpdate();
-			
+			miningDuties();			
 		} catch (Exception e) {
 			System.out.println("Miner Exception");
 			e.printStackTrace();
@@ -1138,17 +1028,21 @@ public class RobotPlayer {
 
 	static void miningDuties() throws GameActionException
 	{
+		if (!rc.isCoreReady())
+			return;
+		
 		double oreHere = rc.senseOre(myLocation);
 		int oreMiningCriterion = rc.readBroadcast(bestOrePatchAvg);
-		//System.out.println("Ore mining criterion = " + oreMiningCriterion);
+
 		double[] localOre = mineScore();
 		double mineScore = localOre[2];
+		
 		// depending on what state the miner is in, execute functionality
 		switch (minerState)
 		{
 		case LEADING:
 			rc.setIndicatorDot(myLocation.add(1,0), 0,255,0); // green dots on front line miners
-			if(mineScore < 3*oreMiningCriterion && oreHere < 10) // less ore and can't max out
+			if(mineScore < 3*oreMiningCriterion && oreHere < 4) // less ore and can't max out
 				minerState = MinerState.SEARCHING; // switch to searching, this will be reported to HQ next round
 			else // we've been sitting still and mining
 				mineAndMoveStraight(oreMiningCriterion);
@@ -1174,9 +1068,7 @@ public class RobotPlayer {
 			}
 			else
 			{
-				rc.setIndicatorString(0, "Exploring");
-				rc.setIndicatorString(1, "Following the grid: " + minersCounter);
-				int bitdir = gridPathfind(myLocation, gridMiningBase, true);
+				int bitdir = gridPathfind(myLocation, null, gridMiningBase);
 				tryMove(Direction.OMNI, bitdir, UnitAggression.NO_TOWERS);
 			}
 			break;
@@ -1193,8 +1085,8 @@ public class RobotPlayer {
 	
 	static void mineAndMoveStraight(int oreMiningCriterion) throws GameActionException {
 		double oreHere = rc.senseOre(myLocation);
-		if(oreHere>=10 || oreHere>=oreMiningCriterion/2){ //there is plenty of ore, so try to mine
-			if(rand.nextDouble()<0.95){ // mine 95% of time we can collect max
+		if(oreHere>=5 || oreHere>=oreMiningCriterion/2){ //there is plenty of ore, so try to mine
+			if(rand.nextDouble()<0.5){ // mine 95% of time we can collect max
 				if(rc.isCoreReady()&&rc.canMine()){
 					rc.mine();
 					rc.setIndicatorString(1, "Mining");
@@ -1211,7 +1103,7 @@ public class RobotPlayer {
 	static void mineLocally(double[] localOre, int oreMiningCriterion) throws GameActionException {
 		double oreHere = rc.senseOre(myLocation);
 		if(oreHere>=10 || oreHere>=oreMiningCriterion/2){ //there is plenty of ore, so try to mine
-			if(rand.nextDouble()<0.98){ // mine 98% of time we can collect max
+			if(rand.nextDouble()<0.75){ // mine 98% of time we can collect max
 				if(rc.isCoreReady()&&rc.canMine()){
 					rc.mine();
 					rc.setIndicatorString(1, "Mining good stuff");
@@ -1237,7 +1129,7 @@ public class RobotPlayer {
 		}else{ //no ore, so look for more
 			minersCounter = 0;
 			minerState = MinerState.EXPLORING;
-			int bitdir = gridPathfind(myLocation, gridMiningBase, true);
+			int bitdir = gridPathfind(myLocation, null, gridMiningBase);
 			tryMove(Direction.OMNI, bitdir, UnitAggression.NO_TOWERS);
 			//facing = Direction.values()[Integer.numberOfTrailingZeros(bitdir)];
 			//tryMove(facing);
@@ -1318,20 +1210,47 @@ public class RobotPlayer {
 		try {
 			int targetValid = rc.readBroadcast(gridTargetValidChan);
 			while ((targetValid&(1<<myTarget)) == 0)
-				myTarget = rand.nextInt(7); 
-
-			int targetX = rc.readBroadcast(gridTargetXBase+myTarget);
-			int targetY = rc.readBroadcast(gridTargetYBase+myTarget);
-			MapLocation target = new MapLocation(targetX,targetY);
-
-			int nunits = rc.senseNearbyRobots(15, myTeam).length;
-			UnitAggression agg = UnitAggression.NO_TOWERS;
-			if (nunits > 3) agg = UnitAggression.CHARGE;
+				myTarget = rand.nextInt(7);
 			
+			// check if we're close to any valid targets
+			for (int i=0; i<7; i++)
+			{
+				if ((targetValid&(1<<i))==0)
+					continue;
+				
+				if (myLocation.distanceSquaredTo(myTargetLocs[i]) <= 64)
+				{
+					myTarget = i;
+					break;
+				}
+			}
+			
+			rc.setIndicatorString(0,"My target (" + myTarget + "): " + myTargetLocs[myTarget] + ", value: " + myGrid.readValue(gridTargetBases[myTarget]));
+
+			// rush if there's a lot of units close by
+			int nunits = rc.senseNearbyRobots(myTargetLocs[myTarget],90,myTeam).length;
+			nunits = Math.max(nunits,rc.senseNearbyRobots(myLocation,15,myTeam).length);
+			UnitAggression agg = UnitAggression.NO_TOWERS;
+			if (nunits > 4) agg = UnitAggression.CHARGE;
+			
+			// prioritize movement over attack, aka rush
 			if (rc.isCoreReady())
 			{
-				int bitval = gridPathfind(myLocation, gridTargetBases[myTarget], true);
-				tryMove(Direction.OMNI,bitval,agg);
+				int bitstowards = gridPathfind(myLocation, myTargetLocs[myTarget], gridTargetBases[myTarget]);
+				
+				int d2t = myLocation.distanceSquaredTo(myTargetLocs[myTarget]);
+				
+				if (d2t <= myType.attackRadiusSquared)
+				{
+					// if we're within shooting range, only move ~1/2 the time
+					if (rand.nextInt(10) < 3)
+						tryMove(Direction.OMNI,bitstowards,agg);
+				}
+				else
+				{
+					// if we're far, we just try to move towards the target however, whatever
+					tryMove(Direction.OMNI,bitstowards,agg);
+				}
 			}
 			if (rc.isWeaponReady())
 			{
@@ -1382,12 +1301,9 @@ public class RobotPlayer {
 		gridMaxY = Math.max(gridMaxY, gridY+1);				
 		setExtents();
 		
-		// queue this grid cell for pathing
-		//rc.broadcast(gridPtrChan, grid.gridIndex);
-		
-		// mark adjacent 4 squares as "SEEN", meaning do connectivity processing
+		// mark adjacent squares as "SEEN", meaning do connectivity processing
 		// (if it's inside gridMinX, etc), but not yet "VISITED"
-		for (int dir=0;dir<4;dir++)
+		for (int dir=0;dir<8;dir++)
 		{
 			GridComponent adjgrid = grid.offsetTo(dir);
 			if (!adjgrid.getFlag(STATUS_SEEN))
@@ -1395,7 +1311,7 @@ public class RobotPlayer {
 		}
 	}
 	
-	static int gridPathfind(MapLocation loc, int gridChannel, boolean ascend) throws GameActionException
+	static int gridPathfind(MapLocation loc, MapLocation dest, int gridChannel) throws GameActionException
 	{
 		GridComponent grid = new GridComponent(loc);
 		// and figure out which connected component we're on
@@ -1410,13 +1326,56 @@ public class RobotPlayer {
 			return 0;
 		}
 		
+		// otherwise, quick check if we're in the same grid index
+		if (dest != null && grid.gridIndex == GridComponent.indexFromLocation(dest))
+		{
+			GridComponent destgrid = new GridComponent(dest);
+			int destpath = destgrid.getPathInd(dest);
+			destgrid.findComponent(destpath);
+			if ((destpath&pathable)>0)
+			{
+				// we can get to there from here
+				int norms = grid.readProperty(gridNormalBase);
+				for (int i=0; i<GRID_N; i++)
+				{
+					int path = relaxGrid(destpath,norms);
+					// now set newpath to difference between old and new
+					if ((path&pathind)>0)
+						break;
+					// or we didn't change anything, but still didn't reach us, somehow?
+					// return error
+					if (destpath==path)
+						return 0;
+					
+					destpath = path;
+				}
+				
+				// now, if we got to here, pathable is one step before we hit pathind, so we find the possible directions by masking it
+				destpath &= bitAdjacency[pathindex];
+
+				// now let's shift it to the center
+				if (pathindex>12) destpath >>= (pathindex-12);
+				else if (pathindex<12) destpath <<= (12-pathindex);
+
+				int bitdirs = 0;
+				while (destpath > 0)
+				{
+					int setbit = Integer.numberOfTrailingZeros(destpath);
+					bitdirs |= Consts.gridToDir[setbit]; 
+					// and drop off last bit
+					destpath &= destpath-1;
+				}
+				return bitdirs;
+			}
+		}
+		
 		// ok, so now we're on the right subgrid/connected component
 		// find the min-value neighbor and corresponding connected edge
 		// now, let's loop through each adjacent direction & their gridids
 		
 		// and stored values of best
 		int bestedge = 0;
-		int bestval = ascend?grid.readValue(gridChannel):-grid.readValue(gridChannel);
+		int bestval = grid.readValue(gridChannel);
 		int bestptr = 0;
 		int bestdir = -1;
 		
@@ -1432,7 +1391,7 @@ public class RobotPlayer {
 				// possibly connected?
 				if (edges > 0) // add adjacent value
 				{
-					int adjval = ascend?adjgrid.readValue(gridChannel):-adjgrid.readValue(gridChannel);
+					int adjval = adjgrid.readValue(gridChannel);
 					if (adjval > bestval)
 					{
 						bestval = adjval;
@@ -1458,7 +1417,7 @@ public class RobotPlayer {
 				int adjpath = adjgrid.getMaybes();
 				if ((adjpath&bitEdge[dir+4]) > 0)
 				{
-					int adjval = ascend?adjgrid.readValue(gridChannel):-adjgrid.readValue(gridChannel);
+					int adjval = adjgrid.readValue(gridChannel);
 					if (adjval > bestval)
 					{
 						bestval = adjval;
@@ -1735,44 +1694,51 @@ public class RobotPlayer {
 		GridComponent grid = new GridComponent(rc.readBroadcast(gridTargetPtrChan));
 		if (!grid.isValid()) grid.initialize();
 		
+		if (grid.readProperty(gridUpdateBase)+10 < Clock.getRoundNum() && grid.getFlag(STATUS_UPDATING))
+		{
+			grid.unsetFlag(STATUS_UPDATING);
+			grid.firstComponent();
+			gridConnectivity(grid);
+			return false;
+		}
+		
 		// check if we made it all the way around
 		if (grid.isFirst())
 		{
 			int curround = Clock.getRoundNum();
 			int lastup = rc.readBroadcast(gridLastTargetChan);
 			// recently updated, don't run again
-			if (curround - lastup < GRID_OD_FREQ)
+			if (curround - lastup < GRID_TARGET_FREQ)
 				return false;
 
 			// broadcast the start of the last update
 			rc.broadcast(gridLastTargetChan,curround);
-			System.out.println("Target update @ " + curround);
+			//System.out.println("Target update @ " + curround);
 		}
 		
 		
 		// advance the pointer
 		rc.broadcast(gridTargetPtrChan,grid.nextCCPointer());		
 				
-		// ok, get the base values for this grid square
 		int[] targetval = new int[7];
 		int targetValid = rc.readBroadcast(gridTargetValidChan);
 		
 		int maxtarget = 0;
-		MapLocation[] targets = null;
 		for (int i=0; i<7; i++)
 		{
 			if ((targetValid&(1<<i))>0)
 			{
-				targetval[i] = grid.readValue(gridTargetBases[i]) + Consts.GRID_DECAY;
-				maxtarget = i;
+				targetval[i] = grid.readValue(gridTargetBases[i]);
+				maxtarget = i+1;
 				// make sure the values are initialized
-				if (targetval[i] == 0)
+				/*if (targetval[i] == 0 && !grid.getFlag(STATUS_SEEN))
 				{
-					if (targets == null) targets = getBuildings(enemyTeam);
+					System.out.println("Grid intialization for " + i);
 					MapLocation gridcenter = grid.getCenter();
-					int disttotarget = Math.abs(gridcenter.x-targets[i].x)/5+Math.abs(gridcenter.y-targets[i].y)/5;
-					targetval[i] = Consts.GRID_BASE-disttotarget;
-				}
+					int disttotarget = Math.abs(gridcenter.x-myTargetLocs[i].x)/5+Math.abs(gridcenter.y-myTargetLocs[i].y)/5;
+					targetval[i] = Consts.GRID_INIT_BASE-disttotarget;
+				}*/
+				targetval[i] += Consts.GRID_DECAY;
 			}
 		}
 
@@ -1818,43 +1784,55 @@ public class RobotPlayer {
 			}			
 		}
 		
+		// and diagonals
+		for (int dir=4; dir<8; dir++)
+		{
+			if ((pathable&bitEdge[dir]) == 0)
+				continue;
+			
+			GridComponent adjgrid = grid.offsetTo(dir);
+			while (adjgrid.isValid())
+			{
+				int adjpath = adjgrid.getMaybes();
+				if ((adjpath&bitEdge[dir+4]) > 0)
+				{
+					for (int i=0; i<maxtarget; i++)
+						if ((targetValid&(1<<i))>0)
+							targetval[i] = Math.max(targetval[i],adjgrid.readValue(gridTargetBases[i])+Consts.GRID_DECAY);
+
+				}
+				adjgrid.nextComponent();
+			}
+		}
+		
 		for (int i=0; i<maxtarget; i++)
-			if ((targetValid&(1<<i))>0)
+			if ((targetValid&(1<<i))>0)// && targetval[i] > 0)
 				grid.writeValue(gridTargetBases[i], targetval[i]);
 
+		//System.out.println("Target time: " + (Clock.getBytecodeNum()-bc));
+		
 		return true;
 	}
 	
-	static boolean gridConnectivity() throws GameActionException
+	static boolean gridConnectivity(GridComponent grid) throws GameActionException
 	{
 		int bc = Clock.getBytecodeNum();
 		
-		int ptr = rc.readBroadcast(gridConnectivityPtrChan);
-		// start off the grid at the first connected component for this function
-		GridComponent grid = new GridComponent(ptr&65535);
 		if (!grid.isValid()) grid.initialize();
-		
-		int atomicStartRound = Clock.getRoundNum();
-		
-		// go on to the next connected component, so we don't double-count things
-		rc.broadcast(gridConnectivityPtrChan,grid.nextIndexPointer());
-		
-		// check if we made it all the way around
-		if (grid.isFirst())
-		{
-			int curround = Clock.getRoundNum();
-			int lastup = rc.readBroadcast(gridLastConnectivityChan);
-			// recently updated, don't run again
-			if (curround - lastup < GRID_CONNECTIVITY_FREQ)
-				return false;
 
-			rc.broadcast(gridLastConnectivityChan,curround);
-			//System.out.println("Connectivity update @ " + curround);
-		}
-		
 		// now, if we haven't seen it at all, do nothing
 		if (!grid.getFlag(STATUS_SEEN))
 			return true;
+
+		if (grid.readProperty(gridUpdateBase)+10 < Clock.getRoundNum() && grid.getFlag(STATUS_UPDATING))
+			grid.unsetFlag(STATUS_UPDATING);
+
+		// or if we're updating it
+		if (grid.getFlag(STATUS_UPDATING))
+			return true;
+		
+		grid.setFlag(STATUS_UPDATING);
+		grid.writeProperty(gridUpdateBase, Clock.getRoundNum());
 		
 		// CHECKPOINT #1: CHECK IF WE ARE ADDING ANY NEW TERRAIN TILES
 		MapLocation loc = grid.getCenter();
@@ -1867,32 +1845,22 @@ public class RobotPlayer {
 		int oldknown = known;
 		
 		// do we know all the tiles?
-		// if we don't, try finding some new ones
-		
-		int nadd=0;
-		
-		// only add terrain tiles right before connected-component 0
-		// to make sure next steps are consistent
-		if (known != GRID_MASK && grid.gridCC == 0)
+		// if we don't, try finding some new ones		
+		if (known != GRID_MASK)
 		{
 			// first, get the terrain tiles
 			int unknown = GRID_MASK&(~known);
 			
-			// set unknown to known+1, if we have too many unknowns
-			if (Integer.bitCount(unknown) > 15)
+			// set unknown to known extended by 1, if we have too many unknowns
+			if (known>0)
 			{
-				if (known>0)
-				{
-					unknown = relaxGrid(known,GRID_MASK);
-					// and mask it off
-					unknown = unknown & (~known);
-					// and include middle edges
-					unknown |= GRID_EDGE_CENTERS;
-				}
-				else
-				{
-					unknown = GRID_EDGE_CENTERS;
-				}
+				unknown = relaxGrid(known,GRID_MASK);
+				// and mask it off
+				unknown = unknown & (~known);
+			}
+			else
+			{
+				unknown = GRID_EDGE_CENTERS;
 			}
 			
 			// drop down the unknown bits one by one
@@ -1906,7 +1874,6 @@ public class RobotPlayer {
 				case NORMAL:
 					norms |= z;
 					known |= z;
-					nadd++;
 					break;
 				case UNKNOWN:
 					break;
@@ -1914,11 +1881,9 @@ public class RobotPlayer {
 				case OFF_MAP:
 					voids |= z;
 					known |= z;
-					nadd++;
 					break;
 				}
 				// limit how many times we add things just to slow it down a bit to 1000-bc-size chunks
-				if (nadd>10) break;
 			}
 			
 			// then write them back if it changed
@@ -1927,119 +1892,102 @@ public class RobotPlayer {
 				grid.writeProperty(gridNormalBase, norms);
 				grid.writeProperty(gridVoidBase, voids);
 				grid.writeProperty(gridKnownBase, known);
-				// and flag it as needing a path update
 				grid.unsetFlag(STATUS_PATHED);
-			}
-			
-			// and if we added a lot, return without doing stuff, but stay on the same square
-			if (nadd > 10)
-			{
-				//System.out.println("Connectivity add time for " + grid.gridIndex + ": " + (Clock.getBytecodeNum()-bc));
-				// stay on same round, til we're done adding
-				if (Clock.getRoundNum() == atomicStartRound)
-					rc.broadcast(gridConnectivityPtrChan,grid.gridIndex);
-				return true;
 			}
 		}
 		
-		// do we know anything at all, or do we need to re-path?
-		if (known == 0 || grid.getFlag(STATUS_PATHED))
+		// if we have pathed and also know everything...
+		if (grid.getFlag(STATUS_PATHED) && known == GRID_MASK)
 		{
-			//System.out.println("Blank grid time (" + nadd + "): " + (Clock.getBytecodeNum()-bc));
-			// already went on to next round
-			return true;
+			grid.unsetFlag(STATUS_UPDATING);
+			return false;
 		}
 		
 		// CHECKPOINT #3: ADD UP PATHABLES UP TO THIS CONNECTED COMPONENT INDEX
 		// note that this is where gridid gets advanced to current grid cell
 		int prevpathable = 0;
-		int gridcc = (ptr>>>16);
-		for (int i=0; i<gridcc; i++)
-		{
-			prevpathable |= grid.readValue(gridPathableBase);
-			grid.nextComponent();
-		}
-
-		// now flood-fill the current connected component as far as we can
-		int pathable = grid.readValue(gridPathableBase);
 		
-		// if pathable is 0, it's a fresh connected component (or first connected component)
-		// which means we *know* it's not connected to prevpathable, if we did our math right
-		// so we can just set it to any single norm that isn't part of prevpathable, if there are any
-		if (pathable == 0)
-		{
-			pathable = Integer.lowestOneBit(norms & ~(prevpathable));
-//			System.out.println("pathable set to " + Integer.toBinaryString(GRID_MASK&(norms&~(prevpathable))));
-		}
-		
-		// now flood-fill this connected component for all we're worth
-		for (int i=0; i<GRID_N; i++)
-		{
-			int path = relaxGrid(pathable,norms);
-			// now set newpath to difference between old and new
-			int newpath = path & (~pathable);
-			pathable = path;
-			// if nothing new, stop looping
-			if (newpath == 0)
-				break;
-		}
-		
-		// save the path we found
-		grid.writeValue(gridPathableBase,pathable);
-
-		// this is the region that is pathed so far
-		prevpathable |= pathable;
 		// if it's connected to unknown
 		int maybe = relaxGrid((~known)&GRID_MASK,(~voids)&GRID_MASK);
-		
-		// norms that we are considering adding
-		int newnorms = norms & (~prevpathable);
-		
-		// CHECKPOINT #4: ANY NORMS NOT IN PREVIOUS PATHABLES THAT ALSO AREN'T CONNECTED VIA MAYBE
-		if (grid.gridCC+1 == grid.gridNCC)
+
+		while (grid.isValid())
 		{
-			if ((newnorms>0) && ((newnorms&maybe)==0||(prevpathable&maybe)==0))
+			int pathable = grid.readValue(gridPathableBase);
+	
+			// now flood-fill the current connected component as far as we can
+			
+			// if pathable is 0, it's a fresh connected component (or first connected component)
+			// which means we *know* it's not connected to prevpathable, if we did our math right
+			// so we can just set it to any single norm that isn't part of prevpathable, if there are any
+			if (pathable == 0)
+				pathable = Integer.lowestOneBit(norms & ~(prevpathable));
+			
+			// now flood-fill this connected component for all we're worth
+			for (int i=0; i<GRID_N; i++)
 			{
-				// add a new connected component
-				// first, add a new grid cell at the particular index
-				grid.addComponent();
-				// now, we shouldn't need to do anything
-				// the norms should be filled in automatically next update
+				int path = relaxGrid(pathable,norms);
+				// now set newpath to difference between old and new
+				int newpath = path & (~pathable);
+				pathable = path;
+				// if nothing new, stop looping
+				if (newpath == 0)
+					break;
 			}
-			else
+			
+			// save the path we found
+			grid.writeValue(gridPathableBase,pathable);
+	
+			// this is the region that is pathed so far
+			prevpathable |= pathable;
+			
+			// norms that we are considering adding
+			int newnorms = norms & (~prevpathable);
+			
+			// CHECKPOINT #4: ANY NORMS NOT IN PREVIOUS PATHABLES THAT ALSO AREN'T CONNECTED VIA MAYBE
+			if (grid.gridCC+1 == grid.gridNCC)
 			{
-				// no new components on the last update, so set pathable
-				grid.setFlag(STATUS_PATHED);
+				if ((newnorms>0) && ((newnorms&maybe)==0||(prevpathable&maybe)==0))
+				{
+					// add a new connected component
+					// first, add a new grid cell at the particular index
+					grid.addComponent();
+					// now, we shouldn't need to do anything
+					// the norms should be filled in automatically next update
+				}
+				else
+				{
+					// no new components on the last update, so set pathable
+					grid.setFlag(STATUS_PATHED);
+				}
 			}
+			
+			// CHECKPOINT #5: NOW CALCULATE OUR MAYBE EDGES
+			// for this pathable, it's defined as edges on adjacent square that can get to pathable
+			// or to pathable|unknown, if they connect
+			if ((pathable&maybe)>0 || pathable == 0)
+				pathable |= GRID_MASK&(~known);
+			
+			pathable = grid.getMaybes();
+			
+			// do UD-DU flip
+			int nsEdge = (pathable >>> 20)&bitEdge[0]; // south edge -> north
+			nsEdge |= (pathable << 20)&bitEdge[3]; // north edge -> south
+			// and LR/RL
+			int ewEdge = (pathable << 4)&bitEdge[1]; // west -> east
+			ewEdge |= (pathable >>> 4)&bitEdge[2]; // east -> west
+			// now expand them  by one and re-mask
+			nsEdge = relaxGrid(nsEdge,GRID_MASK&~voids)&(bitEdge[0]|bitEdge[3]);
+			ewEdge = relaxGrid(ewEdge,GRID_MASK&~voids)&(bitEdge[1]|bitEdge[2]);
+			// and save them
+			grid.writeValue(gridEdgesNSBase,nsEdge);
+			grid.writeValue(gridEdgesEWBase,ewEdge);
+			
+			grid.nextComponent();
 		}
 		
-		// CHECKPOINT #5: NOW CALCULATE OUR MAYBE EDGES
-		// for this pathable, it's defined as edges on adjacent square that can get to pathable
-		// or to pathable|unknown, if they connect
-		if ((pathable&maybe)>0 || pathable == 0)
-			pathable |= GRID_MASK&(~known);
+		//System.out.println("Connectivity time: " + (Clock.getBytecodeNum()-bc));
+		grid.unsetFlag(STATUS_UPDATING);
 		
-		pathable = grid.getMaybes();
-		
-		// do UD-DU flip
-		int nsEdge = (pathable >>> 20)&bitEdge[0]; // south edge -> north
-		nsEdge |= (pathable << 20)&bitEdge[3]; // north edge -> south
-		// and LR/RL
-		int ewEdge = (pathable << 4)&bitEdge[1]; // west -> east
-		ewEdge |= (pathable >>> 4)&bitEdge[2]; // east -> west
-		// now expand them  by one and re-mask
-		nsEdge = relaxGrid(nsEdge,GRID_MASK&~voids)&(bitEdge[0]|bitEdge[3]);
-		ewEdge = relaxGrid(ewEdge,GRID_MASK&~voids)&(bitEdge[1]|bitEdge[2]);
-		// and save them
-		grid.writeValue(gridEdgesNSBase,nsEdge);
-		grid.writeValue(gridEdgesEWBase,ewEdge);
-		
-		//System.out.println("Connectivity path time: " + (Clock.getBytecodeNum()-bc));
-		
-		// go on to next CC, if we made it in a single round
-		if (Clock.getRoundNum() == atomicStartRound)
-			rc.broadcast(gridConnectivityPtrChan,grid.nextCCPointer());
-
 		return true;
 	}	
 	
@@ -2292,12 +2240,13 @@ public class RobotPlayer {
 		
 		if (bitmoves == 0)
 		{
+			return false;
 			// if we're here, it means we said to move, but we can't move anywhere
 			// that we specified with bitmoves
 			// so we just pick a random safe direction instead, if possible
-			bitmoves = (canmoves&safemoves);
+			/*bitmoves = (canmoves&safemoves);
 			if (bitmoves == 0)
-				return false;
+				return false;*/
 		}
 
 		// now pick by starting in direction d and moving out
@@ -2344,9 +2293,9 @@ public class RobotPlayer {
 		{
 			int ind = (enemyHQ.x-myloc.x+6) + 13*(enemyHQ.y-myloc.y+6);
 			if (enemyTowers.length>1) // use range 35
-				bitmoves |= (Consts.attackMask[ind]>>(9*Consts.unitRanges[0]));
+				bitmoves |= (Consts.attackMask[ind]>>(9*3));
 			else // use 24
-				bitmoves |= (Consts.attackMask[ind]>>(9*Consts.unitRanges[1]));;
+				bitmoves |= (Consts.attackMask[ind]>>(9*2));;
 		}
 		
 		for (MapLocation t : enemyTowers)
@@ -2355,7 +2304,7 @@ public class RobotPlayer {
 				continue;
 				
 			int ind = (t.x-myloc.x+6) + 13*(t.y-myloc.y+6);
-			bitmoves |= (Consts.attackMask[ind]>>(9*Consts.unitRanges[1]));;
+			bitmoves |= (Consts.attackMask[ind]>>(9*2));;
 		}
 		
 		return (int)(bitmoves&0x1FF);
@@ -2382,6 +2331,46 @@ public class RobotPlayer {
 		}
 		
 		return false;
+	}
+	
+	static void transferSupplies() throws GameActionException
+	{
+		if (myType == RobotType.MINER || myType == RobotType.TANK)
+			return;
+		
+		// buildings transfer to buildings or to miners and tanks
+		RobotInfo[] robots = rc.senseNearbyRobots(myLocation,GameConstants.SUPPLY_TRANSFER_RADIUS_SQUARED,myTeam);
+		
+		
+		
+		for (RobotInfo ri : robots)
+		{
+			// transfer max supply to tanks
+			if (ri.type == RobotType.TANK)
+			{
+				rc.transferSupplies((int)rc.getSupplyLevel(), ri.location);
+				return;
+			}
+			if (ri.type == RobotType.MINER)
+			{
+				int supplymissing = 300-(int)ri.supplyLevel;
+				if (supplymissing > 0)
+				{
+					rc.transferSupplies(supplymissing, ri.location);
+					return;
+				}
+			}
+			// building-to-building transfer, just diffuse
+			if (ri.type.ordinal() <= RobotType.AEROSPACELAB.ordinal() && rand.nextInt(10) < 3)
+			{
+				double supplydelta = (rc.getSupplyLevel() - ri.supplyLevel)/2;
+				if (supplydelta > 0)
+				{
+					rc.transferSupplies((int)supplydelta, ri.location);
+					return;
+				}
+			}
+		}
 	}
 
 	static boolean buildUnitParity(RobotType type) throws GameActionException
@@ -2415,111 +2404,6 @@ public class RobotPlayer {
 	static void spawnUnit(RobotType type) throws GameActionException
 	{
 		trySpawn(getRandomDirection(),type);
-	}
-	
-	static void debug_drawBestDirection(GridComponent grid, int channel) throws GameActionException
-	{
-		grid.firstComponent();
-		// loop through all of my connected components
-		while (grid.isValid())
-		{
-			// get our square's pathable U unknown
-			int pathable = grid.getMaybes();
-
-			// for each edge, find best direction
-			int bestval = grid.readValue(channel);
-			int bestdir = -1;
-			
-			for (int dir=0; dir<4; dir++)
-			{
-				// get index of adjacent square here
-				GridComponent adjgrid = grid.offsetTo(dir);
-				
-				while (adjgrid.isValid())
-				{
-					int edges = adjgrid.readValue(edgeChans[dir]);					
-					
-					int conn = (edges&pathable&bitEdge[dir]); 
-					if (conn > 0)
-					{
-						int adjval = adjgrid.readValue(channel);
-						if (adjval > bestval)
-						{
-							bestval = adjval;
-							bestdir = dir;
-						}
-					}
-					
-					adjgrid.nextComponent();
-				}
-			}
-			
-			// and diagonals
-			for (int dir=4; dir<8; dir++)
-			{
-				if ((pathable&bitEdge[dir]) == 0)
-					continue;
-				
-				GridComponent adjgrid = grid.offsetTo(dir);
-				while (adjgrid.isValid())
-				{
-					int adjpath = adjgrid.getMaybes();
-					if ((adjpath&bitEdge[dir+4])>0)
-					{
-						int adjval = adjgrid.readValue(channel);
-						if (adjval > bestval)
-						{
-							bestval = adjval;
-							bestdir = dir;
-						}
-					}
-					adjgrid.nextComponent();
-				}
-			}
-			
-			// and draw the best direction
-			MapLocation loc = grid.getCenter().add(grid.gridCC,0);
-			if (bestdir >= 0)
-				rc.setIndicatorLine(loc,loc.add(2*dirOffX[bestdir],2*dirOffY[bestdir]),255*colorR[grid.gridCC],255*colorG[grid.gridCC],255*colorB[grid.gridCC]);
-
-			grid.nextComponent();
-		}
-		grid.firstComponent();
-	}
-	
-	static void debug_drawGridVals() throws GameActionException
-	{
-		getExtents();
-		for (int x=0; x<GRID_DIM; x++)
-		{
-			for (int y=0;y<GRID_DIM;y++)
-			{
-				int gridind = y*GRID_DIM+x;
-				
-				// not mapped yet
-				if (x < gridMinX || x > gridMaxX || y < gridMinY || y > gridMaxY)
-					continue;
-				
-				GridComponent grid = new GridComponent(gridind);
-				
-//				if (Clock.getRoundNum()%50 < 15)
-//					debug_drawConnections(grid);
-				
-				debug_drawBestDirection(grid,gridTargetBases[0]);
-				
-				int brt = 0;
-				if (grid.getFlag(STATUS_SEEN)) brt = 100;
-				if (grid.getFlag(STATUS_VISITED)) brt = 255;
-				
-				rc.setIndicatorDot(grid.getCenter(),brt,brt,brt);
-				
-				/*for (int i=0; i<grid.gridNCC; i++)
-				{
-					debug_drawValue(grid.getCenter().add(i,0),(grid.readValue(gridOffenseBase)-Consts.GRID_BASE)*10);					
-					grid.nextComponent();
-				}*/
-			}
-		}
 	}
 }
 
@@ -2785,7 +2669,7 @@ class GridComponent
 		MapLocation mid = getCenter();
 		if (Math.abs(mid.x-loc.x)>RobotPlayer.GRID_SPC/2 || Math.abs(mid.y-loc.y)>RobotPlayer.GRID_SPC/2)
 			return false;
-		int maybe = getMaybes();
+		int maybe = getFastMaybes();
 		return (maybe&getPathInd(loc))>0;
 	}
 	

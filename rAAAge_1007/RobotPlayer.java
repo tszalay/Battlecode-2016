@@ -131,7 +131,7 @@ class RobotConsts
 			1, // SOLDIER
 			2, // BASHER
 			1, // MINER
-			2, // DRONE
+			1, // DRONE
 			5, // TANK
 			5, // COMMANDER
 			8, // LAUNCHER
@@ -189,25 +189,25 @@ class RobotConsts
 	int[] ragePriorities = {
 		   9, // HQ 
 		   9, // TOWER
-		   5, // SUPPLYDEPOT
-		   5, // TECHNOLOGYINSTITUTE
-		   5, // BARRACKS
-		   5, // HELIPAD
-		   5, // TRAININGFIELD
-		   5, // TANKFACTORY
-		   5, // MINERFACTORY
-		   5, // HANDWASHSTATION
-		   5, // AEROSPACELAB
-		   4, // BEAVER
+		   7, // SUPPLYDEPOT
+		   7, // TECHNOLOGYINSTITUTE
+		   7, // BARRACKS
+		   7, // HELIPAD
+		   7, // TRAININGFIELD
+		   7, // TANKFACTORY
+		   7, // MINERFACTORY
+		   7, // HANDWASHSTATION
+		   8, // AEROSPACELAB
+		   6, // BEAVER
 		   2, // COMPUTER
 		   2, // SOLDIER
 		   2, // BASHER
-		   4, // MINER
+		   6, // MINER
 		   1, // DRONE
 		   3, // TANK
-		   6, // COMMANDER
-		   8, // LAUNCHER
-		   7  // MISSILE
+		   8, // COMMANDER
+		   5, // LAUNCHER
+		   4  // MISSILE
 	};
 }
 
@@ -1232,9 +1232,6 @@ public class RobotPlayer {
 	static void doTower()
 	{
 		try {
-			if (myLocation.equals(rc.senseTowerLocations()[0]))
-				debug_drawGridVals();
-
 			if (rc.isWeaponReady())
 			{
 				attackSomething();
@@ -1880,27 +1877,15 @@ public class RobotPlayer {
 		case STANDARD:		
 			// this list defines the build order. make sure you don't mess up building prereqs.
 			// terminate preset build order with a 1;
-			//int[] stdBuildOrder = {8, 4, 5, 7, 3, 2, 7, 2, 2, 7, 1};
 			int[] stdBuildOrder = {8, 4, 7, 3, 2, 7, 2, 2, 7, 1};
+			//int[] stdBuildOrder = {8, 4, 7, 3, 2, 7, 2, 2, 7, 1};
 			buildOrder = stdBuildOrder;
-			if (Consts.LAUNCHER_ENEMY)
-			{
-				int[] droneBuildOrder = {8, 5, 2, 4, 7, 3, 2, 7, 2, 2, 7, 1};
-				buildOrder = droneBuildOrder;
-			}
-			
 		
 			break;
 		case HELIPAD:
 			// this list defines the build order. make sure you don't mess up building prereqs.
-			int[] lgBuildOrder = {8, 4, 5, 7, 3, 2, 7, 2, 2, 7, 1};
+			int[] lgBuildOrder = {8, 4, 7, 5, 2, 3, 7, 2, 8, 2, 7, 1};
 			buildOrder = lgBuildOrder;	
-			
-			if (Consts.LAUNCHER_ENEMY)
-			{
-				int[] droneBuildOrder = {8, 5, 2, 4, 5, 7, 8, 7, 2, 7, 2, 7, 2, 2, 7, 7, 7, 7, 7, 1};
-				buildOrder = droneBuildOrder;
-			}
 			break;	
 			
 		case SMALL_MAP:
@@ -1910,7 +1895,7 @@ public class RobotPlayer {
 			
 			if (Consts.LAUNCHER_ENEMY)
 			{
-				int[] droneBuildOrder = {8, 5, 2, 4, 7, 2, 7, 2, 2, 7, 1};
+				int[] droneBuildOrder = {8, 4, 7, 2, 5, 2, 7, 2, 2, 7, 1};
 				buildOrder = droneBuildOrder;
 			}
 			break;
@@ -2212,12 +2197,8 @@ public class RobotPlayer {
 		//numSoldiers = Math.max((600-Clock.getRoundNum())/80,0);
 		numSoldiers = 0;
 		// fixed number of drones for harass, but we only build a helipad 
-		numDrones = 10;
+		numDrones = 8;
 		//numDrones = Math.max((1000-Clock.getRoundNum())/30,2);
-		
-		if (Consts.LAUNCHER_ENEMY)
-			numDrones = 999;
-		
 		
 		if (!Consts.LAUNCHER_ENEMY)
 			Consts.LAUNCHER_ENEMY = rc.readBroadcast(launcherEnemyChan)>0;
@@ -2228,7 +2209,7 @@ public class RobotPlayer {
 		}
 		else
 		{
-			if (Consts.LAUNCHER_ENEMY && Clock.getRoundNum() < 800) // only change build early in the game
+			if (Consts.LAUNCHER_ENEMY && Clock.getRoundNum() < 1300) // only change build early in the game
 				myBuild = BuildOrder.HELIPAD;
 		}
 		
@@ -2423,7 +2404,7 @@ public class RobotPlayer {
 	{
 		// rage if there is anything nearby to rage at
 		MapLocation here = rc.getLocation();
-		MapLocation target = chooseEnemyTarget(minerRageTargets, 15); // (list, max distance)
+		MapLocation target = chooseEnemyTarget(minerRageTargets, 2); // (list, max distance)
 		
 		if(target==null)
 		{
@@ -2467,20 +2448,24 @@ public class RobotPlayer {
 					// our firepower
 					strengthBal += Consts.unitVals[bot.type.ordinal()] * bot.type.attackPower;
 				}
-				if(strengthBal<=0)
-				{
-					Direction dir = here.directionTo(here.add((int)evadeX,(int)evadeY));
-					tryMove(dir, 0, UnitAggression.NO_TOWERS);
-					rc.setIndicatorString(0,"Evading: (" + evadeX + ", " + evadeY + ")");
-					rc.setIndicatorString(1,"Strength balance = " + strengthBal);
-				}
-				else
+				if(strengthBal>=10)
 				{
 					// set a rage attack target
 					rc.setIndicatorString(0,"Attacking enemy " + enemyRobots[0].ID);
 					rc.setIndicatorString(1,"Strength balance = " + strengthBal);
 					addEnemyToTargets(minerRageTargets,enemyRobots[0].ID);
 					tryMove(here.directionTo(enemyRobots[0].location), 0, UnitAggression.NO_TOWERS);
+				}
+				else if(strengthBal>=0)
+				{
+					return true;
+				}
+				else if(strengthBal<-5)
+				{
+					Direction dir = here.directionTo(here.add((int)evadeX,(int)evadeY));
+					tryMove(dir, 0, UnitAggression.NO_TOWERS);
+					rc.setIndicatorString(0,"Evading: (" + evadeX + ", " + evadeY + ")");
+					rc.setIndicatorString(1,"Strength balance = " + strengthBal);
 				}
 				return true; // evading, but enemies in sight
 			}
@@ -2871,7 +2856,7 @@ public class RobotPlayer {
 		{
 			// ok, if we don't have a target, or we're somehow too far from it, just walk towards the enemy
 			// stay more clumped if we're fighting launchers
-			if (Consts.LAUNCHER_ENEMY)
+			/*if (Consts.LAUNCHER_ENEMY)
 			{
 				int nclose = rc.senseNearbyRobots(myLocation,15,myTeam).length;
 				// if there's nobody around, back up
@@ -2887,10 +2872,10 @@ public class RobotPlayer {
 				}
 			}
 			else
-			{
+			{*/
 				int bitdir = gridPathfind(myLocation,gridOffenseBase,true);
 				tryMove(myLocation.directionTo(enemyHQ),bitdir,myAggression);
-			}
+			//}
 			return;
 		}
 		else
@@ -3767,7 +3752,6 @@ public class RobotPlayer {
 		{
 			prevpathable |= grid.readValue(gridPathableBase);
 			grid.nextComponent();
-			debug_assert(grid.gridID != 0, "AWWWWWWWWWWW" + grid);
 		}
 
 		// now flood-fill the current connected component as far as we can
@@ -4627,191 +4611,6 @@ public class RobotPlayer {
 		
 		return units;
 	}
-	
-	static void debug_drawGridMask(MapLocation loc, int mask, int r, int g, int b) throws GameActionException
-	{
-		for (int i=0; i<25; i++)
-			if ((mask&(1<<i)) > 0)
-				rc.setIndicatorDot(loc.add(gridOffX[i],gridOffY[i]),r,g,b);
-	}
-
-	static void debug_drawConnections(GridComponent grid) throws GameActionException
-	{
-		// loop through all of my connected components
-		while (grid.isValid())
-		{
-			// get our square's pathable U unknown
-			int pathable = grid.getMaybes();
-
-			// for each edge, now draw locations that connect to adjacent grid indices
-			
-			for (int dir=0; dir<4; dir++)
-			{
-				// get index of adjacent square here
-				GridComponent adjgrid = grid.offsetTo(dir);
-				
-				while (adjgrid.isValid())
-				{
-					int edges = adjgrid.readValue(edgeChans[dir]);					
-					
-					int conn = (edges&pathable&bitEdge[dir]); 
-					if (conn > 0)
-					{
-						// draw connected edges for this connected component
-						debug_drawGridMask(grid.getCenter(),conn,150*colorR[grid.gridCC],150*colorG[grid.gridCC],150*colorB[grid.gridCC]);
-					}
-					
-					adjgrid.nextComponent();
-				}
-			}
-
-			grid.nextComponent();
-		}
-		grid.firstComponent();
-	}
-	
-	static void debug_drawBestDirection(GridComponent grid, int channel) throws GameActionException
-	{
-		grid.firstComponent();
-		// loop through all of my connected components
-		while (grid.isValid())
-		{
-			// get our square's pathable U unknown
-			int pathable = grid.getMaybes();
-
-			// for each edge, find best direction
-			int bestval = grid.readValue(channel);
-			int bestdir = -1;
-			
-			for (int dir=0; dir<4; dir++)
-			{
-				// get index of adjacent square here
-				GridComponent adjgrid = grid.offsetTo(dir);
-				
-				while (adjgrid.isValid())
-				{
-					int edges = adjgrid.readValue(edgeChans[dir]);					
-					
-					int conn = (edges&pathable&bitEdge[dir]); 
-					if (conn > 0)
-					{
-						int adjval = adjgrid.readValue(channel);
-						if (adjval > bestval)
-						{
-							bestval = adjval;
-							bestdir = dir;
-						}
-					}
-					
-					adjgrid.nextComponent();
-				}
-			}
-			
-			// and diagonals
-			for (int dir=4; dir<8; dir++)
-			{
-				if ((pathable&bitEdge[dir]) == 0)
-					continue;
-				
-				GridComponent adjgrid = grid.offsetTo(dir);
-				while (adjgrid.isValid())
-				{
-					int adjpath = adjgrid.getMaybes();
-					if ((adjpath&bitEdge[dir+4])>0)
-					{
-						int adjval = adjgrid.readValue(channel);
-						if (adjval > bestval)
-						{
-							bestval = adjval;
-							bestdir = dir;
-						}
-					}
-					adjgrid.nextComponent();
-				}
-			}
-			
-			// and draw the best direction
-			MapLocation loc = grid.getCenter().add(grid.gridCC,0);
-			if (bestdir >= 0)
-				rc.setIndicatorLine(loc,loc.add(2*dirOffX[bestdir],2*dirOffY[bestdir]),255*colorR[grid.gridCC],255*colorG[grid.gridCC],255*colorB[grid.gridCC]);
-
-			grid.nextComponent();
-		}
-		grid.firstComponent();
-	}
-	
-	static void debug_drawValue(MapLocation loc, int value)
-	{
-		if (value > 0)
-		{
-			if (value > 255) value = 255;
-			rc.setIndicatorDot(loc, value, 0, 0);
-		}
-		else
-		{
-			value = -value;
-			if (value > 255) value = 255;
-			rc.setIndicatorDot(loc, 0, 0, value);			
-		}
-	}
-	
-	static void debug_drawGridVals() throws GameActionException
-	{
-		getExtents();
-		for (int x=0; x<GRID_DIM; x++)
-		{
-			for (int y=0;y<GRID_DIM;y++)
-			{
-				int gridind = y*GRID_DIM+x;
-				
-				// not mapped yet
-				if (x < gridMinX || x > gridMaxX || y < gridMinY || y > gridMaxY)
-					continue;
-				
-				GridComponent grid = new GridComponent(gridind);
-				
-				if (Clock.getRoundNum()%50 < 15)
-					debug_drawConnections(grid);
-				
-				debug_drawBestDirection(grid,gridRageBase);
-				//debug_drawBestDirection(grid,gridDefenseBase);
-				//debug_drawBestDirection(grid,gridRallyBase);
-//				System.out.println(grid.readValue(gridPotentialBase));
-				
-				int brt = 0;
-				if (grid.getFlag(STATUS_SEEN)) brt = 100;
-				if (grid.getFlag(STATUS_VISITED)) brt = 255;
-				
-				
-				//if (grid.gridNCC > 0)
-				//if ((grid.readValue(gridRageBase)&65535) > 490)
-				//	rc.setIndicatorDot(grid.getCenter().add(0,1),255,255,255);
-				
-				for (int i=0; i<grid.gridNCC; i++)
-				{
-					//MapValue g = gridGradient(grid);
-					//g.x = g.x/(int)(g.value/4+1);
-					//g.y = g.y/(int)(g.value/4+1);
-										
-					//rc.setIndicatorLine(grid.getCenter().add(i,0), grid.getCenter().add(i+g.x,0+g.y), 255, 255, 0);
-					debug_drawValue(grid.getCenter().add(i,0),(grid.readValue(gridOffenseBase)-Consts.GRID_BASE)*10);
-					//System.out.println("Grid: " + g.x + "," + g.y + "," + grid.readValue(gridPotentialBase));
-					
-					grid.nextComponent();
-				}
-			}
-		}
-	}
-	
-	static void debug_assert(boolean val, String s) throws GameActionException
-	{
-		if (val)
-			return;
-		
-		System.out.println(s);
-		//rc.breakpoint();
-		throw new GameActionException(GameActionExceptionType.CANT_DO_THAT_BRO,s);
-	}
 }
 
 //class to represent information about a grid location & connected component
@@ -4903,9 +4702,6 @@ class GridComponent
 	public void writeValue(int chan, int val) throws GameActionException
 	{
 		//RobotPlayer.debug_assert(gridID != 0, "Writing to ID 0 for index " + gridIndex + " and cc " + gridCC + " and gridInfo " + Integer.toBinaryString(gridInfo));
-		RobotPlayer.debug_assert(chan != RobotPlayer.gridRageBase || (gridY() >= RobotPlayer.gridMinY && gridY() <= RobotPlayer.gridMaxY && gridX() >= RobotPlayer.gridMinX && gridX() <= RobotPlayer.gridMaxX), 
-				"Writing off map: " + gridIndex + "/" + gridID + " and cc " + gridCC + " with value " + val);
-		
 		RobotPlayer.rc.broadcast(chan+gridID, val);
 	}
 
