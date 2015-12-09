@@ -1,0 +1,17 @@
+function runPathfinding(mapname, nav)
+
+    % load map
+    if ischar(mapname)
+        mf = matfile(mapname);
+        M = mf.M;
+    else
+        M = mapname;
+    end
+    N = size(M,1);
+    
+    % initialize pathfinder
+    % pathfind is now a _function_ returne
+    pathfind = nav(M);
+
+end
+
