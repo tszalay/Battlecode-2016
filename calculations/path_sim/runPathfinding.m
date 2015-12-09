@@ -12,15 +12,11 @@ function runPathfinding(mapname, nav)
     % create visibility mask
     visMask = 0*M;
     
-    % initialize pathfinder
-    % pathfind is now a _function_ returned by nav
-    % which should get called every step
-    pathfind = nav(M);
-
     % get spawn location
-    spawnLocation = find(M==2,1,'first');
-    [I,J] = ind2sub(size(M),spawnLocation);
-    spawnLocation = [I,J];
+    baseLocations = find(M==2);
+    [I,J] = ind2sub(size(M),baseLocations);
+    spawnLocation = [I(1),J(1)];
+    enemyLocation = [I(2),J(2)];
     
     % positions of units
     unitLocations = [];
@@ -38,11 +34,18 @@ function runPathfinding(mapname, nav)
         % check if we spawn
         if (roundNum-lastSpawn) >= spawnDelay
             unitLocations(end+1,:) = spawnLocation;
+            unitFunctions{end+1} = nav('new');
+            lastSpawn = roundNum;
         end
         
         % move units
+        data = [];
+        data.M = M;
         for i=1:size(unitLocations,1)
-            unitLocations(i,:) = unitLocations(i,:) + [1,1];
+            newloc = unitFunctions{i}(unitLocations(i,:),enemyLocation,data);
+            if (M(newloc(1),newloc(2)) == 0)
+                unitLocations(i,:) = newloc;
+            end
         end
         
         % update sight masks
@@ -67,7 +70,7 @@ function runPathfinding(mapname, nav)
         daspect([1 1 1])
         %colormap(gca,hot(5))
         
-        pause(0.5)
+        pause(0.1)
     end
 end
 
