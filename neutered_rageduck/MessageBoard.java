@@ -17,7 +17,7 @@ public enum MessageBoard {
     public static void setDefaultChannelValues() throws GameActionException {
         DESIRED_BUILDING.writeRobotType(RobotType.MINERFACTORY);
         RALLY_LOC.writeMapLocation(new MapLocation(Bot.rc.senseHQLocation().x, Bot.rc.senseHQLocation().y));
-        RAGE_LOC.writeMapLocation(new MapLocation(Bot.rc.senseEnemyHQLocation().x, Bot.rc.senseEnemyHQLocation().y));
+        RAGE_LOC.writeInt(0);
         
         MAP_MIN_X.writeInt(-MeasureMapSize.COORD_UNKNOWN);
         MAP_MAX_X.writeInt(MeasureMapSize.COORD_UNKNOWN);

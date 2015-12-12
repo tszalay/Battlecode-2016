@@ -64,18 +64,22 @@ public class BotLauncher extends Bot {
                 // and we don't have any missiles to fire
                 if (Clock.getRoundNum() - lastKitedBackRound > 8 || rc.getMissileCount() > 0) {
                     MapLocation rallyLoc = MessageBoard.RALLY_LOC.readMapLocation();
-                    MapLocation rageLoc = MessageBoard.RAGE_LOC.readMapLocation();
+                    MapLocation rageLoc = enemyTowers[0];
+                    if (Rage.rageTargetCanBeSensed()) {
+                    	rageLoc = rc.senseRobot(MessageBoard.RAGE_LOC.readInt()).location;
+                    }
+                    MessageBoard.RAGE_LOC.readMapLocation();
                     rc.setIndicatorString(0, "Rage location: [" + rageLoc.x + ", " + rageLoc.y + "]");
                     if (here.distanceSquaredTo(rallyLoc) > 35) { // stop short because we can shoot the target from long range
                         RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(35, them);
                         if (nearbyEnemies.length == 0) { // stop while we kill the enemy
                             NavSafetyPolicy safetyPolicy = new SafetyPolicyAvoidAllUnits(enemyTowers, nearbyEnemies);
                             NavSafetyPolicy rageSafetyPolicy = new SafetyPolicyAvoidTowersAndHQ(enemyTowers);
-                            if (here.distanceSquaredTo(rageLoc) > 30) {
-                            	Nav.goTo(rallyLoc, safetyPolicy);
+                            if (here.distanceSquaredTo(rageLoc) > 40) {
+                                Nav.goTo(rallyLoc, safetyPolicy);
                             	rc.setIndicatorString(1, "Rallying.");
                             } else {
-                            	Nav.goTo(rageLoc, safetyPolicy);
+                            	Nav.goTo(rageLoc, rageSafetyPolicy);
                             	rc.setIndicatorString(1, "Raging.");
                             }
                         } else {

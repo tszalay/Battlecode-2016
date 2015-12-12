@@ -3,25 +3,42 @@ package neutered_rageduck;
 import battlecode.common.*;
 
 public class Rage extends Bot {
-    
-    public static boolean rageTargetCanBeSensed(int robotID) {
-    	if (Bot.rc.canSenseRobot(robotID)) {
+
+    private static boolean rageTargetAlreadyExists() {
+    	int rageID = 0;
+		try {
+			rageID = MessageBoard.RAGE_LOC.readInt();
+		} catch (GameActionException e) {
+			e.printStackTrace();
+		}
+    	if (Bot.rc.canSenseRobot(rageID)) {
     		return true;
     	} else {
     		return false;
     	}
-    	
+    }
+    
+    public static boolean rageTargetCanBeSensed() {
+    	int rageID = 0;
+		try {
+			rageID = MessageBoard.RAGE_LOC.readInt();
+		} catch (GameActionException e) {
+			e.printStackTrace();
+		}
+    	if (Bot.rc.canSenseRobot(rageID)) {
+    		return true;
+    	} else {
+    		return false;
+    	}
     }
 	
-    private static int rageTargetLastUpdateRound;
-    
 	public static boolean tryBroadcastNewRageLocation(RobotInfo enemyLauncher) throws GameActionException {
-        if (Bot.rc.getRoundLimit() - rageTargetLastUpdateRound > 5) {
-        	MessageBoard.RAGE_LOC.writeMapLocation(enemyLauncher.location);
-        	rageTargetLastUpdateRound = Bot.rc.getRoundLimit();
-        	return true;
-        } else {
+        if (rageTargetAlreadyExists()) {
         	return false;
+        } else {
+        	MessageBoard.RAGE_LOC.writeInt(enemyLauncher.ID);
+        	return true;
         }
     }
+	
 }

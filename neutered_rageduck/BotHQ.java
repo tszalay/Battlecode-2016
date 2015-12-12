@@ -227,7 +227,7 @@ public class BotHQ extends Bot {
                 rallyLoc = theirHQ;
             } else {
                 for (MapLocation tower : enemyTowers) {
-                    if (rallyLoc == null || ourHQ.distanceSquaredTo(tower) < ourHQ.distanceSquaredTo(rallyLoc)) {
+                    if (rallyLoc == null || here.distanceSquaredTo(tower) < here.distanceSquaredTo(rallyLoc)) {
                         rallyLoc = tower;
                     }
                 }
