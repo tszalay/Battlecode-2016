@@ -79,7 +79,7 @@ public class BotLauncher extends Bot {
                                 Nav.goTo(rallyLoc, safetyPolicy);
                             	rc.setIndicatorString(1, "Rallying.");
                             } else {
-                            	Nav.goTo(rageLoc, rageSafetyPolicy);
+                            	Nav.goTo(rageLoc, safetyPolicy);
                             	rc.setIndicatorString(1, "Raging.");
                             }
                         } else {
