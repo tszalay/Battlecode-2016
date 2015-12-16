@@ -9,6 +9,10 @@ public class BotLauncher extends Bot {
 	public static void loop(RobotController theRC) throws GameActionException {
         Bot.init(theRC);
         // Debug.init("supply");
+        Random generator = new Random(rc.getID());
+        rogue = generator.nextDouble()>0.9;
+        rogueInt = (int) generator.nextDouble()*6;
+
         while (true) {
             try {
                 turn();
@@ -49,9 +53,6 @@ public class BotLauncher extends Bot {
     private static void turn() throws GameActionException {
         here = rc.getLocation();
         
-        Random generator = new Random(rc.getID());
-        rogue = generator.nextDouble()>0.9;
-        rogueInt = (int) generator.nextDouble()*6;
 
         Supply.shareSupply();
         Supply.requestResupplyIfNecessary();
