@@ -14,9 +14,17 @@ public class Defense extends Bot {
 		    			return true;
 		    		} else {
 		    			MapLocation defensivePost = MessageBoard.DEFENSE_LOC.readMapLocation();
-		    			if (rc.senseRobot(defenderIDs[i]).location.distanceSquaredTo(defensivePost) > Bot.rc.getLocation().distanceSquaredTo(defensivePost)) { // if we are closer
-		    				MessageBoard.DEFENSIVE_BOTS.addMeToDefenderList(i, rc.getID()); // put us on the list
-		        			return true;
+		    			RobotInfo[] attackers = rc.senseNearbyRobots(defensivePost, 81, them);
+		    			if (attackers.length>0) {
+		    				if (rc.senseRobot(defenderIDs[i]).location.distanceSquaredTo(attackers[0].location) > Bot.rc.getLocation().distanceSquaredTo(attackers[0].location)) { // if we are closer
+			    				MessageBoard.DEFENSIVE_BOTS.addMeToDefenderList(i, rc.getID()); // put us on the list
+			        			return true;
+			    			}
+		    			} else{
+			    			if (rc.senseRobot(defenderIDs[i]).location.distanceSquaredTo(defensivePost) > Bot.rc.getLocation().distanceSquaredTo(defensivePost)) { // if we are closer
+			    				MessageBoard.DEFENSIVE_BOTS.addMeToDefenderList(i, rc.getID()); // put us on the list
+			        			return true;
+			    			}
 		    			}
 		    		}
 		    	}
@@ -47,11 +55,13 @@ public class Defense extends Bot {
     	if (here.equals(MessageBoard.DEFENSE_LOC.readMapLocation())) {// == MessageBoard.DEFENSE_LOC.readMapLocation().x && Bot.here.y == MessageBoard.DEFENSE_LOC.readMapLocation().y) {
     		return true;
     	}
-    	if (newDefensiveLocationTakesPrecedence(nearbyEnemies)) {
-    		//setDefenseLocation(here, Math.min(5,numEnemiesAttackingLocation(here, nearbyEnemies)+1));
-    		setDefenseLocation(Bot.rc.getLocation(), Math.min(5,nearbyEnemies.length+1));
-    		//System.out.println("Tower set as defensive rally.");
-    		return true;
+    	if (rc.senseNearbyRobots(here, 80, us).length < 3) {
+	    	if (newDefensiveLocationTakesPrecedence(nearbyEnemies)) {
+	    		//setDefenseLocation(here, Math.min(5,numEnemiesAttackingLocation(here, nearbyEnemies)+1));
+	    		setDefenseLocation(Bot.rc.getLocation(), Math.min(3,nearbyEnemies.length));
+	    		//System.out.println("Tower set as defensive rally.");
+	    		return true;
+	    	}
     	}
     	return false;
     }
@@ -67,7 +77,7 @@ public class Defense extends Bot {
     	// taking into account transit time
     	int numEnemies = nearbyEnemies.length; //numEnemiesAttackingLocation(loc, nearbyEnemies);
     	int numAttacksTillTowerDies =  (int) (rc.getHealth()) / (numEnemies*(int)RobotType.MISSILE.attackPower);
-    	int numTurnsTillTowerDies = (int) (numAttacksTillTowerDies*8);
+    	int numTurnsTillTowerDies = (int) (numAttacksTillTowerDies*6);
     	//System.out.println(numTurnsTillTowerDies + " till i die");
     	// current defenders
     	int[] defenderIDs = MessageBoard.DEFENSIVE_BOTS.getDefenderList();
@@ -76,14 +86,14 @@ public class Defense extends Bot {
 	    	for (int id : defenderIDs)
 	    	{
 	    		if (rc.canSenseRobot(id)) {
-	    			power = power + Math.max(0, numTurnsTillTowerDies - rc.senseRobot(id).location.distanceSquaredTo(loc) + 6);
+	    			power = power + Math.max(0, numTurnsTillTowerDies - rc.senseRobot(id).location.distanceSquaredTo(loc));
 	    		}
 	    	}
     	}
     	// potential defenders
-    	RobotInfo[] potentialDefenders = rc.senseNearbyRobots(numTurnsTillTowerDies + 6, Bot.us);
+    	RobotInfo[] potentialDefenders = rc.senseNearbyRobots(numTurnsTillTowerDies, Bot.us);
     	for (RobotInfo bot : potentialDefenders) {
-    		power = power + Math.max(0, numTurnsTillTowerDies - bot.location.distanceSquaredTo(loc) + 6);
+    		power = power + Math.max(0, numTurnsTillTowerDies - bot.location.distanceSquaredTo(loc));
     	}
     	return power;
     }

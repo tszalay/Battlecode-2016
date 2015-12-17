@@ -10,7 +10,7 @@ public class BotLauncher extends Bot {
         Bot.init(theRC);
         // Debug.init("supply");
         Random generator = new Random(rc.getID());
-        rogue = generator.nextDouble()>0.9;
+        rogue = generator.nextDouble()>0.85;
 
         while (true) {
             try {
@@ -93,16 +93,16 @@ public class BotLauncher extends Bot {
                     	}
                     	rc.setIndicatorDot(here.add(0,1), 0, 255, 0);
                     }
-                    if (onDefense) {
+                    if (onDefense && !rogue) {
                     	MapLocation defenseLoc = MessageBoard.DEFENSE_LOC.readMapLocation();
-	                    	RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(defenseLoc, 81, them);
-	                    	NavSafetyPolicy safetyPolicy = new SafetyPolicyAvoidTowersAndHQ(enemyTowers);
-	                    	if (nearbyEnemies.length==0) {
-	                    		Nav.goTo(defenseLoc, safetyPolicy); // try to get between tower and enemies
-	                    	} else {
-	                    		//Nav.goTo(defenseLoc.add(defenseLoc.directionTo(nearbyEnemies[0].location)), safetyPolicy); // try to get between tower and enemies
-	                    		Nav.goTo(nearbyEnemies[0].location, safetyPolicy);
-	                    	}
+                    	RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(defenseLoc, 81, them);
+                    	NavSafetyPolicy safetyPolicy = new SafetyPolicyAvoidAllUnits(enemyTowers, nearbyEnemies);
+                    	if (nearbyEnemies.length==0) {
+                    		Nav.goTo(defenseLoc, safetyPolicy); // try to get between tower and enemies
+                    	} else {
+                    		//Nav.goTo(defenseLoc.add(defenseLoc.directionTo(nearbyEnemies[0].location)), safetyPolicy); // try to get between tower and enemies
+                    		Nav.goTo(nearbyEnemies[0].location, safetyPolicy);
+                    	}
                     } else {
                     	if (here.distanceSquaredTo(rallyLoc) > 35) { // stop short because we can shoot the target from long range
                             RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(35, them);
