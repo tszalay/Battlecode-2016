@@ -11,7 +11,6 @@ public class BotLauncher extends Bot {
         // Debug.init("supply");
         Random generator = new Random(rc.getID());
         rogue = generator.nextDouble()>0.9;
-        rogueInt = (int) generator.nextDouble()*6;
 
         while (true) {
             try {
@@ -46,7 +45,6 @@ public class BotLauncher extends Bot {
 
     private static MapLocation[] enemyTowers;
     private static boolean rogue;
-    private static int rogueInt;
 
     static int lastKitedBackRound = -99;
 
@@ -82,11 +80,16 @@ public class BotLauncher extends Bot {
                 // and we don't have any missiles to fire
                 if (Clock.getRoundNum() - lastKitedBackRound > 8 || rc.getMissileCount() > 0) {
                     MapLocation rallyLoc = MessageBoard.RALLY_LOC.readMapLocation();
-                    if (rogue) {
+                    if (rogue) { // reset the rally loc rogue style
                     	if (enemyTowers.length==0) {
                     		rallyLoc = rc.senseEnemyHQLocation();
                     	} else {
-                    		rallyLoc = enemyTowers[rogueInt % enemyTowers.length];
+                    		rallyLoc = enemyTowers[0];
+                    		for (MapLocation towerLoc : enemyTowers) {
+                    			if (towerLoc.distanceSquaredTo(theirHQ) < rallyLoc.distanceSquaredTo(theirHQ)) {
+                    				rallyLoc = towerLoc;
+                    			}
+                    		}
                     	}
                     	rc.setIndicatorDot(here.add(0,1), 0, 255, 0);
                     }
