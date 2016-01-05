@@ -23,10 +23,12 @@ public class RoboArchon extends RobotPlayer
         } else {
             rc.setIndicatorString(0, "I don't any signal buddies");
         }
+        
+// AK move to an even square then do not move
         if (rc.isCoreReady()) {
-            if (fate < 800) {
-                // Choose a random direction to try to move in
-                Direction dirToMove = Direction.values()[fate % 8];
+        	if (MapUtil.isLocOdd(rc.getLocation())) {
+                // Choose a random non-diagonal direction to try to move in
+                Direction dirToMove = Direction.values()[2*(fate % 4)];
                 // Check the rubble in that direction
                 if (rc.senseRubble(rc.getLocation().add(dirToMove)) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH) {
                     // Too much rubble, so I should clear it
@@ -37,24 +39,29 @@ public class RoboArchon extends RobotPlayer
                     rc.move(dirToMove);
                 }
             } else {
-                // Choose a random unit to build
-                RobotType typeToBuild = RobotType.values()[fate % 8];
+                // Build TTM
+                RobotType typeToBuild = RobotType.TURRET;
+                Debug.setStringAK("wants to build " + typeToBuild.ordinal());
                 // Check for sufficient parts
                 if (rc.hasBuildRequirements(typeToBuild)) {
-                    // Choose a random direction to try to build in
-                    Direction dirToBuild = Direction.values()[rand.nextInt(8)];
-                    for (int i = 0; i < 8; i++) {
+                    // Choose a random non-diagonal direction to try to build in
+                    Direction dirToBuild = Direction.values()[2*(fate % 4)];
+
+                    for (int i = 0; i < 4; i++) {
                         // If possible, build in this direction
                         if (rc.canBuild(dirToBuild, typeToBuild)) {
                             rc.build(dirToBuild, typeToBuild);
                             break;
                         } else {
-                            // Rotate the direction to try
-                            dirToBuild = dirToBuild.rotateLeft();
+                            // Rotate the direction to try (still must be non-diagonal)
+                            dirToBuild = dirToBuild.rotateLeft().rotateLeft();
                         }
                     }
                 }
             }
         }
 	}
+	
+	
 }
+
