@@ -27,31 +27,52 @@ public class RoboTurret extends RobotPlayer
 	public static void turnTurret() throws GameActionException
 	{
 		
-		boolean isFourOdd= MapUtil.isFourOdd(rc.getLocation());
+		boolean isOverpowered = false;
+		
 		 // If this robot type can attack, check for enemies within range and attack one
-        if (rc.isWeaponReady()) {
-            RobotInfo[] enemiesWithinRange = rc.senseNearbyRobots(rc.getType().attackRadiusSquared, theirTeam);
-            RobotInfo[] zombiesWithinRange = rc.senseNearbyRobots(rc.getType().attackRadiusSquared, Team.ZOMBIE);
-            if (enemiesWithinRange.length > 0) {
-            	for (RobotInfo enemy : enemiesWithinRange) {
+        if (rc.isWeaponReady())
+        {
+            RobotInfo[] enemiesWithinRange = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, theirTeam);
+            RobotInfo[] zombiesWithinRange = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.ZOMBIE);
+            
+            if (enemiesWithinRange.length > 0)
+            {
+            	for (RobotInfo enemy : enemiesWithinRange)
+            	{
             		// Check whether the enemy is in a valid attack range (turrets have a minimum range)
             		if (rc.canAttackLocation(enemy.location)) {
             			rc.attackLocation(enemy.location);
             			break;
             		}
             	}
-            } else if (zombiesWithinRange.length > 0) {
-            	for (RobotInfo zombie : zombiesWithinRange) {
-            		if (rc.canAttackLocation(zombie.location)) {
+            } 
+            else if (zombiesWithinRange.length > 0)
+            {
+            	RobotInfo bestTarget = null;
+            	for (RobotInfo zombie : zombiesWithinRange)
+            	{
+            		// are we about to be dealt a killing blow
+            		if (zombie.location.distanceSquaredTo(here) <= zombie.type.attackRadiusSquared && rc.getHealth() < 10*zombie.type.attackPower)
+            			isOverpowered = true;
+
+            		if (rc.canAttackLocation(zombie.location))
+            		{
             			rc.attackLocation(zombie.location);
             			break;
             		}
             	}
-            } else if (!MapUtil.isFourOdd(rc.getLocation())){
-            	rc.pack();
             }
-         
+            else if (!MapUtil.isLocOdd(rc.getLocation()))
+            {
+            	rc.pack();
+            	//System.out.println("Just re-packed!");
+            }
         }
+        
+        RobotInfo ri = rc.senseRobot(rc.getID());
+        
+        if (isOverpowered && ri.zombieInfectedTurns == 0)
+        	rc.disintegrate();
 	}
 
 	public static void turnTTM() throws GameActionException
@@ -81,7 +102,8 @@ public class RoboTurret extends RobotPlayer
 
 
 	// AK find new unpack location
-	public static MapLocation findNewUnpackLoc() throws GameActionException {
+	public static MapLocation findNewUnpackLoc() throws GameActionException
+	{
 		MapLocation newUnpackLoc = rc.getLocation().add(Direction.NORTH);
 		if (!MapUtil.isLocOdd(newUnpackLoc)) {
 			newUnpackLoc = newUnpackLoc.add(Direction.SOUTH_EAST); // now will be 4-odd
