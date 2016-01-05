@@ -1,7 +1,6 @@
 package botline_bling;
 
 import battlecode.common.*;
-import botline_bling.RoboArchon;
 
 import java.util.Random;
 
@@ -22,7 +21,11 @@ public class RobotPlayer
 		RobotPlayer.rand = new Random(rc.getID());
 		RobotPlayer.ourTeam = rc.getTeam();
 		RobotPlayer.theirTeam = ourTeam.opponent();
-
+		
+		Debug.setStringTS("Tamas");
+		Debug.setStringAK("A-aron");
+		Debug.setStringSJF("Stephen J. Fry");
+		Debug.setStringRR("Ryan");
 		
 		switch (robotc.getType())
 		{
