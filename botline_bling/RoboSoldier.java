@@ -43,9 +43,7 @@ public class RoboSoldier extends RobotPlayer
 
         if (!shouldAttack) {
             if (rc.isCoreReady()) {
-                RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, theirTeam);
-                RobotInfo[] nearbyZombies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.ZOMBIE);
-            	NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits(nearbyEnemies, nearbyZombies);
+            	NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
 //            	if (fate < 600) {
                     // try to move to middle of map
                     MapLocation target = new MapLocation(436,159);
