@@ -6,10 +6,30 @@ public class RoboArchon extends RobotPlayer
 {
 	public static void init() throws GameActionException
 	{
+		
 	}
+	
+	
+	
+    //Build scout
+    //Read signal queue to get location round 20
+    	//Store number of buddy archons
+    	//Store their start positions
+    	//Map analysis?
+    //Calculate location to move to
+    //Move to desired location (nav.goto, no odd or evens)
+		//Check core
+		//Nav.goTo(safetypolicy stuff)
+		//move
+    //Build turrets/ttms figure out which 
+    	//Build on even squares
+    	//Check core
+    	//Throw error if you can't
+	//archon 
 	
 	public static void turn() throws GameActionException
 	{
+
         int fate = rand.nextInt(1000);
         // Check if this ARCHON's core is ready
         if (fate % 10 == 2) {
@@ -60,6 +80,7 @@ public class RoboArchon extends RobotPlayer
                 }
             }
         }
+
 	}
 	
 	
