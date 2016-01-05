@@ -27,7 +27,7 @@ public class RoboScout extends RobotPlayer
 
         if (rc.isCoreReady()) {
         	NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
-        	MapLocation target = new MapLocation(436,159);
+        	MapLocation target = here.add(rand.nextInt(200)-100,rand.nextInt(200)-100);
             Nav.goTo(target, safety);
         }
 	}

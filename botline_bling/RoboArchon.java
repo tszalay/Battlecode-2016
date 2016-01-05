@@ -1,5 +1,7 @@
 package botline_bling;
 
+import org.apache.commons.io.output.NullWriter;
+
 import battlecode.common.*;
 
 public class RoboArchon extends RobotPlayer
@@ -66,6 +68,17 @@ public class RoboArchon extends RobotPlayer
 				}
 			}
 		}
+		
+		// try to heal
+		RobotInfo[] nearbyFriends = rc.senseNearbyRobots(rc.getType().attackRadiusSquared,ourTeam);
+		RobotInfo minBot = null;
+		for (RobotInfo ri : nearbyFriends)
+		{
+			if (minBot == null || ri.health < minBot.health)
+				minBot = ri;
+		}
+		if (minBot != null && minBot.health < minBot.maxHealth-1)
+			rc.repair(minBot.location);
 		
 		//build scout
 		RobotType robotToBuild = RobotType.TURRET;
