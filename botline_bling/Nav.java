@@ -28,7 +28,7 @@ class SafetyPolicyAvoidAllUnits extends RobotPlayer implements NavSafetyPolicy
     	}
     	for (int i=0; i<nearbyZombies.length; i++)
     	{
-    		this.nearbyEnemies[i+nearbyEnemies.length] = nearbyZombies[i+nearbyEnemies.length];
+    		this.nearbyEnemies[i+nearbyEnemies.length] = nearbyZombies[i];
     	}
     }
     
