@@ -19,13 +19,19 @@ public class MapUtil
 
 	// AK check if map location is four-odd or four-even.
 	public static boolean isFourOdd(MapLocation loc) {
-		if ((loc.x+loc.y)%4 == 1){
+		if (isLocOdd(loc)) {
+			if ((loc.x)%2 == 1) {
+				Debug.setStringAK("FourODD loc");
+				return true;
+			}
+			else {			
 			Debug.setStringAK("FourEVEN loc");
 			return false;
+			}
 		}
 		else {
-			Debug.setStringAK("FourODD loc");
-			return true;
+			Debug.setStringAK("FourEVEN loc");
+			return false;
 		}
 	}
 }
