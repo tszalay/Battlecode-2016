@@ -6,6 +6,7 @@ public class RoboArchon extends RobotPlayer
 {
 	public static void init() throws GameActionException
 	{
+		new Message(Message.MessageType.SPAWN, rc.getLocation()).send(100);
 	}
 	
 	public static void turn() throws GameActionException
