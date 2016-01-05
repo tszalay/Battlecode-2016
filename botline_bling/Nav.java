@@ -375,7 +375,6 @@ public class Nav extends RobotPlayer
 
         safety = theSafety;
         
-        Debug.setStringSJF(bugState.toString());
         bugMove();
         
     }

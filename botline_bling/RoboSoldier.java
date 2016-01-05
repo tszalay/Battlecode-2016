@@ -44,22 +44,8 @@ public class RoboSoldier extends RobotPlayer
         if (!shouldAttack) {
             if (rc.isCoreReady()) {
             	NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
-//            	if (fate < 600) {
-                    // try to move to middle of map
-                    MapLocation target = new MapLocation(436,159);
-                    Nav.goTo(target, safety);
-                    
-                    
-//                    // Check the rubble in that direction
-//                    if (rc.senseRubble(rc.getLocation().add(dirToMove)) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH) {
-//                        // Too much rubble, so I should clear it
-//                        rc.clearRubble(dirToMove);
-//                        // Check if I can move in this direction
-//                    } else if (rc.canMove(dirToMove)) {
-//                        // Move
-//                        rc.move(dirToMove);
-//                    }
-//                }
+                MapLocation target = new MapLocation(436,159);
+                Nav.goTo(target, safety);
             }
         }
 	}

@@ -40,19 +40,9 @@ public class RoboGuard extends RobotPlayer
 
         if (!shouldAttack) {
             if (rc.isCoreReady()) {
-                if (fate < 600) {
-                    // Choose a random direction to try to move in
-                    Direction dirToMove = Direction.values()[fate % 8];
-                    // Check the rubble in that direction
-                    if (rc.senseRubble(rc.getLocation().add(dirToMove)) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH) {
-                        // Too much rubble, so I should clear it
-                        rc.clearRubble(dirToMove);
-                        // Check if I can move in this direction
-                    } else if (rc.canMove(dirToMove)) {
-                        // Move
-                        rc.move(dirToMove);
-                    }
-                }
+            	NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
+            	MapLocation target = new MapLocation(436,159);
+                Nav.goTo(target, safety);
             }
         }
 	}
