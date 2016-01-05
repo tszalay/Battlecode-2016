@@ -17,41 +17,6 @@ public class RoboScout extends RobotPlayer
 	
 	public static void turn() throws GameActionException
 	{		
-		if (rc.getRoundNum() > RoboScout.SIGNAL_ROUND)
-		{
-			// check for signals by a time we should have received some
-			
-			int minID = 1000000;
-			MapLocation rallyLoc = null;
-			
-			Signal[] sigs = rc.emptySignalQueue();
-			for (Signal s : sigs)
-			{
-				// ignore enemy signals for now
-				if (s.getTeam() != ourTeam)
-					continue;
-				
-				Message m = new Message(s);
-				switch(m.type)
-				{
-				case SPAWN:
-					MapLocation loc = m.readLocation();
-					if (s.getID() < minID)
-					{
-						rallyLoc = loc;
-						minID = s.getID();
-					}
-					//System.out.println(s.getID() + " " + s.getLocation() + " " + loc + " / MY LOC:" + here);
-					break;
-				default:
-					break;
-				}
-			}
-
-			// now the rally location is in rallyLoc
-		}
-		
-		
         int fate = rand.nextInt(1000);
 
         if (fate % 5 == 3) {
