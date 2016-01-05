@@ -7,8 +7,10 @@ import battlecode.common.*;
 public class RoboTurret extends RobotPlayer
 {
 	static MapLocation unpackLoc=null;
-	static final int[] unpackSearchTableX = {0,-2,0,2,2,-2,-2,2};
-	static final int[] unpackSearchTableY = {2, 0, -2, 0, 2, 2, -2 ,2};
+//	static final int[] unpackSearchTableX = {0,-2,0,2,2,-2,-2,2};
+//	static final int[] unpackSearchTableY = {2, 0, -2, 0, 2, 2, -2 ,2};
+	static final int[] unpackSearchTableX = {-1,1,1,-1,-2,0,2,0};
+	static final int[] unpackSearchTableY = {1, 1, -1, -1, 0, 2, 0 ,-2};
 	
 	public static void init() throws GameActionException
 	{
@@ -54,7 +56,7 @@ public class RoboTurret extends RobotPlayer
 
 	public static void turnTTM() throws GameActionException
 	{
-		if (MapUtil.isFourOdd(rc.getLocation())){
+		if (MapUtil.isLocOdd(rc.getLocation())){
 			rc.unpack();
 		}
 		
@@ -81,7 +83,7 @@ public class RoboTurret extends RobotPlayer
 	// AK find new unpack location
 	public static MapLocation findNewUnpackLoc() throws GameActionException {
 		MapLocation newUnpackLoc = rc.getLocation().add(Direction.NORTH);
-		if (!MapUtil.isFourOdd(newUnpackLoc)) {
+		if (!MapUtil.isLocOdd(newUnpackLoc)) {
 			newUnpackLoc = newUnpackLoc.add(Direction.SOUTH_EAST); // now will be 4-odd
 		}
 		for (int i = 0; i < 8; i++) {

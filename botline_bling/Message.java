@@ -72,7 +72,7 @@ public class Message extends RobotPlayer
 		if (x<0) x=0;
 		
 		//rc.broadcastMessageSignal(v1,v2,x);
-		rc.broadcastMessageSignal(v1,v2,lin_distance);
+		rc.broadcastMessageSignal(v1,v2,lin_distance*lin_distance);
 	}
 	
 	// sends a message-free signal

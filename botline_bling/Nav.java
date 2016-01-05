@@ -174,7 +174,7 @@ public class Nav extends RobotPlayer
     		return rc.canMove(dir) && safety.isSafeToMoveTo(here.add(dir));
     	}
     	// if not a scout, then worry about rubble: only move to spots that have rubble <= RUBBLE_SLOW_THRESH
-    	return (rc.senseRubble(here.add(dir)) <= GameConstants.RUBBLE_SLOW_THRESH) && rc.canMove(dir) && safety.isSafeToMoveTo(here.add(dir));
+    	return (rc.senseRubble(here.add(dir)) < GameConstants.RUBBLE_SLOW_THRESH) && rc.canMove(dir) && safety.isSafeToMoveTo(here.add(dir));
     }
 
     private static boolean tryMoveDirect() throws GameActionException {
