@@ -13,7 +13,6 @@ public class RobotPlayer
 	public static MapLocation here;
 	
 	@SuppressWarnings("unused")
-
 	// BC Engine -> RobotPlayer.run -> RoboXXX.run
     public static void run(RobotController robotc)
 	{
@@ -22,46 +21,101 @@ public class RobotPlayer
 		RobotPlayer.rand = new Random(rc.getID());
 		RobotPlayer.ourTeam = rc.getTeam();
 		RobotPlayer.theirTeam = ourTeam.opponent();
-		
+		RobotPlayer.here = rc.getLocation();
+
 		Debug.setStringTS("Tamas");
 		Debug.setStringAK("A-aron");
 		Debug.setStringSJF("Stephen J. Fry");
 		Debug.setStringRR("Ryan");
 		
-		switch (robotc.getType())
+		try
 		{
-		case ARCHON:
-			RoboArchon.run();
-			break;
-		case GUARD:
-			RoboGuard.run();
-			break;
-		case SCOUT:
-			RoboScout.run();
-			break;
-		case SOLDIER:
-			RoboSoldier.run();
-			break;
-		case TTM:
-			RoboTTM.run();
-			break;
-		case TURRET:
-			RoboTurret.run();
-			break;
-		case VIPER:
-			RoboViper.run();
-			break;
+			switch (robotc.getType())
+			{
+			case ARCHON:
+				RoboArchon.init();
+				break;
+			case GUARD:
+				RoboGuard.init();
+				break;
+			case SCOUT:
+				RoboScout.init();
+				break;
+			case SOLDIER:
+				RoboSoldier.init();
+				break;
+			case TTM:
+			case TURRET:
+				RoboTurret.init();
+				break;
+			case VIPER:
+				RoboViper.init();
+				break;
+				
+			case ZOMBIEDEN:
+			case BIGZOMBIE:
+			case FASTZOMBIE:
+			case RANGEDZOMBIE:
+			case STANDARDZOMBIE:
+			default:
+				System.out.println("WTF IS GOING ON!!!111");
+				rc.disintegrate();
+				break;
+			}
+		}
+		catch (Exception e)
+		{
+			System.out.println(e.getMessage());
+            e.printStackTrace();
+		}
+		
+		// doing it like this so we can add robot-wide behaviors easily
+		while (true)
+		{
+			RobotPlayer.here = rc.getLocation();
 			
-		case ZOMBIEDEN:
-		case BIGZOMBIE:
-		case FASTZOMBIE:
-		case RANGEDZOMBIE:
-		case STANDARDZOMBIE:
-		default:
-			System.out.println("WTF IS GOING ON!!!111");
-			rc.disintegrate();
-			break;
-
+			try
+			{
+				switch (robotc.getType())
+				{
+				case ARCHON:
+					RoboArchon.turn();
+					break;
+				case GUARD:
+					RoboGuard.turn();
+					break;
+				case SCOUT:
+					RoboScout.turn();
+					break;
+				case SOLDIER:
+					RoboSoldier.turn();
+					break;
+				case TTM:
+				case TURRET:
+					RoboTurret.turn();
+					break;
+				case VIPER:
+					RoboViper.turn();
+					break;
+					
+				case ZOMBIEDEN:
+				case BIGZOMBIE:
+				case FASTZOMBIE:
+				case RANGEDZOMBIE:
+				case STANDARDZOMBIE:
+				default:
+					System.out.println("WTF IS GOING ON!!!111");
+					rc.disintegrate();
+					break;
+				}
+			}
+			catch (Exception e)
+			{
+				System.out.println(e.getMessage());
+                e.printStackTrace();
+			}
+			
+			Clock.yield();
 		}
     }
 }
