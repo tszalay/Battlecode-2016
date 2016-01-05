@@ -1,8 +1,25 @@
 package botline_bling;
 
+import battlecode.common.Clock;
+
 public class Debug extends RobotPlayer
 {
 	static String[] auStrings = new String[4];
+	static int timer_start;
+	
+	public static void startTiming()
+	{
+		timer_start = Clock.getBytecodeNum();
+	}
+	
+	public static void stopTiming(String s)
+	{
+		int dt = Clock.getBytecodeNum() - timer_start;
+		if (dt < 0) // wrapped around
+			dt += rc.getType().bytecodeLimit;
+		
+		System.out.println(s + " time:" + dt);
+	}
 	
 	public static void setStringAK(String s)
 	{
