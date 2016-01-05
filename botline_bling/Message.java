@@ -71,7 +71,8 @@ public class Message extends RobotPlayer
 		int x = lin_distance*lin_distance/rc.getType().sensorRadiusSquared - 2;
 		if (x<0) x=0;
 		
-		rc.broadcastMessageSignal(v1,v2,x);
+		//rc.broadcastMessageSignal(v1,v2,x);
+		rc.broadcastMessageSignal(v1,v2,lin_distance);
 	}
 	
 	// sends a message-free signal
