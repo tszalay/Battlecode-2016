@@ -16,9 +16,25 @@ class SafetyPolicyAvoidAllUnits extends RobotPlayer implements NavSafetyPolicy
 {
     RobotInfo[] nearbyEnemies;
 
+    public SafetyPolicyAvoidAllUnits()
+    {
+    	RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, theirTeam);
+        RobotInfo[] nearbyZombies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.ZOMBIE);
+    	this.nearbyEnemies = new RobotInfo[nearbyEnemies.length+nearbyZombies.length];
+    	// concatenate arrays of nearbyEnemies and nearbyZombies
+        for (int i=0; i<nearbyEnemies.length; i++)
+    	{
+    		this.nearbyEnemies[i] = nearbyEnemies[i];
+    	}
+    	for (int i=0; i<nearbyZombies.length; i++)
+    	{
+    		this.nearbyEnemies[i+nearbyEnemies.length] = nearbyZombies[i+nearbyEnemies.length];
+    	}
+    }
+    
     public SafetyPolicyAvoidAllUnits(RobotInfo[] nearbyEnemies, RobotInfo[] nearbyZombies)
     {
-        this.nearbyEnemies = new RobotInfo[nearbyEnemies.length+nearbyZombies.length];
+    	this.nearbyEnemies = new RobotInfo[nearbyEnemies.length+nearbyZombies.length];
     	// concatenate arrays of nearbyEnemies and nearbyZombies
         for (int i=0; i<nearbyEnemies.length; i++)
     	{
@@ -61,9 +77,15 @@ class SafetyPolicyAvoidOtherTeam extends RobotPlayer implements NavSafetyPolicy
 {
     RobotInfo[] nearbyEnemies;
 
+    public SafetyPolicyAvoidOtherTeam()
+    {
+    	RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, theirTeam);
+    	this.nearbyEnemies = nearbyEnemies;
+    }
+    
     public SafetyPolicyAvoidOtherTeam(RobotInfo[] nearbyEnemies)
     {
-        this.nearbyEnemies = nearbyEnemies;
+    	this.nearbyEnemies = nearbyEnemies;
     }
 
     public boolean isSafeToMoveTo(MapLocation loc) {
@@ -97,9 +119,15 @@ class SafetyPolicyAvoidZombies extends RobotPlayer implements NavSafetyPolicy
 {
     RobotInfo[] nearbyEnemies;
 
+    public SafetyPolicyAvoidZombies()
+    {
+        RobotInfo[] nearbyZombies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.ZOMBIE);
+    	this.nearbyEnemies = nearbyZombies;
+    }
+    
     public SafetyPolicyAvoidZombies(RobotInfo[] nearbyZombies)
     {
-        this.nearbyEnemies = nearbyZombies;
+    	this.nearbyEnemies = nearbyZombies;
     }
 
     public boolean isSafeToMoveTo(MapLocation loc) {
