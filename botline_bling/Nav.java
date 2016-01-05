@@ -2,6 +2,12 @@ package botline_bling;
 
 import battlecode.common.*;
 
+// There are three NavSafetyPolicies:
+
+// SafetyPolicyAvoidAllUnits - avoids all units that can attack
+// SafetyPolicyAvoidOtherTeam - avoids all units on the other team that can attack, but ignores zombies
+// SafetyPolicyAvoidZombies - avoids all zombies (all of which can attack), but ignores other team
+
 interface NavSafetyPolicy {
     public boolean isSafeToMoveTo(MapLocation loc);
 }
@@ -10,7 +16,52 @@ class SafetyPolicyAvoidAllUnits extends RobotPlayer implements NavSafetyPolicy
 {
     RobotInfo[] nearbyEnemies;
 
-    public SafetyPolicyAvoidAllUnits(RobotInfo[] nearbyEnemies)
+    public SafetyPolicyAvoidAllUnits(RobotInfo[] nearbyEnemies, RobotInfo[] nearbyZombies)
+    {
+        this.nearbyEnemies = new RobotInfo[nearbyEnemies.length+nearbyZombies.length];
+    	// concatenate arrays of nearbyEnemies and nearbyZombies
+        for (int i=0; i<nearbyEnemies.length; i++)
+    	{
+    		this.nearbyEnemies[i] = nearbyEnemies[i];
+    	}
+    	for (int i=0; i<nearbyZombies.length; i++)
+    	{
+    		this.nearbyEnemies[i+nearbyEnemies.length] = nearbyZombies[i+nearbyEnemies.length];
+    	}
+    }
+
+    public boolean isSafeToMoveTo(MapLocation loc) {
+
+    	for (RobotInfo enemy : nearbyEnemies)
+    	{
+			switch (enemy.type)
+			{
+				case ARCHON: // archons cannot attack, do not avoid them
+					break;
+					
+				case TTM: // TTMs cannot attack in their packed-up form, do not avoid them
+					break;
+					
+				case SCOUT: // scouts cannot attack, do not avoid them
+					break;
+
+				default: // for other units, stay out of their attack range
+					if (enemy.type.attackRadiusSquared >= loc.distanceSquaredTo(enemy.location))
+						return false;
+					
+					break;
+			}
+        }
+
+        return true; // no enemies are within attack range of this location
+    }
+}
+
+class SafetyPolicyAvoidOtherTeam extends RobotPlayer implements NavSafetyPolicy
+{
+    RobotInfo[] nearbyEnemies;
+
+    public SafetyPolicyAvoidOtherTeam(RobotInfo[] nearbyEnemies)
     {
         this.nearbyEnemies = nearbyEnemies;
     }
@@ -19,20 +70,47 @@ class SafetyPolicyAvoidAllUnits extends RobotPlayer implements NavSafetyPolicy
 
     	for (RobotInfo enemy : nearbyEnemies)
     	{
-            switch (enemy.type)
-            {
-                case ARCHON:
-                    break;
+    			switch (enemy.type)
+    			{
+    				case ARCHON: // archons cannot attack, do not avoid them
+    					break;
+    					
+    				case TTM: // TTMs cannot attack in their packed-up form, do not avoid them
+    					break;
+    					
+    				case SCOUT: // scouts cannot attack, do not avoid them
+    					break;
 
-                default:
-                    if (enemy.type.attackRadiusSquared >= loc.distanceSquaredTo(enemy.location))
-                    	return false;
-                    
-                    break;
-            }
+    				default: // for other units, stay out of their attack range
+    					if (enemy.type.attackRadiusSquared >= loc.distanceSquaredTo(enemy.location))
+    						return false;
+    					
+    					break;
+    			}
         }
 
-        return true;
+        return true; // no enemies are within attack range of this location
+    }
+}
+
+class SafetyPolicyAvoidZombies extends RobotPlayer implements NavSafetyPolicy
+{
+    RobotInfo[] nearbyEnemies;
+
+    public SafetyPolicyAvoidZombies(RobotInfo[] nearbyZombies)
+    {
+        this.nearbyEnemies = nearbyZombies;
+    }
+
+    public boolean isSafeToMoveTo(MapLocation loc) {
+
+    	for (RobotInfo enemy : nearbyEnemies)
+    	{
+			if (enemy.type.attackRadiusSquared >= loc.distanceSquaredTo(enemy.location))
+				return false;
+        }
+
+        return true; // no zombies are within attack range of this location
     }
 }
 
@@ -63,7 +141,12 @@ public class Nav extends RobotPlayer
     }
 
     private static boolean canMove(Direction dir) {
-        return rc.canMove(dir) && safety.isSafeToMoveTo(here.add(dir));
+    	if (rc.getType() == RobotType.SCOUT) // if you're a scout, you can move over rubble, so don't worry about it
+    	{
+    		return rc.canMove(dir) && safety.isSafeToMoveTo(here.add(dir));
+    	}
+    	// if not a scout, then worry about rubble: only move to spots that have rubble <= RUBBLE_SLOW_THRESH
+    	return (rc.senseRubble(here.add(dir)) <= GameConstants.RUBBLE_SLOW_THRESH) && rc.canMove(dir) && safety.isSafeToMoveTo(here.add(dir));
     }
 
     private static boolean tryMoveDirect() throws GameActionException {

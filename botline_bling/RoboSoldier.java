@@ -4,19 +4,21 @@ import battlecode.common.*;
 
 public class RoboSoldier extends RobotPlayer
 {
+	static int fate;
+	
 	public static void init()
 	{
-		
+		fate = rand.nextInt(1000);
 	}
 	
 	public static void turn() throws GameActionException
 	{
-        int fate = rand.nextInt(1000);
+        
 
-        if (fate % 5 == 3) {
-            // Send a normal signal
-            rc.broadcastSignal(80);
-        }
+//        if (fate % 5 == 3) {
+//            // Send a normal signal
+//            rc.broadcastSignal(80);
+//        }
 
         boolean shouldAttack = false;
 
@@ -41,19 +43,25 @@ public class RoboSoldier extends RobotPlayer
 
         if (!shouldAttack) {
             if (rc.isCoreReady()) {
-                if (fate < 600) {
-                    // Choose a random direction to try to move in
-                    Direction dirToMove = Direction.values()[fate % 8];
-                    // Check the rubble in that direction
-                    if (rc.senseRubble(rc.getLocation().add(dirToMove)) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH) {
-                        // Too much rubble, so I should clear it
-                        rc.clearRubble(dirToMove);
-                        // Check if I can move in this direction
-                    } else if (rc.canMove(dirToMove)) {
-                        // Move
-                        rc.move(dirToMove);
-                    }
-                }
+                RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, theirTeam);
+                RobotInfo[] nearbyZombies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.ZOMBIE);
+            	NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits(nearbyEnemies, nearbyZombies);
+//            	if (fate < 600) {
+                    // try to move to middle of map
+                    MapLocation target = new MapLocation(436,159);
+                    Nav.goTo(target, safety);
+                    
+                    
+//                    // Check the rubble in that direction
+//                    if (rc.senseRubble(rc.getLocation().add(dirToMove)) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH) {
+//                        // Too much rubble, so I should clear it
+//                        rc.clearRubble(dirToMove);
+//                        // Check if I can move in this direction
+//                    } else if (rc.canMove(dirToMove)) {
+//                        // Move
+//                        rc.move(dirToMove);
+//                    }
+//                }
             }
         }
 	}
