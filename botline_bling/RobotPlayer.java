@@ -10,6 +10,7 @@ public class RobotPlayer
 	public static Random rand;
 	public static Team ourTeam;
 	public static Team theirTeam;
+	public static MapLocation here;
 	
 	@SuppressWarnings("unused")
 
