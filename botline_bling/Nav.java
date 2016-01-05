@@ -298,11 +298,13 @@ public class Nav extends RobotPlayer
     }
 
     private static void bugMove(Direction dir) throws GameActionException {
-        if (move(dir)) {
-            bugRotationCount += calculateBugRotation(dir);
-            bugLastMoveDir = dir;
-            if (bugWallSide == WallSide.LEFT) bugLookStartDir = dir.rotateLeft().rotateLeft();
-            else bugLookStartDir = dir.rotateRight().rotateRight();
+        if (canMove(dir)) {
+            if (move(dir)) {
+            	bugRotationCount += calculateBugRotation(dir);
+            	bugLastMoveDir = dir;
+            	if (bugWallSide == WallSide.LEFT) bugLookStartDir = dir.rotateLeft().rotateLeft();
+            	else bugLookStartDir = dir.rotateRight().rotateRight();
+            }
         }
     }
 
@@ -372,7 +374,9 @@ public class Nav extends RobotPlayer
         	return;
 
         safety = theSafety;
-
+        
+        Debug.setStringSJF(bugState.toString());
         bugMove();
+        
     }
 }
