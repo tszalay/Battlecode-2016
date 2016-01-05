@@ -12,6 +12,9 @@ public class RobotPlayer
 	public static Team theirTeam;
 	public static MapLocation here;
 	
+	public static RobotInfo myArchon = null;
+	public static int myArchonSenseRound = 0; 
+	
 	@SuppressWarnings("unused")
 	// BC Engine -> RobotPlayer.run -> RoboXXX.run
     public static void run(RobotController robotc)
@@ -27,6 +30,28 @@ public class RobotPlayer
 		Debug.setStringAK("A-aron");
 		Debug.setStringSJF("Stephen J. Fry");
 		Debug.setStringRR("Ryan");
+		
+		// look for an archon close by, if we aren't an Archon
+		if (rc.getType() != RobotType.ARCHON)
+		{
+			RobotInfo[] nearbyFriends;
+			// look at a larger distance if we started early in the game
+			if (rc.getRoundNum() < 2)
+				nearbyFriends = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, ourTeam);
+			else
+				nearbyFriends = rc.senseNearbyRobots(2, ourTeam);
+			
+			// find closest Archon
+			for (RobotInfo ri : nearbyFriends)
+			{
+				if (ri.type == RobotType.ARCHON)
+				{
+					if (myArchon == null || here.distanceSquaredTo(myArchon.location) > here.distanceSquaredTo(ri.location))
+						myArchon = ri;
+				}
+			}
+			if (myArchon != null) myArchonSenseRound = rc.getRoundNum();
+		}
 		
 		try
 		{
@@ -70,12 +95,27 @@ public class RobotPlayer
 		}
 		
 		// doing it like this so we can add robot-wide behaviors easily
-		while (true)
+		try
 		{
-			RobotPlayer.here = rc.getLocation();
-			
-			try
+			while (true)
 			{
+				RobotPlayer.here = rc.getLocation();
+				// try to re-sense archon
+				if (myArchon != null)
+				{
+					if (rc.canSenseRobot(myArchon.ID))
+					{
+						myArchon = rc.senseRobot(myArchon.ID);
+						myArchonSenseRound = rc.getRoundNum();
+					}
+					else
+					{
+						// we've really done it now
+						if (rc.getRoundNum() - myArchonSenseRound > 50)
+							myArchon = null;
+					}
+				}
+				
 				switch (robotc.getType())
 				{
 				case ARCHON:
@@ -108,14 +148,15 @@ public class RobotPlayer
 					rc.disintegrate();
 					break;
 				}
+				
+				Clock.yield();
 			}
-			catch (Exception e)
-			{
-				System.out.println(e.getMessage());
-                e.printStackTrace();
-			}
-			
-			Clock.yield();
 		}
+		catch (Exception e)
+		{
+			System.out.println(e.getMessage());
+            e.printStackTrace();
+		}
+
     }
 }
