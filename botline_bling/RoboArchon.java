@@ -4,9 +4,12 @@ import battlecode.common.*;
 
 public class RoboArchon extends RobotPlayer
 {
+	
+	static MapLocation rallyLoc;
+	
 	public static void init() throws GameActionException
 	{
-		
+		rallyLoc = null;
 	}
 	
 	
@@ -31,23 +34,12 @@ public class RoboArchon extends RobotPlayer
 	{
 		Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST, Direction.SOUTH_EAST,
                 Direction.SOUTH, Direction.SOUTH_WEST, Direction.WEST, Direction.NORTH_WEST};
-		//build scout
-		
+//build scout
 		Direction dirToBuild;
 		MapLocation archonLoc = rc.getLocation();
-		if (archonLoc.x + archonLoc.y % 2 == 0){//archon is on a black, build on diagonal
-			System.out.println("on black diag");			
-			for(int i=0; i<=7; i=i+2){
-				dirToBuild = directions[i];
-				if (rc.hasBuildRequirements(RobotType.SCOUT)){
-					if (rc.canBuild(dirToBuild, RobotType.SCOUT)) {
-						rc.build(dirToBuild, RobotType.SCOUT);
-						break;
-					}
-				}
-			}
-		} else {//archon is on white, build on 
-			System.out.println("on white rook");
+		//System.out.println((archonLoc.x + archonLoc.y) % 2);
+		if (((archonLoc.x + archonLoc.y) % 2) == 0){
+			//System.out.println("on black diag");			
 			for(int i=1; i<=7; i=i+2){
 				dirToBuild = directions[i];
 				if (rc.hasBuildRequirements(RobotType.SCOUT)){
@@ -57,21 +49,25 @@ public class RoboArchon extends RobotPlayer
 					}
 				}
 			}
-			
+		} else {//archon is on white, build on 
+			//System.out.println("on white rook");
+			for(int i=0; i<=7; i=i+2){
+				dirToBuild = directions[i];
+				if (rc.hasBuildRequirements(RobotType.SCOUT)){
+					if (rc.canBuild(dirToBuild, RobotType.SCOUT)) {
+						rc.build(dirToBuild, RobotType.SCOUT);
+						break;
+					}
+				}
+			}
 		}
-
-		
-		
-
-		//read beacon
-
+//read beacon
 		if (rc.getRoundNum() > RoboScout.SIGNAL_ROUND)
 		{
 			// check for signals by a time we should have received some
 
 			int minID = 1000000;
-			MapLocation rallyLoc = null;
-
+			
 			Signal[] sigs = rc.emptySignalQueue();
 			for (Signal s : sigs)
 			{
@@ -88,6 +84,7 @@ public class RoboArchon extends RobotPlayer
 					{
 						rallyLoc = loc;
 						minID = s.getID();
+						//Debug.setStringRR("rallyLocx" +rallyLoc.x + "rallyLocy" +rallyLoc.y);
 					}
 					//System.out.println(s.getID() + " " + s.getLocation() + " " + loc + " / MY LOC:" + here);
 					break;
@@ -96,6 +93,11 @@ public class RoboArchon extends RobotPlayer
 				}
 			}
 
+			Debug.setStringRR("rallyLocx" + rallyLoc.x + "rallyLocy" + rallyLoc.y);
+			NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
+			Nav.goTo(rallyLoc, safety);
+
+//			MapLocation target = rallyLoc;
 			// now the rally location is in rallyLoc
 
 
