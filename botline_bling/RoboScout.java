@@ -33,7 +33,7 @@ public class RoboScout extends RobotPlayer
         	RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, theirTeam);
             RobotInfo[] nearbyZombies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.ZOMBIE);
             
-        	if (!Micro.tryKiteZombies(kiteTarget))
+        	if (!Micro.tryKiteZombies(kiteTarget)  && rc.isCoreReady())
         	{
         		NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits(nearbyEnemies, nearbyZombies);
         		MapLocation target = here.add(rand.nextInt(200)-100,rand.nextInt(200)-100);

@@ -188,7 +188,7 @@ public class Micro extends RobotPlayer
 	public static boolean willDieInfected() throws GameActionException
 	{
 		// get self infection status
-		int healingTime = rc.getInfectedTurns();
+		int healingTime = 0; // rc.getInfectedTurns();
 		int roundsTillDeath = howLongCanSurviveCurrentSkirmish();
 		
 		// if another infection is imminent, add to healing time
@@ -217,16 +217,18 @@ public class Micro extends RobotPlayer
 		NavSafetyPolicy safety = new SafetyPolicyAvoidZombies(nearbyZombies);
 		
 		// get the retreat direction
-		Direction retreatDir = dirToClosestZombie.opposite();
-		if (dirToClosestZombie == null) // no zombie attackers
-		{
+		Direction retreatDir = null;
+		if (dirToClosestZombie != null) // no zombie attackers
+			retreatDir = dirToClosestZombie.opposite();
+		else if (dirToClosestEnemy != null) // no zombie attackers
 			retreatDir = dirToClosestEnemy.opposite();
-			//safety = new SafetyPolicyAvoidAllUnits(nearbyEnemies, nearbyZombies);
-		}
 		
 		// figure out if we can safely retreat, and do it if we can
-		if (safety.isSafeToMoveTo(here.add(retreatDir)) || safety.isSafeToMoveTo(here.add(retreatDir.rotateRight())) || safety.isSafeToMoveTo(here.add(retreatDir.rotateLeft())))
-			return tryMove(retreatDir, safety);
+		if (retreatDir != null)
+		{
+			if (safety.isSafeToMoveTo(here.add(retreatDir)) || safety.isSafeToMoveTo(here.add(retreatDir.rotateRight())) || safety.isSafeToMoveTo(here.add(retreatDir.rotateLeft())) || safety.isSafeToMoveTo(here.add(retreatDir.rotateLeft().rotateLeft())) || safety.isSafeToMoveTo(here.add(retreatDir.rotateRight().rotateRight())))
+				return tryMove(retreatDir, safety);
+		}
 		
 		return false;
 	}
