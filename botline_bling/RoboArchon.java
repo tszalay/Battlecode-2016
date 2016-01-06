@@ -36,6 +36,11 @@ public class RoboArchon extends RobotPlayer
 		}
 		//repair anyone nearby
 		tryrepair();
+//		NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
+//		if (rc.isCoreReady()){ 
+//			Nav.goTo(rallyLoc, safety);
+//		}
+		
 	}
 	
 
