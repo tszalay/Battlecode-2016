@@ -58,9 +58,10 @@ public class Micro extends RobotPlayer
 	public static void doAvoidBeingKilled() throws GameActionException
 	{
 		collateNearbyRobotInfo();
+		Debug.setStringSJF("enemies = " + nearbyEnemies.length + ", zombies = " + nearbyZombies.length + ", allies = " + nearbyAllies.length);
 		
 		// first priority is to attack an enemy archon
-		if (enemyPriorityTarget == null)
+		if (enemyPriorityTarget != null)
 			tryAttackSomebody();
 		
 		// deal with the case of zombies nearby
@@ -93,7 +94,10 @@ public class Micro extends RobotPlayer
 				if (!tryRetreat())
 					tryAttackSomebody();
 			}
+			else
+				tryAttackSomebody();
 		}
+		return;
 	}
 	
 	public static void doAvoidDyingInfectedAtAnyCost() throws GameActionException
@@ -184,8 +188,7 @@ public class Micro extends RobotPlayer
 	public static boolean willDieInfected() throws GameActionException
 	{
 		// get self infection status
-		RobotInfo me = rc.senseRobot(rc.getID());
-		int healingTime = Math.max(me.zombieInfectedTurns, me.viperInfectedTurns);
+		int healingTime = rc.getInfectedTurns();
 		int roundsTillDeath = howLongCanSurviveCurrentSkirmish();
 		
 		// if another infection is imminent, add to healing time
@@ -197,13 +200,25 @@ public class Micro extends RobotPlayer
 
 	}
 	
+	private static boolean tryMove(Direction dir, NavSafetyPolicy safety) throws GameActionException
+	{
+		Nav.goTo(here.add(dir), safety);
+		if (here.equals(rc.getLocation())) // we didn't move
+			return false;
+		else
+			return true;
+	}
+	
 	public static boolean tryRetreat() throws GameActionException
 	{
+		if (!rc.isCoreReady())
+			return false;
+		
 		NavSafetyPolicy safety = new SafetyPolicyAvoidZombies(nearbyZombies);
 		
 		// get the retreat direction
 		Direction retreatDir = dirToClosestZombie.opposite();
-		if (dirToClosestZombie.equals(null)) // no zombie attackers
+		if (dirToClosestZombie == null) // no zombie attackers
 		{
 			retreatDir = dirToClosestEnemy.opposite();
 			//safety = new SafetyPolicyAvoidAllUnits(nearbyEnemies, nearbyZombies);
@@ -211,10 +226,8 @@ public class Micro extends RobotPlayer
 		
 		// figure out if we can safely retreat, and do it if we can
 		if (safety.isSafeToMoveTo(here.add(retreatDir)) || safety.isSafeToMoveTo(here.add(retreatDir.rotateRight())) || safety.isSafeToMoveTo(here.add(retreatDir.rotateLeft())))
-		{
-			Nav.goTo(here.add(retreatDir), safety);
-			return true;
-		}
+			return tryMove(retreatDir, safety);
+		
 		return false;
 	}
 	
@@ -222,11 +235,9 @@ public class Micro extends RobotPlayer
 	{
 		// bum rush enemies in sight range while avoiding zombies
 		NavSafetyPolicy safety = new SafetyPolicyAvoidZombies(nearbyZombies);
-		if (!dirToClosestEnemy.equals(null))
-		{
-			Nav.goTo(here.add(dirToClosestEnemy), safety);
-			return true;
-		}
+		if (dirToClosestEnemy != null)
+			return tryMove(dirToClosestEnemy, safety);
+		
 		return false;
 	}
 	
@@ -243,18 +254,30 @@ public class Micro extends RobotPlayer
 		// priority: enemy archon, zombies, enemies
 		if (enemyPriorityTarget != null)
 		{
-			rc.attackLocation(enemyPriorityTarget.location);
-			return true;
+			if (rc.canAttackLocation(enemyPriorityTarget.location))
+			{
+				rc.attackLocation(enemyPriorityTarget.location);
+				Debug.setStringSJF("attacking [" + enemyPriorityTarget.location.x + ", " + enemyPriorityTarget.location.y + "]");
+				return true;
+			}
 		}
 		if (lowestHealthZombie != null)
 		{
-			rc.attackLocation(lowestHealthZombie.location);
-			return true;
+			if (rc.canAttackLocation(lowestHealthZombie.location))
+			{
+				rc.attackLocation(lowestHealthZombie.location);
+				Debug.setStringSJF("attacking [" + lowestHealthZombie.location.x + ", " + lowestHealthZombie.location.y + "]");
+				return true;
+			}
 		}
 		if (lowestHealthEnemy != null)
 		{
-			rc.attackLocation(lowestHealthEnemy.location);
-			return true;
+			if (rc.canAttackLocation(lowestHealthEnemy.location))
+			{
+				rc.attackLocation(lowestHealthEnemy.location);
+				Debug.setStringSJF("attacking [" + lowestHealthEnemy.location.x + ", " + lowestHealthEnemy.location.y + "]");
+				return true;
+			}
 		}
 		
 		return false;
@@ -262,6 +285,9 @@ public class Micro extends RobotPlayer
 	
 	private static void collateNearbyRobotInfo() throws GameActionException
 	{
+		// get robot info
+		updateEnemyInfo();
+		
 		// loop through zombies
 		zombieTotalDamagePerTurn = 0;
 		zombieTotalHealth = 0;
