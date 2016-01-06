@@ -11,10 +11,9 @@ public class RoboArchon extends RobotPlayer
 	static Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST, Direction.SOUTH_EAST,
             Direction.SOUTH, Direction.SOUTH_WEST, Direction.WEST, Direction.NORTH_WEST};
 
-	
 	public static void init() throws GameActionException
 	{
-		rallyLoc = null;	
+		rallyLoc = null;
 	}
 	
 	public static void turn() throws GameActionException
@@ -23,10 +22,8 @@ public class RoboArchon extends RobotPlayer
 		//read beacon
 		if (rc.getRoundNum() == RoboScout.SIGNAL_ROUND)
 			readBeacon();
-			
-		tryrepair();
-		
-		if(rc.getRoundNum()<=10){
+
+		if(rc.getRoundNum()== 1){
 			tryBuildEven(RobotType.SCOUT);
 		}else if(rallyLoc == null){//then wait
 			//rc.yield();//replace later
@@ -39,6 +36,8 @@ public class RoboArchon extends RobotPlayer
 		}else{
 			tryBuildEven(RobotType.TURRET);
 		}
+		//repair anyone nearby
+		tryrepair();
 	}
 	
 
@@ -139,7 +138,7 @@ public class RoboArchon extends RobotPlayer
 	return false;
 	}
 	
-
+	
 }//end of class
 
 
