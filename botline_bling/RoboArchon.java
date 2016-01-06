@@ -1,7 +1,5 @@
 package botline_bling;
 
-import org.apache.commons.io.output.NullWriter;
-
 import battlecode.common.*;
 
 public class RoboArchon extends RobotPlayer

@@ -1,4 +1,4 @@
-package botline_bling;
+package team023;
 
 import battlecode.common.*;
 
@@ -7,17 +7,10 @@ import battlecode.common.*;
 public class RoboTurret extends RobotPlayer
 {
 	static MapLocation unpackLoc=null;
-	static final int[] unpackSearchTableX = {-1,1,1,-1,-2,0,2,0,-2,-2,2,2,1,-1,-3,-3,-1,1};
-	static final int[] unpackSearchTableY = {1, 1, -1, -1, 0, 2, 0 ,-2,-2,2,2,-2,-3,-3,-1,1,3,3};
-
-	// AK: unpack search in this pattern
-	// [][]18[]18[][]
-	// []10[]06[]11[]
-	// 16[]01[]02[]19
-	// []05[]XX[]07[]
-	// 15[]04[]03[]20
-	// []09[]08[]12[]
-	// [][]14[]13[][]
+//	static final int[] unpackSearchTableX = {0,-2,0,2,2,-2,-2,2};
+//	static final int[] unpackSearchTableY = {2, 0, -2, 0, 2, 2, -2 ,2};
+	static final int[] unpackSearchTableX = {-1,1,1,-1,-2,0,2,0};
+	static final int[] unpackSearchTableY = {1, 1, -1, -1, 0, 2, 0 ,-2};
 	
 	public static void init() throws GameActionException
 	{
@@ -111,16 +104,15 @@ public class RoboTurret extends RobotPlayer
 	// AK find new unpack location
 	public static MapLocation findNewUnpackLoc() throws GameActionException
 	{
-		MapLocation newUnpackLoc = rc.getLocation();
+		MapLocation newUnpackLoc = rc.getLocation().add(Direction.NORTH);
 		if (!MapUtil.isLocOdd(newUnpackLoc)) {
-			newUnpackLoc = newUnpackLoc.add(Direction.WEST); // now will be odd
+			newUnpackLoc = newUnpackLoc.add(Direction.SOUTH_EAST); // now will be 4-odd
 		}
-		
-		for (int i = 0; i < 18; i++) {
-			if (rc.isLocationOccupied(newUnpackLoc) || rc.senseRubble(newUnpackLoc) >= GameConstants.RUBBLE_SLOW_THRESH || !rc.onTheMap(newUnpackLoc)) {
+		for (int i = 0; i < 8; i++) {
+			if (rc.isLocationOccupied(newUnpackLoc)) {
 				newUnpackLoc = newUnpackLoc.add(unpackSearchTableX[i],unpackSearchTableY[i]);
 			}
-			else if (i == 18) {
+			else if (i == 8) {
 				newUnpackLoc = null; // For now, if you can't find a close location just give up
 			}
 			else {

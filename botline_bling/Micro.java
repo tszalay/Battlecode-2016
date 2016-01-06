@@ -144,7 +144,7 @@ public class Micro extends RobotPlayer
 		if (inZombieSensorRange)
 		{
 			// if so, kite toward target
-			NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits(nearbyEnemies, nearbyZombies);
+			NavSafetyPolicy safety = new SafetyPolicyAvoidZombies(nearbyZombies);
 			Nav.goTo(target, safety);
 			return true;
 		}
@@ -188,7 +188,7 @@ public class Micro extends RobotPlayer
 	public static boolean willDieInfected() throws GameActionException
 	{
 		// get self infection status
-		int healingTime = rc.getInfectedTurns();
+		int healingTime = 0; // rc.getInfectedTurns();
 		int roundsTillDeath = howLongCanSurviveCurrentSkirmish();
 		
 		// if another infection is imminent, add to healing time
@@ -217,15 +217,16 @@ public class Micro extends RobotPlayer
 		NavSafetyPolicy safety = new SafetyPolicyAvoidZombies(nearbyZombies);
 		
 		// get the retreat direction
-		Direction retreatDir = dirToClosestZombie.opposite();
-		if (dirToClosestZombie == null) // no zombie attackers
-		{
+		Direction retreatDir = null;
+		if (dirToClosestZombie != null) // no zombie attackers
+			retreatDir = dirToClosestZombie.opposite();
+		else if (dirToClosestEnemy != null) // no zombie attackers
 			retreatDir = dirToClosestEnemy.opposite();
-			//safety = new SafetyPolicyAvoidAllUnits(nearbyEnemies, nearbyZombies);
-		}
+		else
+			return true; // no enemies at all, code should never get here bc this method wouldn't be called
 		
 		// figure out if we can safely retreat, and do it if we can
-		if (safety.isSafeToMoveTo(here.add(retreatDir)) || safety.isSafeToMoveTo(here.add(retreatDir.rotateRight())) || safety.isSafeToMoveTo(here.add(retreatDir.rotateLeft())))
+		if (retreatDir != null)
 			return tryMove(retreatDir, safety);
 		
 		return false;
@@ -241,10 +242,23 @@ public class Micro extends RobotPlayer
 		return false;
 	}
 	
+	public static boolean tryAttackBot(RobotInfo targetBot) throws GameActionException
+	{
+		if (targetBot == null)
+			return false;
+		if (rc.canAttackLocation(targetBot.location))
+		{
+			rc.attackLocation(targetBot.location);
+			return true;
+		}
+		return false;
+	}
+	
 	public static boolean tryAttackSomebody() throws GameActionException
 	{
 		// try to attack someone in weapons range
-		// this method MUST BE CALLED AFTER CALLING collateNearbyRobotInfo()
+		// this method SHOULD BE CALLED AFTER CALLING collateNearbyRobotInfo()
+		// this method can be called from outside without doing anything first, it will just default to shooting at bot with least health
 		
 		// can we even shoot bro?
 		if (!rc.isWeaponReady())
@@ -252,33 +266,26 @@ public class Micro extends RobotPlayer
 		
 		// use the info we've collated
 		// priority: enemy archon, zombies, enemies
-		if (enemyPriorityTarget != null)
+		if (tryAttackBot(enemyPriorityTarget))
+			return true;
+		if (tryAttackBot(lowestHealthZombie))
+			return true;
+		if (tryAttackBot(lowestHealthEnemy))
+			return true;
+		
+		// if this is called from outside Micro.java, and the targets are not set, just default to this:
+		RobotInfo[] localEnemies = rc.senseHostileRobots(here, rc.getType().attackRadiusSquared);
+		if (localEnemies.length == 0)
+			return false;
+		// find enemy with lowest health and try to attack
+		RobotInfo target = localEnemies[0];
+		for (RobotInfo bot : localEnemies)
 		{
-			if (rc.canAttackLocation(enemyPriorityTarget.location))
-			{
-				rc.attackLocation(enemyPriorityTarget.location);
-				Debug.setStringSJF("attacking [" + enemyPriorityTarget.location.x + ", " + enemyPriorityTarget.location.y + "]");
-				return true;
-			}
+			if (bot.health < target.health)
+				target = bot;
 		}
-		if (lowestHealthZombie != null)
-		{
-			if (rc.canAttackLocation(lowestHealthZombie.location))
-			{
-				rc.attackLocation(lowestHealthZombie.location);
-				Debug.setStringSJF("attacking [" + lowestHealthZombie.location.x + ", " + lowestHealthZombie.location.y + "]");
-				return true;
-			}
-		}
-		if (lowestHealthEnemy != null)
-		{
-			if (rc.canAttackLocation(lowestHealthEnemy.location))
-			{
-				rc.attackLocation(lowestHealthEnemy.location);
-				Debug.setStringSJF("attacking [" + lowestHealthEnemy.location.x + ", " + lowestHealthEnemy.location.y + "]");
-				return true;
-			}
-		}
+		if (tryAttackBot(target))
+			return true;
 		
 		return false;
 	}

@@ -1,4 +1,4 @@
-package botline_bling;
+package team023;
 
 import battlecode.common.*;
 
@@ -7,7 +7,6 @@ import battlecode.common.*;
 // SafetyPolicyAvoidAllUnits - avoids all units that can attack
 // SafetyPolicyAvoidOtherTeam - avoids all units on the other team that can attack, but ignores zombies
 // SafetyPolicyAvoidZombies - avoids all zombies (all of which can attack), but ignores other team
-// SafetyPolicyAvoidAllUnitsAndStayInTurtle - SafetyPolicyAvoidAllUnits but stays surrounded by our TTMs or TURRETs
 
 interface NavSafetyPolicy {
     public boolean isSafeToMoveTo(MapLocation loc);
@@ -19,7 +18,18 @@ class SafetyPolicyAvoidAllUnits extends RobotPlayer implements NavSafetyPolicy
 
     public SafetyPolicyAvoidAllUnits()
     {
-    	RobotInfo[] nearbyEnemies = rc.senseHostileRobots(here, rc.getType().sensorRadiusSquared);
+    	RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, theirTeam);
+        RobotInfo[] nearbyZombies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.ZOMBIE);
+    	this.nearbyEnemies = new RobotInfo[nearbyEnemies.length+nearbyZombies.length];
+    	// concatenate arrays of nearbyEnemies and nearbyZombies
+        for (int i=0; i<nearbyEnemies.length; i++)
+    	{
+    		this.nearbyEnemies[i] = nearbyEnemies[i];
+    	}
+    	for (int i=0; i<nearbyZombies.length; i++)
+    	{
+    		this.nearbyEnemies[i+nearbyEnemies.length] = nearbyZombies[i];
+    	}
     }
     
     public SafetyPolicyAvoidAllUnits(RobotInfo[] nearbyEnemies, RobotInfo[] nearbyZombies)
@@ -38,9 +48,6 @@ class SafetyPolicyAvoidAllUnits extends RobotPlayer implements NavSafetyPolicy
 
     public boolean isSafeToMoveTo(MapLocation loc) {
 
-    	if (nearbyEnemies == null || nearbyEnemies.length == 0)
-    		return true;
-    	
     	for (RobotInfo enemy : nearbyEnemies)
     	{
 			switch (enemy.type)
@@ -66,97 +73,6 @@ class SafetyPolicyAvoidAllUnits extends RobotPlayer implements NavSafetyPolicy
     }
 }
 
-class SafetyPolicyAvoidAllUnitsAndStayInTurtle extends RobotPlayer implements NavSafetyPolicy
-{
-    RobotInfo[] nearbyEnemies;
-    RobotInfo[] adjacentAlliedUnits = null;
-
-    public SafetyPolicyAvoidAllUnitsAndStayInTurtle()
-    {
-        RobotInfo[] nearbyEnemies = rc.senseHostileRobots(here, rc.getType().sensorRadiusSquared);
-    }
-    
-    public SafetyPolicyAvoidAllUnitsAndStayInTurtle(RobotInfo[] nearbyEnemies, RobotInfo[] nearbyZombies)
-    {
-    	this.nearbyEnemies = new RobotInfo[nearbyEnemies.length+nearbyZombies.length];
-    	// concatenate arrays of nearbyEnemies and nearbyZombies
-        for (int i=0; i<nearbyEnemies.length; i++)
-    	{
-    		this.nearbyEnemies[i] = nearbyEnemies[i];
-    	}
-    	for (int i=0; i<nearbyZombies.length; i++)
-    	{
-    		this.nearbyEnemies[i+nearbyEnemies.length] = nearbyZombies[i];
-    	}
-    	RobotInfo[] adjacentAlliedUnits = rc.senseNearbyRobots(3, ourTeam);
-    }
-
-    public boolean isSafeToMoveTo(MapLocation loc) {
-
-    	// check whether spot is within turtle
-    	if (!isLocWithinTurtle(loc))
-    		return false;
-    	
-    	if (nearbyEnemies == null || nearbyEnemies.length == 0)
-    		return true;
-    	
-    	// check for enemy units in range
-    	for (RobotInfo enemy : nearbyEnemies)
-    	{
-			switch (enemy.type)
-			{
-				case ARCHON: // archons cannot attack, do not avoid them
-					break;
-					
-				case TTM: // TTMs cannot attack in their packed-up form, do not avoid them
-					break;
-					
-				case SCOUT: // scouts cannot attack, do not avoid them
-					break;
-
-				default: // for other units, stay out of their attack range
-					if (enemy.type.attackRadiusSquared >= loc.distanceSquaredTo(enemy.location))
-						return false;
-					
-					break;
-			}
-        }
-    	
-        return true; // no enemies are within attack range of this location, and it's surrounded by our turrets
-    }
-    
-    public boolean isLocWithinTurtle(MapLocation loc) {
-    	
-    	// also has to return true (meaning safe) if it is outside turtle...
-    	
-    	adjacentAlliedUnits = rc.senseNearbyRobots(loc, 3, ourTeam);
-    	RobotInfo[] adjacentAlliedUnitsToMeNow = rc.senseNearbyRobots(here, 3, ourTeam);
-    	
-    	// handle the case of no allies around
-    	if (adjacentAlliedUnitsToMeNow == null || adjacentAlliedUnitsToMeNow.length == 0)
-    		return true;
-    	if (adjacentAlliedUnits == null || adjacentAlliedUnits.length == 0)
-    		return false;
-    	
-    	// count up adjacent turrets
-    	int numTurretsAdjacent = 0;
-    	for (RobotInfo friend : adjacentAlliedUnits)
-    	{
-    		if (friend.type == RobotType.TURRET)
-    			numTurretsAdjacent += 1;
-    	}
-    	int numTurretsAdjacentNow = 0;
-    	for (RobotInfo friend : adjacentAlliedUnitsToMeNow)
-    	{
-    		if (friend.type == RobotType.TURRET)
-    			numTurretsAdjacentNow += 1;
-    	}
-    	
-    	// 4 adjacent turrets is within turtle, but also allow stuff to move into the turtle
-    	return (numTurretsAdjacent > 3  || (numTurretsAdjacent >= numTurretsAdjacentNow) );
-    }
-}
-
 class SafetyPolicyAvoidOtherTeam extends RobotPlayer implements NavSafetyPolicy
 {
     RobotInfo[] nearbyEnemies;
@@ -174,9 +90,6 @@ class SafetyPolicyAvoidOtherTeam extends RobotPlayer implements NavSafetyPolicy
 
     public boolean isSafeToMoveTo(MapLocation loc) {
 
-    	if (nearbyEnemies == null || nearbyEnemies.length == 0)
-    		return true;
-    	
     	for (RobotInfo enemy : nearbyEnemies)
     	{
     			switch (enemy.type)
