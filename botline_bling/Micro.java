@@ -19,6 +19,8 @@ public class Micro extends RobotPlayer
 	private static RobotInfo closestZombie = null;
 	private static RobotInfo lowestHealthEnemy = null;
 	private static RobotInfo lowestHealthZombie = null;
+	private static boolean enemyViperInSightRange = false;
+	private static boolean inZombieSensorRange = false;
 	
 	public static void updateEnemyInfo() throws GameActionException
 	{
@@ -41,17 +43,99 @@ public class Micro extends RobotPlayer
 	{
 		collateNearbyRobotInfo();
 		
+		// first priority is to attack an enemy archon
+		if (!enemyPriorityTarget.equals(null))
+			tryAttackSomebody();
+		
+		// deal with the case of zombies nearby
+		if (nearbyZombies.length > 0)
+		{
+			if (amOverpowered())
+			{
+				// first try to retreat, if we cannot, then attack
+				if (!tryRetreat())
+					tryAttackSomebody();
+			}
+			else
+			{
+				if (willDieInfected())
+					tryRushEnemies();
+				else
+				{
+					if (!tryRetreat())
+						tryAttackSomebody();
+				}
+			}
+		}
+		
+		// deal with the case of enemies nearby
+		if (nearbyEnemies.length > 0)
+		{
+			if (amOverpowered())
+			{
+				// first try to retreat, if we cannot, then attack
+				if (!tryRetreat())
+					tryAttackSomebody();
+			}
+		}
 	}
 	
 	public static void doAvoidDyingInfectedAtAnyCost() throws GameActionException
 	{
+		collateNearbyRobotInfo();
+		
+		// check if we're in danger of dying infected
+		if (!willDieInfected())
+		{
+			if (imminentInfection())
+			{
+				// check if we can retreat to prevent infection
+				if (!tryRetreat())
+					// otherwise commit suicide
+					rc.disintegrate();
+			}
+			else // we are not in danger
+			{
+				if (nearbyZombies.length==0)
+					tryAttackSomebody();
+				else
+				{
+					if (!tryRetreat())
+						tryAttackSomebody();
+				}
+			}
+		}
+		else // we will die infected, try to rush enemies
+		{
+			if (!tryRushEnemies())
+				tryAttackSomebody();
+		}
 		
 	}
 	
-	public static boolean tryKiteZombies() throws GameActionException
+	public static boolean tryKiteZombies(MapLocation target) throws GameActionException
 	{
+		// fool around avoiding things until we are seen by zombies, then kite toward target
 		
-		return true;
+		// update enemies
+		collateNearbyRobotInfo();
+		
+		// check if we can be seen by zombies
+		if (inZombieSensorRange)
+		{
+			// if so, kite toward target
+			NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits(nearbyEnemies, nearbyZombies);
+			Nav.goTo(target, safety);
+			return true;
+		}
+		else
+		{
+			// skittish behavior, avoidance tactics
+			// first try to retreat, if we cannot, then attack
+			if (!tryRetreat())
+				tryAttackSomebody();
+			return false;
+		}
 	}
 	
 	public static boolean amOverpowered() throws GameActionException
@@ -66,16 +150,31 @@ public class Micro extends RobotPlayer
 		return true;
 	}
 	
-	public static boolean canSurviveCurrentSkirmish() throws GameActionException
+	public static int howLongCanSurviveCurrentSkirmish() throws GameActionException
 	{
 		
-		return true;
+		return 100;
+	}
+	
+	public static boolean imminentInfection() throws GameActionException
+	{
+		return ( (turnsUntilFirstZombieAttacks < 2) || enemyViperInSightRange);
 	}
 	
 	public static boolean willDieInfected() throws GameActionException
 	{
+		// get self infection status
+		RobotInfo me = rc.senseRobot(rc.getID());
+		int healingTime = Math.max(me.zombieInfectedTurns, me.viperInfectedTurns);
+		int roundsTillDeath = howLongCanSurviveCurrentSkirmish();
 		
-		return true;
+		// if another infection is imminent, add to healing time
+		if (imminentInfection())
+			healingTime += 10;
+		
+		// return whether we will be infected when we die
+		return (roundsTillDeath <= healingTime);
+
 	}
 	
 	public static boolean tryRetreat() throws GameActionException
@@ -87,7 +186,7 @@ public class Micro extends RobotPlayer
 		if (dirToClosestZombie.equals(null)) // no zombie attackers
 		{
 			retreatDir = dirToClosestEnemy.opposite();
-			safety = new SafetyPolicyAvoidAllUnits(nearbyEnemies, nearbyZombies);
+			//safety = new SafetyPolicyAvoidAllUnits(nearbyEnemies, nearbyZombies);
 		}
 		
 		// figure out if we can safely retreat, and do it if we can
@@ -147,6 +246,7 @@ public class Micro extends RobotPlayer
 		zombieTotalDamagePerTurn = 0;
 		lowestHealthZombie = null;
 		closestZombie = null;
+		inZombieSensorRange = false;
 		if (nearbyZombies.length>0)
 		{
 			closestZombie = nearbyZombies[0];
@@ -164,6 +264,10 @@ public class Micro extends RobotPlayer
 				// keep track of the zombie with lowest health
 				if (zombie.health < lowestHealthZombie.health)
 					lowestHealthZombie = zombie;
+				
+				// check if we are in zombie sensor range
+				if (inZombieSensorRange == false && here.distanceSquaredTo(zombie.location) <= zombie.type.sensorRadiusSquared)
+					inZombieSensorRange = true;
 			}
 			
 			// figure out how long until closest zombie attacks
@@ -193,6 +297,7 @@ public class Micro extends RobotPlayer
 		enemyTotalDamagePerTurn = 0;
 		lowestHealthEnemy = null;
 		closestEnemy = null;
+		enemyViperInSightRange = false;
 		if (nearbyEnemies.length>0)
 		{
 			// reset priority target
@@ -221,6 +326,10 @@ public class Micro extends RobotPlayer
 				// keep track of the enemy with lowest health
 				if (enemy.health < lowestHealthEnemy.health)
 					lowestHealthEnemy = enemy;
+				
+				// check for vipers
+				if (enemy.type == RobotType.VIPER)
+					enemyViperInSightRange = true;
 			}
 			
 			// compute direction to closest enemy
