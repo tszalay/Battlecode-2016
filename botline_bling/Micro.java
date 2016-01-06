@@ -1,5 +1,7 @@
 package botline_bling;
 
+import com.fasterxml.jackson.databind.AnnotationIntrospector.ReferenceProperty.Type;
+
 import battlecode.common.*;
 
 public class Micro extends RobotPlayer
@@ -15,6 +17,8 @@ public class Micro extends RobotPlayer
 	private static RobotInfo enemyPriorityTarget = null;
 	private static RobotInfo closestEnemy = null;
 	private static RobotInfo closestZombie = null;
+	private static RobotInfo lowestHealthEnemy = null;
+	private static RobotInfo lowestHealthZombie = null;
 	
 	public static void updateEnemyInfo() throws GameActionException
 	{
@@ -35,6 +39,7 @@ public class Micro extends RobotPlayer
 	
 	public static void doAvoidBeingKilled() throws GameActionException
 	{
+		collateNearbyRobotInfo();
 		
 	}
 	
@@ -75,51 +80,77 @@ public class Micro extends RobotPlayer
 	
 	public static boolean tryRetreat() throws GameActionException
 	{
+		NavSafetyPolicy safety = new SafetyPolicyAvoidZombies(nearbyZombies);
 		
-		return true;
+		// get the retreat direction
+		Direction retreatDir = dirToClosestZombie.opposite();
+		if (dirToClosestZombie.equals(null)) // no zombie attackers
+		{
+			retreatDir = dirToClosestEnemy.opposite();
+			safety = new SafetyPolicyAvoidAllUnits(nearbyEnemies, nearbyZombies);
+		}
+		
+		// figure out if we can safely retreat, and do it if we can
+		if (safety.isSafeToMoveTo(here.add(retreatDir)) || safety.isSafeToMoveTo(here.add(retreatDir.rotateRight())) || safety.isSafeToMoveTo(here.add(retreatDir.rotateLeft())))
+		{
+			Nav.goTo(here.add(retreatDir), safety);
+			return true;
+		}
+		return false;
 	}
 	
 	public static boolean tryRushEnemies() throws GameActionException
 	{
-		
-		return true;
+		// bum rush enemies in sight range while avoiding zombies
+		NavSafetyPolicy safety = new SafetyPolicyAvoidZombies(nearbyZombies);
+		if (!dirToClosestEnemy.equals(null))
+		{
+			Nav.goTo(here.add(dirToClosestEnemy), safety);
+			return true;
+		}
+		return false;
 	}
 	
 	public static boolean tryAttackSomebody() throws GameActionException
 	{
 		// try to attack someone in weapons range
+		// this method MUST BE CALLED AFTER CALLING collateNearbyRobotInfo()
+		
 		// can we even shoot bro?
 		if (!rc.isWeaponReady())
 			return false;
 		
-		// check zombies first, then enemies (priority is zombies, even over enemy archons...)
-		RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(rc.getType().attackRadiusSquared, Team.ZOMBIE);
-		if (nearbyEnemies.length == 0)
-			nearbyEnemies = rc.senseNearbyRobots(rc.getType().attackRadiusSquared, theirTeam);
-		
-		// nobody to shoot at :(
-		if (nearbyEnemies.length == 0)
-			return false;
-		
-		// if there is somebody to shoot at, pick the bot with the least health
-		RobotInfo bestTarget = nearbyEnemies[0];
-		for (RobotInfo enemy : nearbyEnemies)
-		{	
-			if (enemy.health < bestTarget.health)
-				bestTarget = enemy;
+		// use the info we've collated
+		// priority: enemy archon, zombies, enemies
+		if (!enemyPriorityTarget.equals(null))
+		{
+			rc.attackLocation(enemyPriorityTarget.location);
+			return true;
+		}
+		if (!lowestHealthZombie.equals(null))
+		{
+			rc.attackLocation(lowestHealthZombie.location);
+			return true;
+		}
+		if (!lowestHealthEnemy.equals(null))
+		{
+			rc.attackLocation(lowestHealthEnemy.location);
+			return true;
 		}
 		
-		rc.attackLocation(bestTarget.location);
-		return true;
+		return false;
 	}
 	
 	private static void collateNearbyRobotInfo() throws GameActionException
 	{
 		// loop through zombies
 		zombieTotalDamagePerTurn = 0;
+		lowestHealthZombie = null;
+		closestZombie = null;
 		if (nearbyZombies.length>0)
 		{
 			closestZombie = nearbyZombies[0];
+			lowestHealthZombie = nearbyZombies[0];
 			for (RobotInfo zombie : nearbyZombies)
 			{
 				// update the closest zombie
@@ -129,6 +160,10 @@ public class Micro extends RobotPlayer
 				// add up the firepower of relevant zombies
 				if (here.distanceSquaredTo(zombie.location) <= zombie.type.attackRadiusSquared)
 					zombieTotalDamagePerTurn += (zombie.attackPower / (zombie.type.attackDelay+1));
+				
+				// keep track of the zombie with lowest health
+				if (zombie.health < lowestHealthZombie.health)
+					lowestHealthZombie = zombie;
 			}
 			
 			// figure out how long until closest zombie attacks
@@ -149,44 +184,47 @@ public class Micro extends RobotPlayer
 					turnsUntilFirstZombieAttacks = (int) ( allyTargetOfClosestZombie.health / (closestZombie.attackPower / (closestZombie.type.attackDelay+1)) );
 				}
 			}
+			
+			// compute direction to closest zombie
+			dirToClosestZombie = here.directionTo(closestZombie.location);
 		}
 		
 		// loop through enemy team
 		enemyTotalDamagePerTurn = 0;
+		lowestHealthEnemy = null;
+		closestEnemy = null;
 		if (nearbyEnemies.length>0)
 		{
+			// reset priority target
+			enemyPriorityTarget = null;
+			closestEnemy = nearbyEnemies[0];
+			lowestHealthEnemy = nearbyEnemies[0];
+			
 			// go through enemies, find targets, count up enemy firepower
-			RobotInfo targetEnemy = null;
 			for (RobotInfo enemy : nearbyEnemies)
 			{
-				// look for sitting duck enemy targets
+				// look for archon enemy targets
 				if (rc.getType().attackRadiusSquared >= here.distanceSquaredTo(enemy.location))
 				{
-					switch (enemy.type)
-					{
-						case ARCHON: // archons cannot attack
-							targetEnemy = enemy; // archons take priority as targets
-							break;
-							
-						case TTM: // TTMs cannot attack in their packed-up form
-							if (targetEnemy.equals(null))
-								targetEnemy = enemy;
-							break;
-							
-						case SCOUT: // scouts cannot attack
-							if (targetEnemy.equals(null))
-								targetEnemy = enemy;
-							break;
-		
-						default: // for other units in attack range, add up firepower
-							break;
-					}
+					if (enemy.type == RobotType.ARCHON)
+						enemyPriorityTarget = enemy;
 				}
+				
+				// update the closest enemy
+				if (here.distanceSquaredTo(enemy.location) < here.distanceSquaredTo(closestEnemy.location))
+					closestEnemy = enemy;
 				
 				// count up enemy firepower
 				if (here.distanceSquaredTo(enemy.location) <= enemy.type.attackRadiusSquared)
 					enemyTotalDamagePerTurn += (enemy.attackPower / (enemy.type.attackDelay+1));
+				
+				// keep track of the enemy with lowest health
+				if (enemy.health < lowestHealthEnemy.health)
+					lowestHealthEnemy = enemy;
 			}
+			
+			// compute direction to closest enemy
+			dirToClosestEnemy = here.directionTo(closestEnemy.location);
 		}
 	}
 }
