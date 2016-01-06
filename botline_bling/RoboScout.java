@@ -14,7 +14,8 @@ public class RoboScout extends RobotPlayer
 		// first-spawn scout, send the message right away
 		// to a distance of 100 units
 		if (rc.getRoundNum() < SIGNAL_ROUND)
-			new Message(Message.MessageType.SPAWN, myArchon.location).send(100);
+			if (myArchon != null)
+				new Message(Message.MessageType.SPAWN, myArchon.location).send(100);
 		
 		kiteTarget = here.add(rand.nextInt(200)-100,rand.nextInt(200)-100);
 	}
@@ -35,14 +36,13 @@ public class RoboScout extends RobotPlayer
             
             NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnitsAndStayInTurtle();
             //NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
-            Nav.goTo(here.add(1,1), safety);
-            
-//        	if (!Micro.tryKiteZombies(kiteTarget)  && rc.isCoreReady())
-//        	{
-//        		NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
-//        		MapLocation target = here.add(rand.nextInt(200)-100,rand.nextInt(200)-100);
-//                Nav.goTo(target, safety);
-//        	}
+            if (rc.getRoundNum()<200)
+            	Nav.goTo(here.add(1,1), safety);
+            else
+            {
+        		MapLocation target = here.add(rand.nextInt(200)-100,rand.nextInt(200)-100);
+                Nav.goTo(target, safety);
+            }
         }
 	}
 }

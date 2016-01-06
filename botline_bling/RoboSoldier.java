@@ -15,6 +15,14 @@ public class RoboSoldier extends RobotPlayer
 	{
         if (rc.isCoreReady()) {
         	Micro.doAvoidBeingKilled();
+        	if (rc.isCoreReady()) // if we didn't do anything
+        	{
+        		NavSafetyPolicy safety = new SafetyPolicyAvoidZombies();
+        		// diffuse randomly
+        		int dx = rand.nextInt(3)-1;
+        		int dy = rand.nextInt(3)-1;
+        		Nav.goTo(here.add(dx,dy), safety);
+        	}
         }
 	}
 }

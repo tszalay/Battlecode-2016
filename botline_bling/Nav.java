@@ -127,8 +127,14 @@ class SafetyPolicyAvoidAllUnitsAndStayInTurtle extends RobotPlayer implements Na
     
     public boolean isLocWithinTurtle(MapLocation loc) {
     	
+    	// also has to return true (meaning safe) if it is outside turtle...
+    	
     	adjacentAlliedUnits = rc.senseNearbyRobots(loc, 3, ourTeam);
+    	RobotInfo[] adjacentAlliedUnitsToMeNow = rc.senseNearbyRobots(here, 3, ourTeam);
+    	
     	// handle the case of no allies around
+    	if (adjacentAlliedUnitsToMeNow == null || adjacentAlliedUnitsToMeNow.length == 0)
+    		return true;
     	if (adjacentAlliedUnits == null || adjacentAlliedUnits.length == 0)
     		return false;
     	
@@ -139,9 +145,15 @@ class SafetyPolicyAvoidAllUnitsAndStayInTurtle extends RobotPlayer implements Na
     		if (friend.type == RobotType.TURRET)
     			numTurretsAdjacent += 1;
     	}
+    	int numTurretsAdjacentNow = 0;
+    	for (RobotInfo friend : adjacentAlliedUnitsToMeNow)
+    	{
+    		if (friend.type == RobotType.TURRET)
+    			numTurretsAdjacentNow += 1;
+    	}
     	
-    	// if the spot has 4 adjacent turrets, it's within the shell
-    	return (numTurretsAdjacent>3);
+    	// 4 adjacent turrets is within turtle, but also allow stuff to move into the turtle
+    	return (numTurretsAdjacent > 3  || (numTurretsAdjacent >= numTurretsAdjacentNow) );
     }
 }
 

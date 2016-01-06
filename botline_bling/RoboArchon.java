@@ -121,7 +121,7 @@ public class RoboArchon extends RobotPlayer
 			//rc.yield();//replace later
 		}else if(here.distanceSquaredTo(rallyLoc) > 4){
 			Debug.setStringRR("rallyLocx" + rallyLoc.x + "rallyLocy" + rallyLoc.y);
-			NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
+			NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnitsAndStayInTurtle();
 			if (rc.isCoreReady()){ 
 				Nav.goTo(rallyLoc, safety);
 			}
