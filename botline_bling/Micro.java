@@ -1,18 +1,20 @@
 package botline_bling;
 
-import com.fasterxml.jackson.databind.AnnotationIntrospector.ReferenceProperty.Type;
-
 import battlecode.common.*;
 
 public class Micro extends RobotPlayer
 {
 	public static Direction dirToClosestZombie = null;
 	public static Direction dirToClosestEnemy = null;
-	public static RobotInfo[] nearbyEnemies = null;
-	public static RobotInfo[] nearbyZombies = null;
-	public static RobotInfo[] nearbyAllies = null;
+	public static RobotInfo[] nearbyEnemies = new RobotInfo[0];
+	public static RobotInfo[] nearbyZombies = new RobotInfo[0];
+	public static RobotInfo[] nearbyAllies = new RobotInfo[0];
 	private static double enemyTotalDamagePerTurn = 0;
 	private static double zombieTotalDamagePerTurn = 0;
+	private static double allyTotalDamagePerTurn = 0;
+	private static double enemyTotalHealth = 0;
+	private static double zombieTotalHealth = 0;
+	private static double allyTotalHealth = 0;
 	private static int turnsUntilFirstZombieAttacks = 100;
 	private static RobotInfo enemyPriorityTarget = null;
 	private static RobotInfo closestEnemy = null;
@@ -36,7 +38,21 @@ public class Micro extends RobotPlayer
 	
 	public static void updateAllies() throws GameActionException
 	{
+		// find allies within sensor range
 		nearbyAllies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, ourTeam);
+		
+		// go though and tally up firepower
+		RobotInfo me = rc.senseRobot(rc.getID());
+		allyTotalDamagePerTurn = ( me.attackPower / (me.type.attackDelay + 1) );
+		allyTotalHealth = me.health;
+		if (nearbyAllies.length > 0)
+		{
+			for (RobotInfo friend : nearbyAllies)
+			{
+				allyTotalDamagePerTurn += ( friend.attackPower / (friend.type.attackDelay + 1) );
+				allyTotalHealth += friend.health;
+			}
+		}
 	}
 	
 	public static void doAvoidBeingKilled() throws GameActionException
@@ -44,7 +60,7 @@ public class Micro extends RobotPlayer
 		collateNearbyRobotInfo();
 		
 		// first priority is to attack an enemy archon
-		if (!enemyPriorityTarget.equals(null))
+		if (enemyPriorityTarget == null)
 			tryAttackSomebody();
 		
 		// deal with the case of zombies nearby
@@ -140,20 +156,24 @@ public class Micro extends RobotPlayer
 	
 	public static boolean amOverpowered() throws GameActionException
 	{
+		// add up friendly firepower
+		updateAllies();
 		
-		return true;
+		// compare enemy firepower with ours
+		return ( allyTotalDamagePerTurn < (enemyTotalDamagePerTurn + zombieTotalDamagePerTurn) );
 	}
-	
-	public static boolean canWin1v1() throws GameActionException
-	{
-		
-		return true;
-	}
-	
+
 	public static int howLongCanSurviveCurrentSkirmish() throws GameActionException
 	{
+		// add up friendly firepower
+		updateAllies();
 		
-		return 100;
+		// figure out about how many rounds skirmish will take
+		int roundsToWin = (int) ( (enemyTotalHealth + zombieTotalHealth) / allyTotalDamagePerTurn );
+		int roundsToLose = (int) ( allyTotalHealth / (enemyTotalDamagePerTurn + zombieTotalDamagePerTurn) );
+		
+		// return the number of rounds after which the skirmish will be over
+		return Math.min(roundsToWin, roundsToLose);
 	}
 	
 	public static boolean imminentInfection() throws GameActionException
@@ -221,17 +241,17 @@ public class Micro extends RobotPlayer
 		
 		// use the info we've collated
 		// priority: enemy archon, zombies, enemies
-		if (!enemyPriorityTarget.equals(null))
+		if (enemyPriorityTarget != null)
 		{
 			rc.attackLocation(enemyPriorityTarget.location);
 			return true;
 		}
-		if (!lowestHealthZombie.equals(null))
+		if (lowestHealthZombie != null)
 		{
 			rc.attackLocation(lowestHealthZombie.location);
 			return true;
 		}
-		if (!lowestHealthEnemy.equals(null))
+		if (lowestHealthEnemy != null)
 		{
 			rc.attackLocation(lowestHealthEnemy.location);
 			return true;
@@ -244,6 +264,7 @@ public class Micro extends RobotPlayer
 	{
 		// loop through zombies
 		zombieTotalDamagePerTurn = 0;
+		zombieTotalHealth = 0;
 		lowestHealthZombie = null;
 		closestZombie = null;
 		inZombieSensorRange = false;
@@ -268,6 +289,9 @@ public class Micro extends RobotPlayer
 				// check if we are in zombie sensor range
 				if (inZombieSensorRange == false && here.distanceSquaredTo(zombie.location) <= zombie.type.sensorRadiusSquared)
 					inZombieSensorRange = true;
+				
+				// add up total health
+				zombieTotalHealth += zombie.health;
 			}
 			
 			// figure out how long until closest zombie attacks
@@ -295,6 +319,7 @@ public class Micro extends RobotPlayer
 		
 		// loop through enemy team
 		enemyTotalDamagePerTurn = 0;
+		enemyTotalHealth = 0;
 		lowestHealthEnemy = null;
 		closestEnemy = null;
 		enemyViperInSightRange = false;
@@ -330,6 +355,9 @@ public class Micro extends RobotPlayer
 				// check for vipers
 				if (enemy.type == RobotType.VIPER)
 					enemyViperInSightRange = true;
+				
+				// add up total health
+				enemyTotalHealth += enemy.health;
 			}
 			
 			// compute direction to closest enemy

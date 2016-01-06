@@ -7,6 +7,7 @@ import java.util.*;
 public class RoboScout extends RobotPlayer
 {
 	public static final int SIGNAL_ROUND = 30; 
+	public static MapLocation kiteTarget = null;
 	
 	public static void init() throws GameActionException
 	{
@@ -14,6 +15,8 @@ public class RoboScout extends RobotPlayer
 		// to a distance of 100 units
 		if (rc.getRoundNum() < SIGNAL_ROUND)
 			new Message(Message.MessageType.SPAWN, rc.getLocation()).send(100);
+		
+		kiteTarget = here.add(rand.nextInt(200)-100,rand.nextInt(200)-100);
 	}
 	
 	public static void turn() throws GameActionException
@@ -30,9 +33,7 @@ public class RoboScout extends RobotPlayer
         	RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, theirTeam);
             RobotInfo[] nearbyZombies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.ZOMBIE);
             
-        	Micro.updateEnemies(nearbyEnemies, nearbyZombies);
-        	
-        	if (!Micro.tryKiteZombies())
+        	if (!Micro.tryKiteZombies(kiteTarget))
         	{
         		NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits(nearbyEnemies, nearbyZombies);
         		MapLocation target = here.add(rand.nextInt(200)-100,rand.nextInt(200)-100);
