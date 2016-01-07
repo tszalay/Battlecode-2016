@@ -34,14 +34,15 @@ public class Message extends RobotPlayer
 {	
 	// bookkeeping stuff
 	private static final int TYPE_BITS = 4;
-	private static final int SHIFT_BITS = 31-TYPE_BITS;
+	private static final int SHIFT_BITS = 32-TYPE_BITS;
 	private static final int LOC_OFFSET = 17000;
 	
 	// storage for received/accumulated message info
 	public static ArrayList<SignalLocation> archonLocs = new ArrayList<SignalLocation>();
 	public static ArrayList<SignalLocation> zombieDenLocs = new ArrayList<SignalLocation>();
 	public static ArrayList<SignalLocation> sightLocs = new ArrayList<SignalLocation>();
-	public static ArrayList<SignalLocation> enemyLocs = new ArrayList<SignalLocation>();
+	// and for any transmitted enemy messages, only keep recents (300 rounds)
+	public static ArrayList<Signal> enemySignals = new ArrayList<Signal>();
 	
 	// and other things
 	public static MapLocation rallyLocation = null;
@@ -51,18 +52,18 @@ public class Message extends RobotPlayer
 	public static int mapMaxX = 0;
 	public static int mapMaxY = 0;
 	
-	
 	public static void readSignalQueue()
 	{
 		Signal[] sigs = rc.emptySignalQueue();
-		
-		//System.out.println("received signals " + sigs.length);
 		
 		for (Signal sig : sigs)
 		{
 			// skip enemy signals for now
 			if (sig.getTeam() != ourTeam)
+			{
+				enemySignals.add(sig);
 				continue;
+			}
 			
 			int[] vals = sig.getMessage().clone();
 			MessageType type;
@@ -114,7 +115,8 @@ public class Message extends RobotPlayer
 	public static void sendBuiltMessage() throws GameActionException
 	{
 		// our rally location should have been set by the Archon already
-		sendMessageSignal(2, MessageType.RALLY_LOCATION, Message.rallyLocation);
+		if (Message.rallyLocation != null)
+			sendMessageSignal(2, MessageType.RALLY_LOCATION, Message.rallyLocation);
 	}
 	
 	// also by archon
