@@ -31,6 +31,13 @@ public class MapUtil extends RobotPlayer
 		}
 	}
 	
+	public static boolean isGoodTurtle(MapLocation loc) throws GameActionException
+	{
+		return !rc.isLocationOccupied(loc)
+				&& rc.senseRubble(loc) < GameConstants.RUBBLE_OBSTRUCTION_THRESH 
+				&& rc.onTheMap(loc);
+	}
+	
 	public static MapLocation findClosestTurtle() throws GameActionException
 	{
 		boolean isodd = isLocOdd(here);
@@ -56,10 +63,9 @@ public class MapUtil extends RobotPlayer
 		for (int i=0; i<finalind; i++)
 		{
 			MapLocation testloc = here.add(dx[i],dy[i]);
-			if (!rc.isLocationOccupied(testloc)
-						&& rc.senseRubble(testloc) < GameConstants.RUBBLE_OBSTRUCTION_THRESH 
-						&& rc.onTheMap(testloc))
+			if (isGoodTurtle(testloc))
 			{
+				Debug.setStringTS("Last Turtle " + testloc);
 				return testloc;
 			}
 		}

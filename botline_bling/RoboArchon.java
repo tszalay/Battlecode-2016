@@ -19,52 +19,33 @@ public class RoboArchon extends RobotPlayer
 	
 	public static void turn() throws GameActionException
 	{
-		// Look for rally message, and go there
-		arrivedAtRally = archonClump(arrivedAtRally);
-		
-		// If we get stuck for a long time, start your colony here.
-		if (rc.getRoundNum() >  maxWaitForRally)
+		if (rc.getRoundNum() == RoboScout.SIGNAL_ROUND)
+			Message.calcRallyLocation();
+
+		if(rc.getRoundNum()== 1)
 		{
-			arrivedAtRally = true;
-		}
-
-		// Check for zombies in sight range
-		// micro.go awy from range 
-	
-
-		if (arrivedAtRally) {
-			if (rc.getTeamParts() >= RobotType.TURRET.partCost)
+			if (tryBuildEven(RobotType.SCOUT)) 
 			{
-				RobotType nextRobot = RobotType.values()[robotSchedule[scheduleCounter%robotSchedule.length]];
-				if (nextRobot == RobotType.SCOUT) {
-					if (tryBuildEven(nextRobot)) scheduleCounter++;
-				}
-				else if (nextRobot == RobotType.TURRET) {
-					nextTurretLoc = findNextTurretDest(nextTurretLoc);
-					Debug.setStringAK("NextTurretDest: " + nextTurretLoc);
-					if (rc.isCoreReady())
-					{
-						if (here.distanceSquaredTo(nextTurretLoc) <= 2)
-						{
-							if (tryBuildOdd(nextRobot)) {
-								waitingToBuild = 0;
-								scheduleCounter++;
-								if (Message.rallyLocation != null) Message.sendBuiltMessage();
-							}
-						}else {
-						NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
-						Nav.goTo(nextTurretLoc, safety);
-						}
-					}
-				}
+				Message.sendBuiltMessage();
 			}
 		}
-
-
+		
+		if (!arrivedAtRally) 
+		{
+			arrivedAtRally = tryMoveNearRally();
+		}
+		else {
+			nextTurretLoc = MapUtil.findClosestTurtle();		
+			if	(!tryBuildUnits(nextTurretLoc)) {
+				Debug.setStringAK("trying to move to turret dest" + nextTurretLoc);
+				tryMoveNearTurretDest(nextTurretLoc);
+			}
+		}
+		
 		//repair anyone nearby
 		tryRepair();		
 
-	}
+	}	
 
 	public static boolean tryRepair() throws GameActionException
 	{
@@ -175,19 +156,8 @@ public class RoboArchon extends RobotPlayer
 
 	}
 
-	public static boolean archonClump(boolean arrivedAtRally) throws GameActionException
+	public static boolean tryMoveNearRally() throws GameActionException
 	{
-		if (rc.getRoundNum() == RoboScout.SIGNAL_ROUND)
-			Message.calcRallyLocation();
-
-		if(rc.getRoundNum()== 1)
-		{
-			if (tryBuildEven(RobotType.SCOUT)) 
-			{
-				if (Message.rallyLocation != null) Message.sendBuiltMessage();
-			}
-		}
-
 		if(Message.rallyLocation == null)
 		{
 			// have to wait until rally loc arrives. is this robust??
@@ -205,5 +175,51 @@ public class RoboArchon extends RobotPlayer
 			return true;
 		}
 		return false;		
+	}
+
+	public static boolean tryBuildUnits(MapLocation nextTurretLoc) throws GameActionException
+	{
+		// so other archons might get a chance to build.
+		if (rand.nextBoolean()) return false;
+		
+		RobotType nextRobot = RobotType.values()[robotSchedule[scheduleCounter%robotSchedule.length]];
+		if (nextRobot == RobotType.SCOUT)
+		{
+			if (tryBuildEven(nextRobot)) 
+			{
+				scheduleCounter++;
+				return true;
+			}
+		}
+		else if (nextRobot == RobotType.TURRET) 
+		{
+			// Debug.setStringAK("NextTurretDest: " + nextTurretLoc);
+
+			if (tryBuildOdd(nextRobot))
+			{
+				waitingToBuild = 0;
+				scheduleCounter++;
+				Message.sendBuiltMessage();
+				return true;
+			}
+		}
+		
+		return false;
+	}
+
+	public static boolean tryMoveNearTurretDest(MapLocation nextTurretLoc) throws GameActionException
+	{
+		if (here.isAdjacentTo(nextTurretLoc)) return false;
+		
+		if (rc.isCoreReady())
+		{
+			NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
+			Nav.goTo(nextTurretLoc, safety);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	}
 }
