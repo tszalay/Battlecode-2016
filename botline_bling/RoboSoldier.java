@@ -14,7 +14,7 @@ public class RoboSoldier extends RobotPlayer
 	public static void turn() throws GameActionException
 	{
         if (rc.isCoreReady()) {
-        	if (!Micro.tryRetreatFromEveryone())
+        	if (!Micro.tryRetreatIfOverpowered())
         	{
 //        		NavSafetyPolicy safety = new SafetyPolicyAvoidZombies();
 //        		// diffuse randomly

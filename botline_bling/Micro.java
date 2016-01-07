@@ -9,8 +9,8 @@ public class Micro extends RobotPlayer
 	// tryAvoidBeingShot()
 	// tryRetreatIfOverpowered()
 	
-	public static Direction dirToClosestZombie = null;
-	public static Direction dirToClosestEnemy = null;
+	public static Direction dirToClosestZombie = Direction.NONE;
+	public static Direction dirToClosestEnemy = Direction.NONE;
 	public static RobotInfo[] nearbyEnemies = new RobotInfo[0];
 	public static RobotInfo[] nearbyZombies = new RobotInfo[0];
 	public static RobotInfo[] nearbyAllies = new RobotInfo[0];
@@ -71,10 +71,12 @@ public class Micro extends RobotPlayer
 		
 		// deal with the case of zombies nearby
 		if (!amISafe)
+		{
 			if (!tryRetreat())
 				return tryAttackSomebody();
 			else
 				return true;
+		}
 		
 		// did nothing
 		return false;
@@ -103,7 +105,6 @@ public class Micro extends RobotPlayer
 	public static boolean tryRetreatIfOverpowered() throws GameActionException
 	{
 		collateNearbyRobotInfo();
-		Debug.setStringSJF("enemies = " + nearbyEnemies.length + ", zombies = " + nearbyZombies.length + ", allies = " + nearbyAllies.length);
 		
 		// first priority is to attack an enemy archon
 		if (enemyPriorityTarget != null)
@@ -140,7 +141,6 @@ public class Micro extends RobotPlayer
 			if (amOverpowered())
 			{
 				// first try to retreat, if we cannot, then attack
-				Debug.setStringSJF("I am overpowered.");
 				if (!tryRetreat())
 					return tryAttackSomebody();
 				else
@@ -148,7 +148,6 @@ public class Micro extends RobotPlayer
 			}
 			else
 			{
-				Debug.setStringSJF("I am not overpowered, I will attack.");
 				return tryAttackSomebody();
 			}
 		}
@@ -259,9 +258,9 @@ public class Micro extends RobotPlayer
 
 	}
 	
-	public static boolean tryMove(Direction dir, NavSafetyPolicy safety) throws GameActionException
+	public static boolean tryMove(MapLocation loc, NavSafetyPolicy safety) throws GameActionException
 	{
-		Nav.goTo(here.add(dir), safety);
+		Nav.goTo(loc, safety);
 		if (here.equals(rc.getLocation())) // we didn't move
 			return false;
 		else
@@ -277,18 +276,15 @@ public class Micro extends RobotPlayer
 		
 		// get the retreat direction
 		Direction retreatDir = null;
-		if (dirToClosestZombie != null) // no zombie attackers
-			retreatDir = dirToClosestZombie.opposite();
-		else if (dirToClosestEnemy != null) // no zombie attackers
-			retreatDir = dirToClosestEnemy.opposite();
-		else
-			return true; // no enemies at all, code should never get here bc this method wouldn't be called
+		if (dirToClosestEnemy == Direction.NONE && dirToClosestZombie == Direction.NONE) // no attackers
+			return false; // no enemies at all, code should never get here bc this method wouldn't be called
 		
 		// figure out if we can safely retreat, and do it if we can
-		if (retreatDir != null)
-			return (tryMove(retreatDir, safety));
-				
-		return false;
+		MapLocation retreatLoc = here.add(dirToClosestEnemy.opposite()).add(dirToClosestZombie.opposite());
+		if (safety.isSafeToMoveTo(retreatLoc))
+			return (tryMove(retreatLoc, safety));
+		else
+			return false;	
 	}
 	
 	public static boolean tryRushEnemies() throws GameActionException
@@ -296,7 +292,7 @@ public class Micro extends RobotPlayer
 		// bum rush enemies in sight range while avoiding zombies
 		NavSafetyPolicy safety = new SafetyPolicyAvoidZombies(nearbyZombies);
 		if (dirToClosestEnemy != null)
-			return tryMove(dirToClosestEnemy, safety);
+			return tryMove(here.add(dirToClosestEnemy), safety);
 		
 		return false;
 	}
@@ -359,6 +355,7 @@ public class Micro extends RobotPlayer
 		zombieTotalHealth = 0;
 		lowestHealthZombie = null;
 		closestZombie = null;
+		dirToClosestZombie = Direction.NONE;
 		inZombieSensorRange = false;
 		if (nearbyZombies.length>0)
 		{
@@ -414,6 +411,7 @@ public class Micro extends RobotPlayer
 		enemyTotalHealth = 0;
 		lowestHealthEnemy = null;
 		closestEnemy = null;
+		dirToClosestEnemy = Direction.NONE;
 		enemyViperInSightRange = false;
 		if (nearbyEnemies.length>0)
 		{
@@ -455,12 +453,17 @@ public class Micro extends RobotPlayer
 			// compute direction to closest enemy
 			dirToClosestEnemy = here.directionTo(closestEnemy.location);
 			
-			// figure out if i am in shooting range of anyone
-			if ((closestEnemy != null && here.distanceSquaredTo(closestEnemy.location) <= closestEnemy.type.attackRadiusSquared) || (closestZombie != null && here.distanceSquaredTo(closestZombie.location) <= closestZombie.type.attackRadiusSquared))
-				amISafe = false;
-			else
-				amISafe = true;
 		}
+		
+		Debug.setStringSJF("enemy dir = " + dirToClosestEnemy.toString() + ", zombie dir = " + dirToClosestZombie.toString());
+		
+		// figure out if i am in shooting range of anyone
+		boolean enemyInRange = ( closestEnemy != null && here.distanceSquaredTo(closestEnemy.location) <= closestEnemy.type.attackRadiusSquared );
+		boolean zombieInRange = ( closestZombie != null && here.distanceSquaredTo(closestZombie.location) <= closestZombie.type.attackRadiusSquared );
+		if (enemyInRange || zombieInRange)
+			amISafe = false;
+		else
+			amISafe = true;
 	}
 	
 	public static RobotInfo getClosestRobot(RobotInfo[] nearby, MapLocation loc)
