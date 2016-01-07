@@ -77,7 +77,7 @@ public class RoboArchon extends RobotPlayer
 			if (minBot == null || ri.health < minBot.health)
 				minBot = ri;
 		}
-		if (minBot != null && minBot.health < minBot.maxHealth-1)
+		if (minBot != null && minBot.type != RobotType.ARCHON && minBot.health < minBot.maxHealth-1)
 			rc.repair(minBot.location);
 		
 		//build scout

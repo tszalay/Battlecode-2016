@@ -12,8 +12,8 @@ public class Message extends RobotPlayer
 	{
 		NONE,
 		SPAWN,
-		DEN,
-		ENEMY,
+		ZOMBIE_DEN,
+		ZOMBIE,
 		SPAM,
 		FREE_BEER
 	}

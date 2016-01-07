@@ -34,6 +34,7 @@ public class RoboScout extends RobotPlayer
         	RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, theirTeam);
             RobotInfo[] nearbyZombies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.ZOMBIE);
             
+            rc.disintegrate();
             NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnitsAndStayInTurtle();
             //NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
             if (rc.getRoundNum()<200)
