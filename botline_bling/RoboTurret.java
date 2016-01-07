@@ -57,12 +57,20 @@ public class RoboTurret extends RobotPlayer
         if (target == null)
         	target = Micro.getClosestTurretTarget(rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.ZOMBIE), here);
         
+        MapLocation targetLocation = null;
+        
+        // if we still didn't find any, check the sighted table
         if (target == null)
+        	targetLocation = Zombie.getSightedTarget();
+        else
+        	targetLocation = target.location;
+        
+        if (targetLocation == null)
         	return false;
         
-        if (rc.canAttackLocation(target.location))
+        if (rc.canAttackLocation(targetLocation))
         {
-			rc.attackLocation(target.location);
+			rc.attackLocation(targetLocation);
 			lastFiredRound = rc.getRoundNum();
 			return true;
         }
