@@ -7,7 +7,7 @@ import java.util.*;
 public class RoboScout extends RobotPlayer
 {
 	public static final int SIGNAL_ROUND = 30; 
-	public static MapLocation kiteTarget = null;
+	public static MapLocation target = null;
 	public static boolean isFreeScout = false;
 	
 	public static void init() throws GameActionException
@@ -21,7 +21,7 @@ public class RoboScout extends RobotPlayer
 				Message.sendMessageSignal(10000, MessageType.SPAWN, myArchon.location);
 			}
 		}
-		kiteTarget = here.add(rand.nextInt(200)-100,rand.nextInt(200)-100);
+		target = here.add(rand.nextInt(200)-100,rand.nextInt(200)-100);
 		
 		// =========================================================
 		// for now, a hacked way of deciding if you are a free scout
@@ -50,23 +50,24 @@ public class RoboScout extends RobotPlayer
 	
 	public static void doTurtleScout() throws GameActionException
 	{
-		// check for attackers and signal
-		
 		// go to edge of turtle
 		
 	}
 	
 	public static void turn() throws GameActionException
 	{
-        if (rc.isCoreReady())
+        // send out info about sighted targets
+		Zombie.sendSightedTarget();
+		
+		if (rc.isCoreReady())
         {
-        	if (!Micro.tryAvoidBeingKilled()) // avoidance micro
-        	{
-	        	if (isFreeScout)
-	        		doFreeScout();
-	        	else
-	        		doTurtleScout();
-        	}
+//        	if (!Micro.tryAvoidBeingKilled()) // avoidance micro
+//        	{
+//	        	if (isFreeScout)
+//	        		doFreeScout();
+//	        	else
+//	        		doTurtleScout();
+//        	}
         }
 	}
 }

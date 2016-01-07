@@ -4,11 +4,17 @@ import battlecode.common.*;
 
 public class Micro extends RobotPlayer
 {
+	// Main useful methods:
+	// tryRetreatFromEveryone()
+	// tryAvoidBeingShot()
+	// tryRetreatIfOverpowered()
+	
 	public static Direction dirToClosestZombie = null;
 	public static Direction dirToClosestEnemy = null;
 	public static RobotInfo[] nearbyEnemies = new RobotInfo[0];
 	public static RobotInfo[] nearbyZombies = new RobotInfo[0];
 	public static RobotInfo[] nearbyAllies = new RobotInfo[0];
+	public static boolean amISafe = true;
 	private static double enemyTotalDamagePerTurn = 0;
 	private static double zombieTotalDamagePerTurn = 0;
 	private static double allyTotalDamagePerTurn = 0;
@@ -55,7 +61,46 @@ public class Micro extends RobotPlayer
 		}
 	}
 	
-	public static boolean tryAvoidBeingKilled() throws GameActionException
+	public static boolean tryAvoidBeingShot() throws GameActionException
+	{
+		collateNearbyRobotInfo();
+		
+		// first priority is to attack an enemy archon
+		if (enemyPriorityTarget != null)
+			return tryAttackBot(enemyPriorityTarget);
+		
+		// deal with the case of zombies nearby
+		if (!amISafe)
+			if (!tryRetreat())
+				return tryAttackSomebody();
+			else
+				return true;
+		
+		// did nothing
+		return false;
+	}
+	
+	public static boolean tryRetreatFromEveryone() throws GameActionException
+	{
+		collateNearbyRobotInfo();
+		NavSafetyPolicy saftey = new SafetyPolicyAvoidAllUnits();
+		
+		// first priority is to attack an enemy archon
+		if (enemyPriorityTarget != null)
+			return tryAttackBot(enemyPriorityTarget);
+		
+		// deal with the case of zombies nearby
+		if (nearbyEnemies.length > 0 || nearbyZombies.length > 0)
+			if (!tryRetreat())
+				return tryAttackSomebody();
+			else
+				return true;
+		
+		// did nothing
+		return false;
+	}
+	
+	public static boolean tryRetreatIfOverpowered() throws GameActionException
 	{
 		collateNearbyRobotInfo();
 		Debug.setStringSJF("enemies = " + nearbyEnemies.length + ", zombies = " + nearbyZombies.length + ", allies = " + nearbyAllies.length);
@@ -228,7 +273,7 @@ public class Micro extends RobotPlayer
 		if (!rc.isCoreReady())
 			return false;
 		
-		NavSafetyPolicy safety = new SafetyPolicyAvoidZombies(nearbyZombies);
+		NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
 		
 		// get the retreat direction
 		Direction retreatDir = null;
@@ -241,8 +286,8 @@ public class Micro extends RobotPlayer
 		
 		// figure out if we can safely retreat, and do it if we can
 		if (retreatDir != null)
-			return tryMove(retreatDir, safety);
-		
+			return (tryMove(retreatDir, safety));
+				
 		return false;
 	}
 	
@@ -409,6 +454,12 @@ public class Micro extends RobotPlayer
 			
 			// compute direction to closest enemy
 			dirToClosestEnemy = here.directionTo(closestEnemy.location);
+			
+			// figure out if i am in shooting range of anyone
+			if ((closestEnemy != null && here.distanceSquaredTo(closestEnemy.location) <= closestEnemy.type.attackRadiusSquared) || (closestZombie != null && here.distanceSquaredTo(closestZombie.location) <= closestZombie.type.attackRadiusSquared))
+				amISafe = false;
+			else
+				amISafe = true;
 		}
 	}
 	
