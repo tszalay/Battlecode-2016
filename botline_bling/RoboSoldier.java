@@ -14,14 +14,15 @@ public class RoboSoldier extends RobotPlayer
 	public static void turn() throws GameActionException
 	{
         if (rc.isCoreReady()) {
-        	Micro.doAvoidBeingKilled();
-        	if (rc.isCoreReady()) // if we didn't do anything
+        	if (!Micro.tryAvoidBeingKilled())
         	{
-        		NavSafetyPolicy safety = new SafetyPolicyAvoidZombies();
-        		// diffuse randomly
-        		int dx = rand.nextInt(3)-1;
-        		int dy = rand.nextInt(3)-1;
-        		Nav.goTo(here.add(dx,dy), safety);
+//        		NavSafetyPolicy safety = new SafetyPolicyAvoidZombies();
+//        		// diffuse randomly
+//        		int dx = rand.nextInt(3)-1;
+//        		int dy = rand.nextInt(3)-1;
+//        		Nav.goTo(here.add(dx,dy), safety);
+        		
+        		// do nothing
         	}
         }
 	}

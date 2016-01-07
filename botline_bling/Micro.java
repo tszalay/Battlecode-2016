@@ -55,14 +55,14 @@ public class Micro extends RobotPlayer
 		}
 	}
 	
-	public static void doAvoidBeingKilled() throws GameActionException
+	public static boolean tryAvoidBeingKilled() throws GameActionException
 	{
 		collateNearbyRobotInfo();
 		Debug.setStringSJF("enemies = " + nearbyEnemies.length + ", zombies = " + nearbyZombies.length + ", allies = " + nearbyAllies.length);
 		
 		// first priority is to attack an enemy archon
 		if (enemyPriorityTarget != null)
-			tryAttackSomebody();
+			return tryAttackBot(enemyPriorityTarget);
 		
 		// deal with the case of zombies nearby
 		if (nearbyZombies.length > 0)
@@ -71,16 +71,20 @@ public class Micro extends RobotPlayer
 			{
 				// first try to retreat, if we cannot, then attack
 				if (!tryRetreat())
-					tryAttackSomebody();
+					return tryAttackSomebody();
+				else
+					return true;
 			}
 			else
 			{
 				if (willDieInfected())
-					tryRushEnemies();
+					return tryRushEnemies();
 				else
 				{
 					if (!tryRetreat())
-						tryAttackSomebody();
+						return tryAttackSomebody();
+					else
+						return true;
 				}
 			}
 		}
@@ -91,13 +95,21 @@ public class Micro extends RobotPlayer
 			if (amOverpowered())
 			{
 				// first try to retreat, if we cannot, then attack
+				Debug.setStringSJF("I am overpowered.");
 				if (!tryRetreat())
-					tryAttackSomebody();
+					return tryAttackSomebody();
+				else
+					return true;
 			}
 			else
-				tryAttackSomebody();
+			{
+				Debug.setStringSJF("I am not overpowered, I will attack.");
+				return tryAttackSomebody();
+			}
 		}
-		return;
+		
+		// did nothing
+		return false;
 	}
 	
 	public static void doAvoidDyingInfectedAtAnyCost() throws GameActionException
@@ -164,7 +176,9 @@ public class Micro extends RobotPlayer
 		updateAllies();
 		
 		// compare enemy firepower with ours
-		return ( allyTotalDamagePerTurn < (enemyTotalDamagePerTurn + zombieTotalDamagePerTurn) );
+		double damageWeInflictBeforeDeath = allyTotalDamagePerTurn / ( rc.getHealth() / (enemyTotalDamagePerTurn + zombieTotalDamagePerTurn) );
+		double damageTheyInflictBeforeDeath = enemyTotalDamagePerTurn / (enemyTotalHealth / allyTotalDamagePerTurn);
+		return ( damageWeInflictBeforeDeath > damageTheyInflictBeforeDeath );
 	}
 
 	public static int howLongCanSurviveCurrentSkirmish() throws GameActionException
