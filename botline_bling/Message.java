@@ -12,7 +12,8 @@ enum MessageType
 	SIGHT_TARGET,
 	MAP_EDGE,
 	SPAM,
-	FREE_BEER
+	FREE_BEER,
+	RALLY_LOCATION
 }
 
 class SignalLocation extends RobotPlayer
@@ -43,6 +44,8 @@ public class Message extends RobotPlayer
 	public static ArrayList<SignalLocation> enemyLocs = new ArrayList<SignalLocation>();
 	
 	// and other things
+	public static MapLocation rallyLocation = null;
+	
 	public static int mapMinX = 0;
 	public static int mapMinY = 0;
 	public static int mapMaxX = 0;
@@ -93,6 +96,9 @@ public class Message extends RobotPlayer
 			case ZOMBIE_DEN:
 				zombieDenLocs.add(new SignalLocation(sig,readLocation(vals)));
 				break;
+			case RALLY_LOCATION:
+				rallyLocation = readLocation(vals);
+				break;
 			}
 		}
 	}
@@ -102,6 +108,33 @@ public class Message extends RobotPlayer
 	{
 		return new MapLocation(vals[0]-LOC_OFFSET, vals[1]-LOC_OFFSET);
 	}
+	
+	
+	// to be called by Archon
+	public static void sendBuiltMessage() throws GameActionException
+	{
+		// our rally location should have been set by the Archon already
+		sendMessageSignal(2, MessageType.RALLY_LOCATION, Message.rallyLocation);
+	}
+	
+	// also by archon
+	public static void calcRallyLocation()
+	{
+		int bestID = 1000000;
+		MapLocation bestloc = null;
+
+		for (SignalLocation sm : Message.archonLocs)
+		{
+			if (sm.sig.getID() < bestID)
+			{
+				bestloc = sm.loc;
+				bestID = sm.sig.getID();
+			}
+		}
+		
+		rallyLocation = bestloc;
+	}
+	
 	
 	public static void sendMessageSignal(int lin_distance, MessageType type, MapLocation loc) throws GameActionException
 	{
