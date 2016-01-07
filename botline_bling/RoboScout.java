@@ -56,15 +56,15 @@ public class RoboScout extends RobotPlayer
 	{
 		// go to edge of turtle by moving away from rally location but staying in turtle
 		NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnitsAndStayInTurtle();
-		int numTurretsAdjacent = getNumTurretsAdjacent(here);
+		int numTurretsAdjacent = getNumTurretsNearby(here, 6);
 		if (numTurretsAdjacent > 11) // we're not at the edge
-			Nav.goTo(here.add(here.directionTo(rally).opposite()), safety);
+			Nav.goTo(here.add(here.directionTo(rally).opposite()), safety); // move only if we're not at the edge
 		Debug.setStringSJF("num turrets adjacent = " + numTurretsAdjacent);
 	}
 	
-	public static int getNumTurretsAdjacent(MapLocation loc)
+	public static int getNumTurretsNearby(MapLocation loc, int squareDist)
     {
-    	RobotInfo units[] = rc.senseNearbyRobots(loc, 9, ourTeam);
+    	RobotInfo units[] = rc.senseNearbyRobots(loc, squareDist, ourTeam);
     	int numTurretsAdjacent = 0;
     	for (RobotInfo friend : units)
     	{

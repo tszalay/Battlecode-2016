@@ -259,7 +259,7 @@ public class Micro extends RobotPlayer
 
 	}
 	
-	private static boolean tryMove(Direction dir, NavSafetyPolicy safety) throws GameActionException
+	public static boolean tryMove(Direction dir, NavSafetyPolicy safety) throws GameActionException
 	{
 		Nav.goTo(here.add(dir), safety);
 		if (here.equals(rc.getLocation())) // we didn't move
