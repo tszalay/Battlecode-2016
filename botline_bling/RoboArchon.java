@@ -43,7 +43,7 @@ public class RoboArchon extends RobotPlayer
 			int dx = rand.nextInt(3)-1;
 			int	dy = rand.nextInt(3)-1;
 			Debug.setStringRR("dx "+dx+"dy "+dy);
-			NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnitsAndStayInTurtle();
+			NavSafetyPolicy safety = new SafetyPolicyAvoidZombies();
 			if (rc.isCoreReady()){ 
 				Nav.goTo(here.add(dx,dy), safety);
 			}

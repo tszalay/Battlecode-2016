@@ -5,15 +5,9 @@ import battlecode.common.MapLocation;
 public class MapUtil
 {
 	// AK check if map location is odd or even.
-	public static boolean isLocOdd(MapLocation loc) {
-		if ((loc.x+loc.y)%2 == 0){
-			Debug.setStringAK("EVEN loc");
-			return false;
-		}
-		else {
-			Debug.setStringAK("ODD loc");
-			return true;
-		}
+	public static boolean isLocOdd(MapLocation loc)
+	{
+		return ((loc.x+loc.y)%2) != 0;
 	}
 
 

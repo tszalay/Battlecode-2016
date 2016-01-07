@@ -100,6 +100,7 @@ public class RobotPlayer
 			while (true)
 			{
 				RobotPlayer.here = rc.getLocation();
+				Message.readSignalQueue();
 				// try to re-sense archon
 				if (myArchon != null)
 				{
