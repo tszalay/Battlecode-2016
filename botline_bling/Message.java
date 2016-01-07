@@ -9,20 +9,23 @@ enum MessageType
 	NONE,
 	SPAWN,
 	ZOMBIE_DEN,
-	ZOMBIE,
+	SIGHT_TARGET,
+	MAP_EDGE,
 	SPAM,
 	FREE_BEER
 }
 
-class SignalLocation
+class SignalLocation extends RobotPlayer
 {
 	public MapLocation loc;
 	public Signal sig;
+	public int round;
 	
 	public SignalLocation (Signal s, MapLocation ml)
 	{
 		sig = s;
 		loc = ml;
+		round = rc.getRoundNum();
 	}
 }
 
@@ -36,9 +39,15 @@ public class Message extends RobotPlayer
 	// storage for received/accumulated message info
 	public static ArrayList<SignalLocation> archonLocs = new ArrayList<SignalLocation>();
 	public static ArrayList<SignalLocation> zombieDenLocs = new ArrayList<SignalLocation>();
-	public static ArrayList<SignalLocation> zombieLocs = new ArrayList<SignalLocation>();
+	public static ArrayList<SignalLocation> sightLocs = new ArrayList<SignalLocation>();
+	public static ArrayList<SignalLocation> enemyLocs = new ArrayList<SignalLocation>();
 	
-	//List<Signal> enemySignals;
+	// and other things
+	public static int mapMinX = 0;
+	public static int mapMinY = 0;
+	public static int mapMaxX = 0;
+	public static int mapMaxY = 0;
+	
 	
 	public static void readSignalQueue()
 	{
@@ -66,17 +75,20 @@ public class Message extends RobotPlayer
 
 			switch (type)
 			{
+			case NONE:
+				// logic for basic signaling goes here
+				break;
 			case SPAWN:
 				archonLocs.add(new SignalLocation(sig,readLocation(vals)));
 				break;
 			case FREE_BEER:
 				break;
-			case NONE:
-				// logic for basic signaling goes here
+			case MAP_EDGE:
 				break;
 			case SPAM:
 				break;
-			case ZOMBIE:
+			case SIGHT_TARGET:
+				sightLocs.add(new SignalLocation(sig,readLocation(vals)));
 				break;
 			case ZOMBIE_DEN:
 				zombieDenLocs.add(new SignalLocation(sig,readLocation(vals)));
@@ -84,6 +96,7 @@ public class Message extends RobotPlayer
 			}
 		}
 	}
+	
 
 	private static MapLocation readLocation(int[] vals)
 	{
