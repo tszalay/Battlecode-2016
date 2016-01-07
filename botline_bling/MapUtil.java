@@ -20,16 +20,13 @@ public class MapUtil extends RobotPlayer
 	public static boolean isFourOdd(MapLocation loc) {
 		if (isLocOdd(loc)) {
 			if ((loc.x)%2 == 1) {
-				Debug.setStringAK("FourODD loc");
 				return true;
 			}
 			else {			
-			Debug.setStringAK("FourEVEN loc");
 			return false;
 			}
 		}
 		else {
-			Debug.setStringAK("FourEVEN loc");
 			return false;
 		}
 	}
