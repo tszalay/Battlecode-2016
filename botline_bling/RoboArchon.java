@@ -6,6 +6,7 @@ public class RoboArchon extends RobotPlayer
 {
 	
 	static MapLocation rallyLoc;
+	static int RoundDiffuseInTurtle =100;
 	static Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST, Direction.SOUTH_EAST,
             Direction.SOUTH, Direction.SOUTH_WEST, Direction.WEST, Direction.NORTH_WEST};
 
@@ -25,7 +26,7 @@ public class RoboArchon extends RobotPlayer
 			tryBuildEven(RobotType.SCOUT);
 		}else if(rallyLoc == null){//then wait
 			//rc.yield();//replace later
-		}else if(here.distanceSquaredTo(rallyLoc) > 4){
+		}else if(here.distanceSquaredTo(rallyLoc) > 2  && rc.getRoundNum()<RoundDiffuseInTurtle){
 			//Debug.setStringRR("rallyLocx" + rallyLoc.x + "rallyLocy" + rallyLoc.y);
 			NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
 			if (rc.isCoreReady()){ 
@@ -35,11 +36,20 @@ public class RoboArchon extends RobotPlayer
 			tryBuildEven(RobotType.TURRET);
 		}
 		//repair anyone nearby
-		tryrepair();
-//		NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
-//		if (rc.isCoreReady()){ 
-//			Nav.goTo(rallyLoc, safety);
-//		}
+		//doesturtleexist?
+		if (!tryrepair() && rc.getRoundNum() > RoundDiffuseInTurtle){
+			//if repair earby then stay, otherwise, diffuse after waiting some rounds
+//			variable x = (expression) ? value if true : value if false
+			int dx = rand.nextInt(3)-1;
+			int	dy = rand.nextInt(3)-1;
+			Debug.setStringRR("dx "+dx+"dy "+dy);
+			NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnitsAndStayInTurtle();
+			if (rc.isCoreReady()){ 
+				Nav.goTo(here.add(dx,dy), safety);
+			}
+		}
+
+
 		
 	}
 	
