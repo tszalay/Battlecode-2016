@@ -15,7 +15,7 @@ public class RoboScout extends RobotPlayer
 		// to a distance of 100 units
 		if (rc.getRoundNum() < SIGNAL_ROUND)
 			if (myArchon != null)
-				new Message(Message.MessageType.SPAWN, myArchon.location).send(100);
+				Message.sendMessageSignal(100, MessageType.SPAWN, myArchon.location);
 		
 		kiteTarget = here.add(rand.nextInt(200)-100,rand.nextInt(200)-100);
 	}
