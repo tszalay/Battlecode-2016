@@ -8,39 +8,65 @@ public class RoboScout extends RobotPlayer
 {
 	public static final int SIGNAL_ROUND = 30; 
 	public static MapLocation kiteTarget = null;
+	public static boolean isFreeScout = false;
 	
 	public static void init() throws GameActionException
 	{
 		// first-spawn scout, send the message right away
 		// to a distance of 100 units
 		if (rc.getRoundNum() < SIGNAL_ROUND)
+		{
 			if (myArchon != null)
 			{
 				Message.sendMessageSignal(10000, MessageType.SPAWN, myArchon.location);
 			}
-		
+		}
 		kiteTarget = here.add(rand.nextInt(200)-100,rand.nextInt(200)-100);
+		
+		// =========================================================
+		// for now, a hacked way of deciding if you are a free scout
+		Micro.updateAllies();
+		int numOtherScouts = 0;
+		for (RobotInfo bot : Micro.nearbyAllies)
+		{
+			if (bot.type == RobotType.SCOUT)
+				numOtherScouts += 1;
+		}
+		if (numOtherScouts >= 1)
+			isFreeScout = true;
+		// =========================================================
+			
+	}
+	
+	public static void doFreeScout() throws GameActionException
+	{
+		// signal any interesting information about enemies, zombies, dens
+		
+		// pick a target
+		
+		// move toward target
+		
+	}
+	
+	public static void doTurtleScout() throws GameActionException
+	{
+		// check for attackers and signal
+		
+		// go to edge of turtle
+		
 	}
 	
 	public static void turn() throws GameActionException
-	{		
-        int fate = rand.nextInt(1000);
-
+	{
         if (rc.isCoreReady())
         {
-        	RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, theirTeam);
-            RobotInfo[] nearbyZombies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.ZOMBIE);
-            
-            rc.disintegrate();
-            NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnitsAndStayInTurtle();
-            //NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
-            if (rc.getRoundNum()<200)
-            	Nav.goTo(here.add(1,1), safety);
-            else
-            {
-        		MapLocation target = here.add(rand.nextInt(200)-100,rand.nextInt(200)-100);
-                Nav.goTo(target, safety);
-            }
+        	if (!Micro.tryAvoidBeingKilled()) // avoidance micro
+        	{
+	        	if (isFreeScout)
+	        		doFreeScout();
+	        	else
+	        		doTurtleScout();
+        	}
         }
 	}
 }
