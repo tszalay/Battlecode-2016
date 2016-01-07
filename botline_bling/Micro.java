@@ -397,4 +397,40 @@ public class Micro extends RobotPlayer
 			dirToClosestEnemy = here.directionTo(closestEnemy.location);
 		}
 	}
+	
+	public static RobotInfo getClosestRobot(RobotInfo[] nearby, MapLocation loc)
+	{
+		int minsqdist = 1000;
+		RobotInfo closest = null;
+		
+		for (RobotInfo ri : nearby)
+		{
+			if (ri.location.distanceSquaredTo(loc) < minsqdist)
+			{
+				closest = ri;
+				minsqdist = ri.location.distanceSquaredTo(loc);
+			}
+		}
+		
+		return closest;
+	}
+	
+	public static RobotInfo getClosestTurretTarget(RobotInfo[] nearby, MapLocation loc)
+	{
+		int minsqdist = 1000;
+		RobotInfo closest = null;
+		
+		for (RobotInfo ri : nearby)
+		{
+			int dist = ri.location.distanceSquaredTo(loc);
+			
+			if (dist < minsqdist && dist > 5)
+			{
+				closest = ri;
+				minsqdist = dist;
+			}
+		}
+		
+		return closest;
+	}
 }
