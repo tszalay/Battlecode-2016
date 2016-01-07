@@ -3,6 +3,18 @@
 **what_thesis**: _Aaron, Stephen, Ryan, Tamas_
 
 
+## Master TODO
+
+### _Short Term_
+- Archons moving around and building
+- Scouts moving and sighting
+- Chaos scouts
+
+### _Medium Term_
+- Nav overhaul to move in crowded spaces
+- Micro overhaul to account for different considerations
+- Global strategy/build direction
+
 ## Coding guidelines
 
 - You should be able to draw a flowchart for every action and attempted action
@@ -18,11 +30,3 @@
 - Put non-state/non-behavior functions (checks etc) in Common files in the base bot so everyone can use them
 - Use Debug class for debugging output
 - MessageBoard: TBD
-
-
-## Master TODO
-
-1. Write bot
-2. Win
-3. ?????
-4. Profit
