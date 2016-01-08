@@ -69,7 +69,6 @@ public class MapUtil extends RobotPlayer
 			MapLocation testloc = here.add(dx[i]*randFlipX,dy[i]*randFlipY);
 			if (isGoodTurtle(testloc))
 			{
-				Debug.setStringTS("Last Turtle " + testloc);
 				return testloc;
 			}
 		}

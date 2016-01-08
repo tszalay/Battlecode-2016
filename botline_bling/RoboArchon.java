@@ -13,7 +13,7 @@ public class RoboArchon extends RobotPlayer
 	static boolean arrivedAtRally = false;
 	static int roundLastAttacked = 0;
 	static MapLocation locLastAttacked = null;
-	static double myHealth = 0;
+	static double myHealth = rc.getType().maxHealth;
 
 	public static void init() throws GameActionException
 	{
@@ -37,10 +37,11 @@ public class RoboArchon extends RobotPlayer
 		{
 			if (amIBeingAttacked())
 			{
+				Micro.updateAllies();
 				// find closest turtle location, and move away
-				NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnitsAndStayInTurtle();
+				NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
 				if (rc.isCoreReady())
-					Nav.goTo(here.add(here.directionTo(MapUtil.findClosestTurtle()).opposite()), safety);
+					Nav.goTo(Micro.getUnitCOM(Micro.nearbyAllies), safety);
 			}
 			else
 			{
@@ -53,7 +54,7 @@ public class RoboArchon extends RobotPlayer
 					nextTurretLoc = MapUtil.findClosestTurtle();
 					
 					// if it's too close to where i was last shot, change the nextTurretLoc
-					if (nextTurretLoc == null || ( locLastAttacked != null  && nextTurretLoc.distanceSquaredTo(locLastAttacked)<2 ) )
+					if (nextTurretLoc != null && locLastAttacked != null  && nextTurretLoc.distanceSquaredTo(locLastAttacked)<2 )
 						nextTurretLoc = here.add(here.directionTo(locLastAttacked).opposite());
 					
 					if	(!tryBuildUnits(nextTurretLoc))
@@ -205,7 +206,11 @@ public class RoboArchon extends RobotPlayer
 
 	public static boolean tryMoveNearTurretDest(MapLocation nextTurretLoc) throws GameActionException
 	{
-		if (here.isAdjacentTo(nextTurretLoc)) return false;
+		if (nextTurretLoc == null)
+			return false;
+		
+		if (here.isAdjacentTo(nextTurretLoc))
+			return false;
 		
 		if (rc.isCoreReady())
 		{
@@ -221,10 +226,11 @@ public class RoboArchon extends RobotPlayer
 	
 	public static boolean amIBeingAttacked() throws GameActionException
 	{
-		if (rc.getRoundNum()-roundLastAttacked < 10 && roundLastAttacked > 0)
+		if (rc.getRoundNum()-roundLastAttacked < 100 && roundLastAttacked > 0)
 		{
 			return true;
 		}
+		
 		if (rc.getHealth() < myHealth)
 		{
 			myHealth = rc.getHealth();
@@ -232,6 +238,7 @@ public class RoboArchon extends RobotPlayer
 			roundLastAttacked = rc.getRoundNum();
 			return true;
 		}
+		
 		return false;
 	}
 }

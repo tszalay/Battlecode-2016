@@ -529,4 +529,26 @@ public class Micro extends RobotPlayer
 		
 		return closest;
 	}
+	
+	public static MapLocation getUnitCOM(RobotInfo[] nearby)
+	{
+		int xtot = 0;
+		int ytot = 0;
+		
+		if (nearby.length == 0)
+			return here;
+		
+		for (RobotInfo ri : nearby)
+		{
+			xtot += ri.location.x;
+			ytot += ri.location.y;
+		}
+		
+		xtot /= nearby.length;
+		ytot /= nearby.length;
+		
+		Debug.setStringTS("AA" + new MapLocation(xtot,ytot));
+		
+		return new MapLocation(xtot,ytot);
+	}
 }
