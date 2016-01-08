@@ -42,23 +42,161 @@ public class RoboScout extends RobotPlayer
 			
 	}
 	
+	public static int[] getNumAlliedScoutsAndTurretsInRange() throws GameActionException
+	{
+		RobotInfo[] allies = rc.senseNearbyRobots(here, RobotType.SCOUT.sensorRadiusSquared, ourTeam);
+		int numAlliedScoutsInRange = 0;
+		int numAlliedTurretsInRange = 0;
+		for (RobotInfo ri : allies)
+		{
+			if (ri.type == RobotType.SCOUT)
+				numAlliedScoutsInRange += 1;
+			else if (ri.type == RobotType.TURRET)
+				numAlliedTurretsInRange += 1;
+		}
+		int[] packagedOutput = {numAlliedScoutsInRange, numAlliedTurretsInRange};
+		return packagedOutput;
+	}
+	
 	public static void doFreeScout() throws GameActionException
 	{
-		// signal any interesting information about enemies, zombies, dens
+		// if you see the turtle and no other scouts, then you are now a turtle scout
+		int[] allyInfo = getNumAlliedScoutsAndTurretsInRange();
+		int numAlliedScoutsInRange = allyInfo[0];
+		int numAlliedTurretsInRange = allyInfo[1];
+		if (numAlliedScoutsInRange == 0 && numAlliedTurretsInRange > 0)
+		{
+			isFreeScout = false;
+			return;
+		}
 		
-		// pick a target
+		// relay important sightings
+		RobotInfo[] dens = doRelayDens();
+		RobotInfo[] turrets = doRelayTurrets();
 		
-		// move toward target
+		if (!rc.isCoreReady())
+			return;
 		
+		// pick a target: go to dens before spawn, go to enemies after
+		int[] spawnRounds = rc.getZombieSpawnSchedule().getRounds();
+		
+		for (int round : spawnRounds) // go through zombie spawns
+		{
+			// if a spawn is in less than 20 rounds from now
+			if (round - rc.getRoundNum() < 20 && rc.getRoundNum() - round > 0)
+			{
+				// rush the nearest den
+				if (dens != null)
+				{
+					MapLocation closestDenLoc = dens[0].location;
+					for (RobotInfo d : dens)
+					{
+						if (here.distanceSquaredTo(d.location) < here.distanceSquaredTo(closestDenLoc))
+							closestDenLoc = d.location;
+					}
+					if (!Micro.tryAvoidBeingShot()) // avoidance micro only when we're not rushing stuff
+			    	{
+						NavSafetyPolicy safety = new SafetyPolicyAvoidZombies();
+						Nav.goTo(closestDenLoc, safety);
+						return;
+			    	}
+					return;
+				}
+			}
+			
+			// if a spawn happened less than 200 rounds ago
+			if (rc.getRoundNum() - round < 200 && rc.getRoundNum() - round > 0)
+			{
+				// rush the nearest enemies
+				if (turrets != null)
+				{
+					MapLocation closestTurretLoc = dens[0].location;
+					for (RobotInfo t : turrets)
+					{
+						if (here.distanceSquaredTo(t.location) < here.distanceSquaredTo(closestTurretLoc))
+							closestTurretLoc = t.location;
+					}
+					NavSafetyPolicy safety = new SafetyPolicyRecklessAbandon();
+					Nav.goTo(closestTurretLoc, safety);
+					return;
+				}
+				RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(here, RobotType.SCOUT.sensorRadiusSquared, theirTeam);
+				if (nearbyEnemies != null && nearbyEnemies.length > 0)
+				{
+					MapLocation closestEnemyLoc = nearbyEnemies[0].location;
+					for (RobotInfo en : nearbyEnemies)
+					{
+						if (here.distanceSquaredTo(en.location) < here.distanceSquaredTo(closestEnemyLoc))
+							closestEnemyLoc = en.location;
+					}
+					NavSafetyPolicy safety = new SafetyPolicyRecklessAbandon();
+					Nav.goTo(closestEnemyLoc, safety);
+					return;
+				}
+			}
+		}
+		
+		// and if we're still not involved in the action, go away from rally
+		if (!Micro.tryAvoidBeingShot()) // avoidance micro only when we're not rushing stuff
+    	{
+			NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
+			Nav.goTo(here.add(here.directionTo(rally).opposite()), safety);
+    	}
+		
+	}
+	
+	public static RobotInfo[] doRelayTurrets() throws GameActionException
+	{
+		// read signals and rebroadcast enemy turrets
+		ArrayList<SignalLocation> knownEnemyTurretSignalLocs = Message.enemyTurretLocs;
+        if (knownEnemyTurretSignalLocs != null && knownEnemyTurretSignalLocs.size() > 0)
+        {
+	        RobotInfo[] turrets = new RobotInfo[knownEnemyTurretSignalLocs.size()];
+        	for (int i=0; i<knownEnemyTurretSignalLocs.size(); i++)
+	        {
+	        	MapLocation loc = knownEnemyTurretSignalLocs.get(i).loc;
+	        	turrets[i] = new RobotInfo(0, theirTeam, RobotType.TURRET, loc, 0, 0, RobotType.TURRET.attackPower, RobotType.TURRET.maxHealth, RobotType.TURRET.maxHealth, 0, 0); 
+	        }
+	        sendSightedTarget(turrets);
+	        return turrets;
+        }
+        return null;
+	}
+	
+	public static RobotInfo[] doRelayDens() throws GameActionException
+	{
+        // dens
+        ArrayList<SignalLocation> knownDenSignalLocs = Message.zombieDenLocs;
+        if (knownDenSignalLocs != null && knownDenSignalLocs.size() > 0)
+        {
+	        RobotInfo[] dens = new RobotInfo[knownDenSignalLocs.size()];
+        	for (int i=0; i<knownDenSignalLocs.size(); i++)
+	        {
+	        	MapLocation loc = knownDenSignalLocs.get(i).loc;
+	        	dens[i] = new RobotInfo(0, Team.ZOMBIE, RobotType.ZOMBIEDEN, loc, 0, 0, RobotType.ZOMBIEDEN.attackPower, RobotType.ZOMBIEDEN.maxHealth, RobotType.ZOMBIEDEN.maxHealth, 0, 0); 
+	        }
+	        sendSightedTarget(dens);
+	        return dens;
+        }
+        return null;
 	}
 	
 	public static void doTurtleScout() throws GameActionException
 	{
 		// go to edge of turtle by moving away from rally location but staying in turtle
-		NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
-		//if (getNumTurretsNearby(here, 6) > 11 || getNumTurretsNearby(here, 3) < 3) // we're not at the edge
-			//Nav.goTo(here.add(here.directionTo(rally).opposite()), safety); // move only if we're not at the edge
-		Nav.goTo(MapUtil.findClosestTurtle(), safety);
+		NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnitsAndStayInTurtle();
+		if (getNumTurretsNearby(here, 6) > 7 || getNumTurretsNearby(here, 3) < 2) // we're not at the edge
+		{
+			Nav.goTo(here.add(here.directionTo(rally).opposite()), safety); // move only if we're not at the edge
+			//Nav.goTo(MapUtil.findClosestTurtle(), safety);
+			
+			// free the scout if it is not at the turtle edge and sees more than one other scout
+			int[] allyInfo = getNumAlliedScoutsAndTurretsInRange();
+			int numAlliedScoutsInRange = allyInfo[0];
+			if (numAlliedScoutsInRange > 1)
+				isFreeScout = true;
+		}
+		//Nav.goTo(MapUtil.findClosestTurtle(), safety);
 	}
 	
 	public static int getNumTurretsNearby(MapLocation loc, int squareDist)
@@ -111,15 +249,17 @@ public class RoboScout extends RobotPlayer
 		
 		if (rc.isCoreReady())
         {
-        	if (!Micro.tryAvoidBeingShot()) // avoidance micro
+        	if (isFreeScout)
         	{
-	        	if (isFreeScout)
-	        		doFreeScout();
-	        	else
-	        		doTurtleScout();
+        		doFreeScout();
         	}
         	else
-        		Debug.setStringSJF("retreating");
+        	{
+        		if (!Micro.tryAvoidBeingShot()) // avoidance micro
+            	{
+        			doTurtleScout();
+            	}
+        	}
         }
 	}
 }

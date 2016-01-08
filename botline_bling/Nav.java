@@ -167,8 +167,8 @@ class SafetyPolicyAvoidAllUnitsAndStayInTurtle extends RobotPlayer implements Na
     			numTurretsAdjacentNow += 1;
     	}
     	
-    	// 4 adjacent turrets is within turtle, but also allow stuff to move into the turtle
-    	return (numTurretsAdjacent > 3  || (numTurretsAdjacent >= numTurretsAdjacentNow) );
+    	// 3 adjacent turrets is within turtle, but also allow stuff to move into the turtle
+    	return (numTurretsAdjacent > 2  || (numTurretsAdjacent >= numTurretsAdjacentNow) );
     }
 }
 
