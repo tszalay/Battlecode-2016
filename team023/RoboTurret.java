@@ -6,11 +6,21 @@ import battlecode.common.*;
 
 public class RoboTurret extends RobotPlayer
 {
-	static MapLocation unpackLoc=null;
-//	static final int[] unpackSearchTableX = {0,-2,0,2,2,-2,-2,2};
-//	static final int[] unpackSearchTableY = {2, 0, -2, 0, 2, 2, -2 ,2};
-	static final int[] unpackSearchTableX = {-1,1,1,-1,-2,0,2,0};
-	static final int[] unpackSearchTableY = {1, 1, -1, -1, 0, 2, 0 ,-2};
+	static MapLocation unpackDest = null;
+	//static final int[] unpackSearchTableX = {-1,1,1,-1,-2,0,2,0,-2,-2,2,2,1,-1,-3,-3,-1,1};
+	//static final int[] unpackSearchTableY = {1, 1, -1, -1, 0, 2, 0 ,-2,-2,2,2,-2,-3,-3,-1,1,3,3};
+	
+	static int lastFiredRound = 0;
+	static final int TURRET_PACK_DELAY = 15;
+
+	// AK: unpack search in this pattern
+	// [][]18[]18[][]
+	// []10[]06[]11[]
+	// 16[]01[]02[]19
+	// []05[]XX[]07[]
+	// 15[]04[]03[]20
+	// []09[]08[]12[]
+	// [][]14[]13[][]
 	
 	public static void init() throws GameActionException
 	{
@@ -26,100 +36,128 @@ public class RoboTurret extends RobotPlayer
 	
 	public static void turnTurret() throws GameActionException
 	{
-		
-		boolean isOverpowered = false;
-		
-		 // If this robot type can attack, check for enemies within range and attack one
-        if (rc.isWeaponReady())
-        {
-            RobotInfo[] enemiesWithinRange = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, theirTeam);
-            RobotInfo[] zombiesWithinRange = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.ZOMBIE);
-            
-            if (enemiesWithinRange.length > 0)
-            {
-            	for (RobotInfo enemy : enemiesWithinRange)
-            	{
-            		// Check whether the enemy is in a valid attack range (turrets have a minimum range)
-            		if (rc.canAttackLocation(enemy.location)) {
-            			rc.attackLocation(enemy.location);
-            			break;
-            		}
-            	}
-            } 
-            else if (zombiesWithinRange.length > 0)
-            {
-            	RobotInfo bestTarget = null;
-            	for (RobotInfo zombie : zombiesWithinRange)
-            	{
-            		// are we about to be dealt a killing blow
-            		if (zombie.location.distanceSquaredTo(here) <= zombie.type.attackRadiusSquared && rc.getHealth() < 10*zombie.type.attackPower)
-            			isOverpowered = true;
+		// ok let's try to shoot first, ask questions later
+		if (tryTurretAttack())
+			return;
 
-            		if (rc.canAttackLocation(zombie.location))
-            		{
-            			rc.attackLocation(zombie.location);
-            			break;
-            		}
-            	}
-            }
-            else if (!MapUtil.isLocOdd(rc.getLocation()))
-            {
-            	rc.pack();
-            	//System.out.println("Just re-packed!");
-            }
+		// we didn't have anything to shoot at recently, so move around or something
+		if (!MapUtil.isLocOdd(rc.getLocation()) && rc.getRoundNum() > lastFiredRound + TURRET_PACK_DELAY)
+        	rc.pack();
+	}
+	
+	public static boolean tryTurretAttack() throws GameActionException
+	{
+		// can we shoot at all?
+		if (!rc.isWeaponReady())
+			return false;
+		
+        // prioritize shooting at enemies first
+        RobotInfo target = Micro.getClosestTurretTarget(rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, theirTeam), here);
+        // if we didn't find any, try closest zombies
+        if (target == null)
+        	target = Micro.getClosestTurretTarget(rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.ZOMBIE), here);
+        
+        MapLocation targetLocation = null;
+        
+        // if we still didn't find any, check the sighted table
+        if (target == null)
+        	targetLocation = Zombie.getSightedTarget();
+        else
+        	targetLocation = target.location;
+        
+        if (targetLocation == null)
+        	return false;
+        
+        if (rc.canAttackLocation(targetLocation))
+        {
+			rc.attackLocation(targetLocation);
+			lastFiredRound = rc.getRoundNum();
+			return true;
         }
         
-        RobotInfo ri = rc.senseRobot(rc.getID());
-        
-        if (isOverpowered && ri.zombieInfectedTurns == 0)
-        	rc.disintegrate();
+        return false;
 	}
 
+	
+	
 	public static void turnTTM() throws GameActionException
 	{
-		if (MapUtil.isLocOdd(rc.getLocation())){
+		// did we make it to a satisfying spot?
+		if (MapUtil.isLocOdd(rc.getLocation()))
+		{
 			rc.unpack();
+			return;
 		}
 		
-		else if (unpackLoc == null) {
-			unpackLoc = findNewUnpackLoc();
-		}
-		else if (rc.getLocation() != unpackLoc){
-			if (rc.isCoreReady()) {
-				RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, theirTeam);
-				RobotInfo[] nearbyZombies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.ZOMBIE);
-				NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits(nearbyEnemies, nearbyZombies);
-				unpackLoc = findNewUnpackLoc();
-				Nav.goTo(unpackLoc, safety);
+		// unpacklocs are always on odd squares
+		unpackDest = findNewUnpackDest(unpackDest);
+		Debug.setStringTS("Dest: " + unpackDest);
+
+		// and now move towards it
+		if (rc.isCoreReady())
+		{
+			if (here.distanceSquaredTo(unpackDest) <= 2)
+			{
+				if (rc.canMove(here.directionTo(unpackDest)))
+					rc.move(here.directionTo(unpackDest));
+				else //something went wrong, find another
+					unpackDest = findNewUnpackDest(unpackDest);
+				//NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
+				//Nav.goTo(unpackDest, safety);
 			}
-		}
-		else {
-			// you've reached your destination!
-			rc.unpack();
+			else
+			{
+				NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
+				Nav.goTo(unpackDest, safety);
+			}
 		}
 	}
 
-
-
 	// AK find new unpack location
-	public static MapLocation findNewUnpackLoc() throws GameActionException
+	public static MapLocation findNewUnpackDest(MapLocation dest) throws GameActionException
 	{
-		MapLocation newUnpackLoc = rc.getLocation().add(Direction.NORTH);
-		if (!MapUtil.isLocOdd(newUnpackLoc)) {
-			newUnpackLoc = newUnpackLoc.add(Direction.SOUTH_EAST); // now will be 4-odd
+		// start in random direction
+		Direction d0 = Direction.values()[rand.nextInt(8)];
+		if (!MapUtil.isLocOdd(here.add(d0)))
+			d0 = d0.rotateRight();
+		
+		// check four adjacent odd squares
+		for (int i=0; i<4; i++)
+		{
+			MapLocation ml = here.add(d0);
+			if (!rc.isLocationOccupied(ml) && rc.senseRubble(ml) < GameConstants.RUBBLE_SLOW_THRESH && rc.onTheMap(ml))
+			{
+				return ml;
+			}
+			// rotate right twice to keep parity
+			d0 = d0.rotateRight().rotateRight();
 		}
-		for (int i = 0; i < 8; i++) {
-			if (rc.isLocationOccupied(newUnpackLoc)) {
-				newUnpackLoc = newUnpackLoc.add(unpackSearchTableX[i],unpackSearchTableY[i]);
-			}
-			else if (i == 8) {
-				newUnpackLoc = null; // For now, if you can't find a close location just give up
-			}
-			else {
-				break;
-			}
+		
+		if (dest != null)
+			return dest;
+		
+		// all else fails, return a random direction or something
+		return here.add(rand.nextInt(200)-100,rand.nextInt(200)-100);
+			
+		// or check if there are any close by
+		//MapLocation newUnpackLoc = here;
+		
+		
+		/*if (!MapUtil.isLocOdd(newUnpackLoc))
+		{
+			newUnpackLoc = newUnpackLoc.add(Direction.WEST); // now will be odd
 		}
-		return newUnpackLoc;
+		
+		for (int i = 0; i < 18; i++)
+		{
+			// if we found one, go there
+			if (!rc.isLocationOccupied(newUnpackLoc) && rc.senseRubble(newUnpackLoc) < GameConstants.RUBBLE_SLOW_THRESH && rc.onTheMap(newUnpackLoc))
+			{
+				return newUnpackLoc;
+			}
+			newUnpackLoc = newUnpackLoc.add(unpackSearchTableX[i],unpackSearchTableY[i]);
+		}*/
+		// otherwise return the old one
 	}	
 
 }

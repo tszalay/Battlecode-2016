@@ -1,72 +1,151 @@
 package team023;
 
 import battlecode.common.*;
+import java.util.*;
 
-// sq. distance formula: sightRadius*(2+x)
-// so x = sqd / sight - 2
+// enum for encoding the type of a message in the contents
+enum MessageType
+{
+	NONE,
+	SPAWN,
+	ZOMBIE_DEN,
+	SIGHT_TARGET,
+	MAP_EDGE,
+	SPAM,
+	FREE_BEER,
+	RALLY_LOCATION
+}
+
+class SignalLocation extends RobotPlayer
+{
+	public MapLocation loc;
+	public Signal sig;
+	public int round;
+	
+	public SignalLocation (Signal s, MapLocation ml)
+	{
+		sig = s;
+		loc = ml;
+		round = rc.getRoundNum();
+	}
+}
 
 public class Message extends RobotPlayer
-{
-	// enum for encoding the type of a message in the contents
-	public enum MessageType
-	{
-		NONE,
-		SPAWN,
-		DEN,
-		ENEMY,
-		SPAM,
-		FREE_BEER
-	}
-	
-	MessageType type;
-	int val1;
-	int val2;
-	
+{	
+	// bookkeeping stuff
 	private static final int TYPE_BITS = 4;
 	private static final int SHIFT_BITS = 32-TYPE_BITS;
 	private static final int LOC_OFFSET = 17000;
 	
-	// general constructor with two ints
-	public Message(MessageType myType, int v1, int v2)
-	{
-		this.type = myType;
-		
-		this.val1 = v1 | (this.type.ordinal() << SHIFT_BITS);
-		this.val2 = v2;
-	}
+	// storage for received/accumulated message info
+	public static ArrayList<SignalLocation> archonLocs = new ArrayList<SignalLocation>();
+	public static ArrayList<SignalLocation> zombieDenLocs = new ArrayList<SignalLocation>();
+	public static ArrayList<SignalLocation> sightLocs = new ArrayList<SignalLocation>();
+	// and for any transmitted enemy messages, only keep recents (300 rounds)
+	public static ArrayList<Signal> enemySignals = new ArrayList<Signal>();
 	
-	public Message(MessageType myType, MapLocation loc)
-	{
-		this(myType, loc.x + LOC_OFFSET, loc.y + LOC_OFFSET);
-	}
+	// and other things
+	public static MapLocation rallyLocation = null;
 	
-	public Message(Signal sig)
+	public static int mapMinX = 0;
+	public static int mapMinY = 0;
+	public static int mapMaxX = 0;
+	public static int mapMaxY = 0;
+	
+	public static void readSignalQueue()
 	{
-		int[] vals = sig.getMessage();
+		Signal[] sigs = rc.emptySignalQueue();
 		
-		// check if it's a message-less signal first
-		if (vals == null)
+		for (Signal sig : sigs)
 		{
-			this.type = MessageType.NONE;
-			return;
+			// skip enemy signals for now
+			if (sig.getTeam() != ourTeam)
+			{
+				enemySignals.add(sig);
+				continue;
+			}
+			
+			int[] vals = sig.getMessage().clone();
+			MessageType type;
+			if (vals == null)
+			{
+				type = MessageType.NONE;
+			}
+			else
+			{
+				type = MessageType.values()[vals[0] >>> SHIFT_BITS];
+				vals[0] &= ((1 << SHIFT_BITS)-1);
+			}
+
+			switch (type)
+			{
+			case NONE:
+				// logic for basic signaling goes here
+				break;
+			case SPAWN:
+				archonLocs.add(new SignalLocation(sig,readLocation(vals)));
+				break;
+			case FREE_BEER:
+				break;
+			case MAP_EDGE:
+				break;
+			case SPAM:
+				break;
+			case SIGHT_TARGET:
+				sightLocs.add(new SignalLocation(sig,readLocation(vals)));
+				break;
+			case ZOMBIE_DEN:
+				zombieDenLocs.add(new SignalLocation(sig,readLocation(vals)));
+				break;
+			case RALLY_LOCATION:
+				rallyLocation = readLocation(vals);
+				break;
+			}
+		}
+	}
+	
+
+	private static MapLocation readLocation(int[] vals)
+	{
+		return new MapLocation(vals[0]-LOC_OFFSET, vals[1]-LOC_OFFSET);
+	}
+	
+	
+	// to be called by Archon
+	public static void sendBuiltMessage() throws GameActionException
+	{
+		// our rally location should have been set by the Archon already
+		if (Message.rallyLocation != null)
+			sendMessageSignal(2, MessageType.RALLY_LOCATION, Message.rallyLocation);
+	}
+	
+	// also by archon
+	public static void calcRallyLocation()
+	{
+		int bestID = 1000000;
+		MapLocation bestloc = null;
+
+		for (SignalLocation sm : Message.archonLocs)
+		{
+			if (sm.sig.getID() < bestID)
+			{
+				bestloc = sm.loc;
+				bestID = sm.sig.getID();
+			}
 		}
 		
-		this.type = MessageType.values()[vals[0] >>> SHIFT_BITS];
-		this.val1 = vals[0] & ((1 << SHIFT_BITS)-1);
-		this.val2 = vals[1];
+		rallyLocation = bestloc;
 	}
 	
-	public MapLocation readLocation()
+	
+	public static void sendMessageSignal(int lin_distance, MessageType type, MapLocation loc) throws GameActionException
 	{
-		return new MapLocation(this.val1-LOC_OFFSET, this.val2-LOC_OFFSET);
+		int v1 = (type.ordinal() << SHIFT_BITS);
+		sendMessageSignal(lin_distance, v1 | (loc.x+LOC_OFFSET), (loc.y+LOC_OFFSET));
 	}
+
 	
-	public void send(int lin_distance) throws GameActionException
-	{
-		Message.sendMessageSignal(lin_distance, this.val1, this.val2);
-	}
-	
-	public static void sendMessageSignal(int lin_distance, int v1, int v2) throws GameActionException
+	private static void sendMessageSignal(int lin_distance, int v1, int v2) throws GameActionException
 	{
 		int x = lin_distance*lin_distance/rc.getType().sensorRadiusSquared - 2;
 		if (x<0) x=0;
@@ -81,6 +160,6 @@ public class Message extends RobotPlayer
 		int x = lin_distance*lin_distance/rc.getType().sensorRadiusSquared - 2;
 		if (x<0) x=0;
 		
-		rc.broadcastSignal(x);
+		rc.broadcastSignal(lin_distance*lin_distance);
 	}
 }

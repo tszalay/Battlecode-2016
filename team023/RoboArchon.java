@@ -1,163 +1,244 @@
 package team023;
 
-import org.apache.commons.io.output.NullWriter;
-
 import battlecode.common.*;
 
 public class RoboArchon extends RobotPlayer
-{
-	
-	static MapLocation rallyLoc;
-	
+{	
+	static MapLocation nextTurretLoc = null;
+	static int robotSchedule[] = {10, 10, 10, 6}; // 10-turret 6 - scout
+	static int scheduleCounter = rand.nextInt(100);
+	static int waitingToBuild = 0;
+	static int maxWaitBuildTime = 10;
+	static int maxWaitForRally = 600;
+	static boolean arrivedAtRally = false;
+	static int roundLastAttacked = 0;
+	static MapLocation locLastAttacked = null;
+	static double myHealth = rc.getType().maxHealth;
+
 	public static void init() throws GameActionException
 	{
-		rallyLoc = null;	
+		myHealth = rc.getHealth();
 	}
-
-    //Build scout
-    //Read signal queue to get location round 20
-    	//Store number of buddy archons
-    	//Store their start positions
-    	//Map analysis?
-    //Calculate location to move to
-    //Move to desired location (nav.goto, no odd or evens)
-		//Check core
-		//Nav.goTo(safetypolicy stuff)
-		//move
-    //Build turrets/ttms figure out which 
-    	//Build on even squares
-    	//Check core
-    	//Throw error if you can't
-	//archon 
 	
 	public static void turn() throws GameActionException
 	{
-		Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST, Direction.SOUTH_EAST,
-                Direction.SOUTH, Direction.SOUTH_WEST, Direction.WEST, Direction.NORTH_WEST};
-
-
-		//read beacon
 		if (rc.getRoundNum() == RoboScout.SIGNAL_ROUND)
+			Message.calcRallyLocation();
+
+		if(rc.getRoundNum()== 1)
 		{
-			// check for signals by a time we should have received some
-
-			int minID = 1000000;
-
-			Signal[] sigs = rc.emptySignalQueue();
-			for (Signal s : sigs)
+			if (tryBuildEven(RobotType.SCOUT)) 
 			{
-				// ignore enemy signals for now
-				if (s.getTeam() != ourTeam)
-					continue;
-
-				Message m = new Message(s);
-				switch(m.type)
+				Message.sendBuiltMessage();
+			}
+		}
+		
+		if (!Micro.tryAvoidBeingShot())
+		{
+			if (amIBeingAttacked())
+			{
+				Micro.updateAllies();
+				// find closest turtle location, and move away
+				NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
+				if (rc.isCoreReady())
+					Nav.goTo(Micro.getUnitCOM(Micro.nearbyAllies), safety);
+			}
+			else
+			{
+				if (!arrivedAtRally) 
 				{
-				case SPAWN:
-					MapLocation loc = m.readLocation();
-					if (s.getID() < minID)//calc location
+					arrivedAtRally = tryMoveNearRally();
+				}
+				else
+				{
+					nextTurretLoc = MapUtil.findClosestTurtle();
+					
+					// if it's too close to where i was last shot, change the nextTurretLoc
+					if (nextTurretLoc != null && locLastAttacked != null  && nextTurretLoc.distanceSquaredTo(locLastAttacked)<2 )
+						nextTurretLoc = here.add(here.directionTo(locLastAttacked).opposite());
+					
+					if	(!tryBuildUnits(nextTurretLoc))
 					{
-						rallyLoc = loc;
-						minID = s.getID();
-						//Debug.setStringRR(""+ minID);
+						Debug.setStringAK("trying to move to turret dest" + nextTurretLoc);
+						tryMoveNearTurretDest(nextTurretLoc);
 					}
-					//System.out.println(s.getID() + " " + s.getLocation() + " " + loc + " / MY LOC:" + here);
-					break;
-				default:
-					break;
 				}
 			}
 		}
 		
-		// try to heal
+		//repair anyone nearby
+		tryRepair();
+
+	}	
+
+	public static boolean tryRepair() throws GameActionException
+	{
 		RobotInfo[] nearbyFriends = rc.senseNearbyRobots(rc.getType().attackRadiusSquared,ourTeam);
 		RobotInfo minBot = null;
+
 		for (RobotInfo ri : nearbyFriends)
 		{
-			if (minBot == null || ri.health < minBot.health)
+			if (ri.type == RobotType.ARCHON)
+				continue;
+
+			if (minBot == null || (ri.maxHealth - ri.health) > (minBot.maxHealth - minBot.health) || minBot.zombieInfectedTurns < ri.zombieInfectedTurns)
 				minBot = ri;
 		}
-		if (minBot != null && minBot.health < minBot.maxHealth-1)
-			rc.repair(minBot.location);
-		
-		//build scout
-		RobotType robotToBuild = RobotType.TURRET;
-		if (rc.getRoundNum() <= 10){
-			robotToBuild = RobotType.SCOUT;
-			Debug.setStringRR("set to scout");
-			Direction dirToBuild;
-			MapLocation archonLoc = rc.getLocation();
-			//System.out.println((archonLoc.x + archonLoc.y) % 2);
-			if (((archonLoc.x + archonLoc.y) % 2) == 0){
-				//System.out.println("on black diag");			
-				for(int i=1; i<=7; i=i+2){
-					Debug.setStringRR("black");
-					dirToBuild = directions[i];
-					if (rc.hasBuildRequirements(robotToBuild)){
-						if (rc.canBuild(dirToBuild, robotToBuild)) {
-							if (rc.isCoreReady()){
-								rc.build(dirToBuild, robotToBuild);
-							}
-							break;
-						}
-					}
-				}
-			} else {//archon is on white, build on 
-				//System.out.println("on white rook");
-				for(int i=0; i<=7; i=i+2){
-					Debug.setStringRR("white");
-					dirToBuild = directions[i];
-					if (rc.hasBuildRequirements(robotToBuild)){
-						if (rc.canBuild(dirToBuild, robotToBuild)) {
-							if (rc.isCoreReady()){
-								rc.build(dirToBuild, robotToBuild);
-							}
-							break;
-						}
-					}
-				}
-			}
-		}else if(rallyLoc == null){//then wait
-			//rc.yield();//replace later
-		}else if(here.distanceSquaredTo(rallyLoc) > 4){
-			Debug.setStringRR("rallyLocx" + rallyLoc.x + "rallyLocy" + rallyLoc.y);
-			NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
-			if (rc.isCoreReady()){ 
-				Nav.goTo(rallyLoc, safety);
-			}
-		}else{
-			robotToBuild = RobotType.TURRET;
 
-			Direction dirToBuild;
-			MapLocation archonLoc = rc.getLocation();
-			//System.out.println((archonLoc.x + archonLoc.y) % 2);
-			if (((archonLoc.x + archonLoc.y) % 2) == 0){
-				//System.out.println("on black diag");			
-				for(int i=1; i<=7; i=i+2){
-					dirToBuild = directions[i];
-					if (rc.hasBuildRequirements(robotToBuild)){
-						if (rc.canBuild(dirToBuild, robotToBuild)) {
-							if (rc.isCoreReady()){
-								rc.build(dirToBuild, robotToBuild);
-							}
-							break;
-						}
-					}
-				}
-			} else {//archon is on white, build on 
-				//System.out.println("on white rook");
-				for(int i=0; i<=7; i=i+2){
-					dirToBuild = directions[i];
-					if (rc.hasBuildRequirements(robotToBuild)){
-						if (rc.canBuild(dirToBuild, robotToBuild)) {
-							if (rc.isCoreReady()){
-								rc.build(dirToBuild, robotToBuild);
-							}
-							break;
-						}
-					}
-				}
+		if (minBot != null && minBot.health < minBot.maxHealth-1)
+		{
+			rc.repair(minBot.location);
+			return true;
+		}
+		return false;
+	}
+
+	public static boolean tryBuildEven(RobotType robotToBuild) throws GameActionException
+	{
+		if (!rc.isCoreReady())
+			return false;
+		if (!rc.hasBuildRequirements(robotToBuild))
+			return false;
+
+
+		Direction dirToBuild = Direction.values()[rand.nextInt(8)];
+
+		// make sure we are building on even square (see function name)
+		if (MapUtil.isLocOdd(here.add(dirToBuild)))
+			dirToBuild = dirToBuild.rotateRight();
+
+		// rotate right two at a time
+		for(int i=0; i<4; i++)
+		{
+			if (rc.canBuild(dirToBuild, robotToBuild))
+			{
+				rc.build(dirToBuild, robotToBuild);
+				return true;
+			}
+
+			dirToBuild = dirToBuild.rotateRight().rotateRight();
+		} 
+
+		// failed to find any build locations
+		return false;
+	}
+
+	public static boolean tryBuildOdd(RobotType robotToBuild) throws GameActionException
+	{
+		if (!rc.isCoreReady())
+			return false;
+		if (!rc.hasBuildRequirements(robotToBuild))
+			return false;
+
+
+		Direction dirToBuild = Direction.values()[rand.nextInt(8)];
+
+		// make sure we are building on odd square (see function name)
+		if (!MapUtil.isLocOdd(here.add(dirToBuild)))
+			dirToBuild = dirToBuild.rotateRight();
+
+		// rotate right two at a time
+		for(int i=0; i<4; i++)
+		{
+			if (rc.canBuild(dirToBuild, robotToBuild))
+			{
+				rc.build(dirToBuild, robotToBuild);
+				return true;
+			}
+
+			dirToBuild = dirToBuild.rotateRight().rotateRight();
+		} 
+
+		// failed to find any build locations
+		return false;
+	}
+	
+	public static boolean tryMoveNearRally() throws GameActionException
+	{
+		if(Message.rallyLocation == null)
+		{
+			// have to wait until rally loc arrives. is this robust??
+		}
+		else if(here.distanceSquaredTo(Message.rallyLocation) > 4)
+		{
+			NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
+			if (rc.isCoreReady())
+			{ 
+				Nav.goTo(Message.rallyLocation, safety);
 			}
 		}
+		else
+		{
+			return true;
+		}
+		return false;		
+	}
+
+	public static boolean tryBuildUnits(MapLocation nextTurretLoc) throws GameActionException
+	{
+		// so other archons might get a chance to build.
+		if (rand.nextBoolean()) return false;
+		
+		RobotType nextRobot = RobotType.values()[robotSchedule[scheduleCounter%robotSchedule.length]];
+		if (nextRobot == RobotType.SCOUT)
+		{
+			if (tryBuildEven(nextRobot)) 
+			{
+				scheduleCounter++;
+				return true;
+			}
+		}
+		else if (nextRobot == RobotType.TURRET) 
+		{
+			// Debug.setStringAK("NextTurretDest: " + nextTurretLoc);
+
+			if (tryBuildOdd(nextRobot))
+			{
+				waitingToBuild = 0;
+				scheduleCounter++;
+				Message.sendBuiltMessage();
+				return true;
+			}
+		}
+		
+		return false;
+	}
+
+	public static boolean tryMoveNearTurretDest(MapLocation nextTurretLoc) throws GameActionException
+	{
+		if (nextTurretLoc == null)
+			return false;
+		
+		if (here.isAdjacentTo(nextTurretLoc))
+			return false;
+		
+		if (rc.isCoreReady())
+		{
+			NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
+			Nav.goTo(nextTurretLoc, safety);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	
+	public static boolean amIBeingAttacked() throws GameActionException
+	{
+		if (rc.getRoundNum()-roundLastAttacked < 100 && roundLastAttacked > 0)
+		{
+			return true;
+		}
+		
+		if (rc.getHealth() < myHealth)
+		{
+			myHealth = rc.getHealth();
+			locLastAttacked = here;
+			roundLastAttacked = rc.getRoundNum();
+			return true;
+		}
+		
+		return false;
 	}
 }
