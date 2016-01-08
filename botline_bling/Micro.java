@@ -29,11 +29,27 @@ public class Micro extends RobotPlayer
 	private static RobotInfo lowestHealthZombie = null;
 	private static boolean enemyViperInSightRange = false;
 	private static boolean inZombieSensorRange = false;
+	private static boolean isTargetSighted = false;
+	private static MapLocation sightedTargetLoc = null;
 	
 	public static void updateEnemyInfo() throws GameActionException
 	{
 		nearbyEnemies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, theirTeam);
         nearbyZombies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.ZOMBIE);
+        // try to additionally make use of scouted information and assume all scouted enemies are turrets to be ultra-skittish
+        //Debug.setStringSJF("pre-check");
+        MapLocation sightedTargetLoc = Zombie.getSightedTarget();
+        if (sightedTargetLoc != null)
+        	if (here.distanceSquaredTo(sightedTargetLoc) <= RobotType.TURRET.attackRadiusSquared)
+        	{
+        		//Debug.setStringSJF("sighted target exists and is in firing range of me.");
+        		amISafe = false;
+        		isTargetSighted = true;
+        	}
+        	//else
+        		//Debug.setStringSJF("sighted target exists but is not in firing range.");
+        //else
+        	//Debug.setStringSJF("no sighted target.");
 	}
 	
 	public static void updateEnemyInfo(RobotInfo[] opponents, RobotInfo[] zombies) throws GameActionException
@@ -277,7 +293,19 @@ public class Micro extends RobotPlayer
 		// get the retreat direction
 		Direction retreatDir = null;
 		if (dirToClosestEnemy == Direction.NONE && dirToClosestZombie == Direction.NONE) // no attackers
-			return false; // no enemies at all, code should never get here bc this method wouldn't be called
+		{
+			// no enemies in our sight range, check for a sighted enemy
+			if (isTargetSighted)
+			{
+				retreatDir = here.directionTo(sightedTargetLoc).opposite();
+				Debug.setStringSJF("retreating to " + retreatDir.toString() + " from a sighted target");
+			}
+			else
+			{
+				Debug.setStringSJF("no enemies, no sighted enemies, we shouldn't have even tried to retreat");
+				return false;
+			}
+		}
 		
 		// figure out if we can safely retreat, and do it if we can
 		MapLocation retreatLoc = here.add(dirToClosestEnemy.opposite()).add(dirToClosestZombie.opposite());
@@ -455,7 +483,7 @@ public class Micro extends RobotPlayer
 			
 		}
 		
-		Debug.setStringSJF("enemy dir = " + dirToClosestEnemy.toString() + ", zombie dir = " + dirToClosestZombie.toString());
+		//Debug.setStringSJF("enemy dir = " + dirToClosestEnemy.toString() + ", zombie dir = " + dirToClosestZombie.toString());
 		
 		// figure out if i am in shooting range of anyone
 		boolean enemyInRange = ( closestEnemy != null && here.distanceSquaredTo(closestEnemy.location) <= closestEnemy.type.attackRadiusSquared );
