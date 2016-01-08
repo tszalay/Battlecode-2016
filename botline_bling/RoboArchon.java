@@ -11,10 +11,13 @@ public class RoboArchon extends RobotPlayer
 	static int maxWaitBuildTime = 10;
 	static int maxWaitForRally = 600;
 	static boolean arrivedAtRally = false;
+	static int roundLastAttacked = 0;
+	static MapLocation locLastAttacked = null;
+	static double myHealth = 0;
 
 	public static void init() throws GameActionException
 	{
-
+		myHealth = rc.getHealth();
 	}
 	
 	public static void turn() throws GameActionException
@@ -30,20 +33,40 @@ public class RoboArchon extends RobotPlayer
 			}
 		}
 		
-		if (!arrivedAtRally) 
+		if (!Micro.tryAvoidBeingShot())
 		{
-			arrivedAtRally = tryMoveNearRally();
-		}
-		else {
-			nextTurretLoc = MapUtil.findClosestTurtle();		
-			if	(!tryBuildUnits(nextTurretLoc)) {
-				Debug.setStringAK("trying to move to turret dest" + nextTurretLoc);
-				tryMoveNearTurretDest(nextTurretLoc);
+			if (amIBeingAttacked())
+			{
+				// find closest turtle location, and move away
+				NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnitsAndStayInTurtle();
+				if (rc.isCoreReady())
+					Nav.goTo(here.add(here.directionTo(MapUtil.findClosestTurtle()).opposite()), safety);
+			}
+			else
+			{
+				if (!arrivedAtRally) 
+				{
+					arrivedAtRally = tryMoveNearRally();
+				}
+				else
+				{
+					nextTurretLoc = MapUtil.findClosestTurtle();
+					
+					// if it's too close to where i was last shot, change the nextTurretLoc
+					if (nextTurretLoc == null || ( locLastAttacked != null  && nextTurretLoc.distanceSquaredTo(locLastAttacked)<2 ) )
+						nextTurretLoc = here.add(here.directionTo(locLastAttacked).opposite());
+					
+					if	(!tryBuildUnits(nextTurretLoc))
+					{
+						Debug.setStringAK("trying to move to turret dest" + nextTurretLoc);
+						tryMoveNearTurretDest(nextTurretLoc);
+					}
+				}
 			}
 		}
 		
 		//repair anyone nearby
-		tryRepair();		
+		tryRepair();
 
 	}	
 
@@ -128,34 +151,7 @@ public class RoboArchon extends RobotPlayer
 		// failed to find any build locations
 		return false;
 	}
-
-	public static MapLocation findNextTurretDest(MapLocation dest) throws GameActionException
-	{
-		// start in random direction
-		Direction d0 = Direction.values()[rand.nextInt(8)];
-		if (!MapUtil.isLocOdd(here.add(d0)))
-			d0 = d0.rotateRight();
-
-		// check four adjacent odd squares
-		for (int i=0; i<4; i++)
-		{
-			MapLocation ml = here.add(d0);
-			if (!rc.isLocationOccupied(ml) && rc.senseRubble(ml) < GameConstants.RUBBLE_SLOW_THRESH && rc.onTheMap(ml))
-			{
-				return ml;
-			}
-			// rotate right twice to keep parity
-			d0 = d0.rotateRight().rotateRight();
-		}
-
-		if (dest != null)
-			return dest;
-
-		// all else fails, return a random direction or something
-		return here.add(rand.nextInt(200)-100,rand.nextInt(200)-100);
-
-	}
-
+	
 	public static boolean tryMoveNearRally() throws GameActionException
 	{
 		if(Message.rallyLocation == null)
@@ -221,5 +217,21 @@ public class RoboArchon extends RobotPlayer
 		{
 			return false;
 		}
+	}
+	
+	public static boolean amIBeingAttacked() throws GameActionException
+	{
+		if (rc.getRoundNum()-roundLastAttacked < 10 && roundLastAttacked > 0)
+		{
+			return true;
+		}
+		if (rc.getHealth() < myHealth)
+		{
+			myHealth = rc.getHealth();
+			locLastAttacked = here;
+			roundLastAttacked = rc.getRoundNum();
+			return true;
+		}
+		return false;
 	}
 }
