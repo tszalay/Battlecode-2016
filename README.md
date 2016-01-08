@@ -16,6 +16,7 @@
   - If archon scouts senses turret, backs up to give Archon enough room to retreat
 - Create separate turret signal from zombie signal so everyone knows where turrets are
 - Archons can remember all seen turrets and know not to build/go there
+- Scouts have sense of what parts of the map have been explored, know to cover all of it
 
 ### _Longer Term_
 - Use simplified/not-bug nav to move inside ball
