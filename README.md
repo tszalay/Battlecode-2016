@@ -5,14 +5,25 @@
 
 ## Master TODO
 
-### _Short Term_
-- Scouts moving
-- Chaos scouts
+### _Shorter Term_
+- Functions to find distance to edge of turtle and move along edge of turtle in a direction
+  - Should prevent archons from getting stuck in a corner
+- Prioritize turtle build locations that have more adjacent turrets
+  - Should help prevent long branches
+- Sighting scouts moving to/along edge, idle ones (no enemies or movement) clear rubble
+- Free scouts fighting for freedom
+- Add Archon scouts: make sure each Archon ALWAYS has an adjacent scout
+  - If archon scouts senses turret, backs up to give Archon enough room to retreat
+- Create separate turret signal from zombie signal so everyone knows where turrets are
+- Archons can remember all seen turrets and know not to build/go there
 
-### _Medium Term_
-- Nav overhaul to move in crowded spaces
-- Micro overhaul to account for different considerations
-- Global strategy/build direction
+### _Longer Term_
+- Use simplified/not-bug nav to move inside ball
+- Micro overhaul to account for different enemy considerations
+- Keep track of interesting waypoints (estimated/observed den locations, seen parts, seen enemies)
+- Bored turrets pack up and move to more interesting directions
+
+
 
 ## Coding guidelines
 
