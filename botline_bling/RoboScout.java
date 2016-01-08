@@ -55,9 +55,10 @@ public class RoboScout extends RobotPlayer
 	public static void doTurtleScout() throws GameActionException
 	{
 		// go to edge of turtle by moving away from rally location but staying in turtle
-		NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnitsAndStayInTurtle();
-		if (getNumTurretsNearby(here, 6) > 11 || getNumTurretsNearby(here, 3) < 3) // we're not at the edge
-			Nav.goTo(here.add(here.directionTo(rally).opposite()), safety); // move only if we're not at the edge
+		NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
+		//if (getNumTurretsNearby(here, 6) > 11 || getNumTurretsNearby(here, 3) < 3) // we're not at the edge
+			//Nav.goTo(here.add(here.directionTo(rally).opposite()), safety); // move only if we're not at the edge
+		Nav.goTo(MapUtil.findClosestTurtle(), safety);
 	}
 	
 	public static int getNumTurretsNearby(MapLocation loc, int squareDist)

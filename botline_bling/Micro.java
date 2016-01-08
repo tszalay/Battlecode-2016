@@ -86,7 +86,8 @@ public class Micro extends RobotPlayer
 		
 		// first priority is to attack an enemy archon
 		if (enemyPriorityTarget != null)
-			return tryAttackBot(enemyPriorityTarget);
+			if (!tryAttackBot(enemyPriorityTarget))
+				return tryRetreat();
 		
 		// deal with the case of zombies nearby
 		if (!amISafe)
@@ -291,19 +292,16 @@ public class Micro extends RobotPlayer
 		if (!rc.isCoreReady())
 			return false;
 		
-		NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
+		NavSafetyPolicy safety = new SafetyPolicyRecklessAbandon();
 		
 		// get the retreat direction
 		Direction retreatDir = null;
 		if (dirToClosestEnemy == Direction.NONE && dirToClosestZombie == Direction.NONE) // no attackers
 			return false;
 		
-		// figure out if we can safely retreat, and do it if we can
+		// retreat if we can within the bounds of the safety policy
 		MapLocation retreatLoc = here.add(dirToClosestEnemy.opposite()).add(dirToClosestZombie.opposite());
-		if (safety.isSafeToMoveTo(retreatLoc))
-			return (tryMove(retreatLoc, safety));
-		else
-			return false;	
+		return (tryMove(retreatLoc, safety));
 	}
 	
 	public static boolean tryRushEnemies() throws GameActionException

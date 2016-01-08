@@ -1,5 +1,7 @@
 package botline_bling;
 
+import java.util.ArrayList;
+
 import battlecode.common.*;
 
 // There are three NavSafetyPolicies:
@@ -13,13 +15,26 @@ interface NavSafetyPolicy {
     public boolean isSafeToMoveTo(MapLocation loc);
 }
 
+class SafetyPolicyRecklessAbandon extends RobotPlayer implements NavSafetyPolicy
+{
+	public SafetyPolicyRecklessAbandon()
+	{
+		// who cares about anything just go
+	}
+	
+	public boolean isSafeToMoveTo(MapLocation loc)
+	{
+		return true;
+	}
+}
+
 class SafetyPolicyAvoidAllUnits extends RobotPlayer implements NavSafetyPolicy
 {
     RobotInfo[] nearbyEnemies;
 
-    public SafetyPolicyAvoidAllUnits()
+    public SafetyPolicyAvoidAllUnits() throws GameActionException
     {
-    	RobotInfo[] nearbyEnemies = rc.senseHostileRobots(here, rc.getType().sensorRadiusSquared);
+    	this.nearbyEnemies = Nav.getAllNearbyEnemies();
     }
     
     public SafetyPolicyAvoidAllUnits(RobotInfo[] nearbyEnemies, RobotInfo[] nearbyZombies)
@@ -71,9 +86,9 @@ class SafetyPolicyAvoidAllUnitsAndStayInTurtle extends RobotPlayer implements Na
     RobotInfo[] nearbyEnemies;
     RobotInfo[] adjacentAlliedUnits = null;
 
-    public SafetyPolicyAvoidAllUnitsAndStayInTurtle()
+    public SafetyPolicyAvoidAllUnitsAndStayInTurtle() throws GameActionException
     {
-        RobotInfo[] nearbyEnemies = rc.senseHostileRobots(here, rc.getType().sensorRadiusSquared);
+    	this.nearbyEnemies = Nav.getAllNearbyEnemies();
     }
     
     public SafetyPolicyAvoidAllUnitsAndStayInTurtle(RobotInfo[] nearbyEnemies, RobotInfo[] nearbyZombies)
@@ -161,10 +176,9 @@ class SafetyPolicyAvoidOtherTeam extends RobotPlayer implements NavSafetyPolicy
 {
     RobotInfo[] nearbyEnemies;
 
-    public SafetyPolicyAvoidOtherTeam()
+    public SafetyPolicyAvoidOtherTeam() throws GameActionException
     {
-    	RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, theirTeam);
-    	this.nearbyEnemies = nearbyEnemies;
+    	this.nearbyEnemies = Nav.getNearbyEnemies();
     }
     
     public SafetyPolicyAvoidOtherTeam(RobotInfo[] nearbyEnemies)
@@ -208,8 +222,7 @@ class SafetyPolicyAvoidZombies extends RobotPlayer implements NavSafetyPolicy
 
     public SafetyPolicyAvoidZombies()
     {
-        RobotInfo[] nearbyZombies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.ZOMBIE);
-    	this.nearbyEnemies = nearbyZombies;
+    	this.nearbyEnemies = rc.senseNearbyRobots(here, rc.getType().sensorRadiusSquared, Team.ZOMBIE);
     }
     
     public SafetyPolicyAvoidZombies(RobotInfo[] nearbyZombies)
@@ -254,7 +267,55 @@ public class Nav extends RobotPlayer
         rc.move(dir);
         return true;
     }
-
+    
+    public static RobotInfo[] getAllNearbyEnemies() throws GameActionException
+	{
+		// gets nearby enemies, those we can see, and those that scouts sent us messages about
+    	RobotInfo [] nearbyEnemies = rc.senseHostileRobots(here, rc.getType().sensorRadiusSquared);
+        
+        // additionally make use of scouted enemy turrets by adding them to enemy list
+        ArrayList<SignalLocation> knownEnemyTurretSignalLocs = Message.enemyTurretLocs;
+        if (knownEnemyTurretSignalLocs != null && knownEnemyTurretSignalLocs.size() > 0)
+        {
+	        RobotInfo[] enemiesNearAndFar = new RobotInfo[nearbyEnemies.length+knownEnemyTurretSignalLocs.size()];
+        	for (int i=0; i<nearbyEnemies.length; i++)
+        	{
+        		enemiesNearAndFar[i] = nearbyEnemies[i];
+        	}
+	        for (int i=0; i<knownEnemyTurretSignalLocs.size(); i++)
+	        {
+	        	MapLocation loc = knownEnemyTurretSignalLocs.get(i).loc;
+	        	enemiesNearAndFar[i+nearbyEnemies.length] = new RobotInfo(0, theirTeam, RobotType.TURRET, loc, 0, 0, RobotType.TURRET.attackPower, RobotType.TURRET.maxHealth, RobotType.TURRET.maxHealth, 0, 0); 
+	        }
+	        return enemiesNearAndFar;
+        }
+        return nearbyEnemies;
+	}
+    
+    public static RobotInfo[] getNearbyEnemies() throws GameActionException
+	{
+		// gets nearby enemies, those we can see, and those that scouts sent us messages about
+    	RobotInfo [] nearbyEnemies = rc.senseNearbyRobots(here, rc.getType().sensorRadiusSquared, theirTeam);
+        
+        // additionally make use of scouted enemy turrets by adding them to enemy list
+        ArrayList<SignalLocation> knownEnemyTurretSignalLocs = Message.enemyTurretLocs;
+        if (knownEnemyTurretSignalLocs != null && knownEnemyTurretSignalLocs.size() > 0)
+        {
+	        RobotInfo[] enemiesNearAndFar = new RobotInfo[nearbyEnemies.length+knownEnemyTurretSignalLocs.size()];
+        	for (int i=0; i<nearbyEnemies.length; i++)
+        	{
+        		enemiesNearAndFar[i] = nearbyEnemies[i];
+        	}
+	        for (int i=0; i<knownEnemyTurretSignalLocs.size(); i++)
+	        {
+	        	MapLocation loc = knownEnemyTurretSignalLocs.get(i).loc;
+	        	enemiesNearAndFar[i+nearbyEnemies.length] = new RobotInfo(0, theirTeam, RobotType.TURRET, loc, 0, 0, RobotType.TURRET.attackPower, RobotType.TURRET.maxHealth, RobotType.TURRET.maxHealth, 0, 0); 
+	        }
+	        return enemiesNearAndFar;
+        }
+        return nearbyEnemies;
+	}
+    
     private static boolean canMove(Direction dir) {
     	if (rc.getType() == RobotType.SCOUT) // if you're a scout, you can move over rubble, so don't worry about it
     	{
