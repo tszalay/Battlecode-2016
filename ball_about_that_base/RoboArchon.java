@@ -2,6 +2,14 @@ package ball_about_that_base;
 
 import battlecode.common.*;
 
+//enum for encoding state
+enum State
+{
+	RALLYING,
+	BUILDING,
+	SEARCHING
+}
+
 public class RoboArchon extends RobotPlayer
 {	
 	static MapLocation nextTurretLoc = null;
@@ -9,18 +17,18 @@ public class RoboArchon extends RobotPlayer
 	static int scheduleCounter = rand.nextInt(100);
 	static int waitingToBuild = 0;
 	static int maxWaitBuildTime = 10;
-	static int maxWaitForRally = 600;
+	static final int MAX_ROUNDS_TO_RALLY = 600;
 	static boolean arrivedAtRally = false;
-	static int roundLastAttacked = 0;
-	static MapLocation locLastAttacked = null;
-	static double myHealth = rc.getType().maxHealth;
+	static boolean canBuildNow = false;
+	static State myState;
 
 	public static void init() throws GameActionException
 	{
-		myHealth = rc.getHealth();
+		myState = State.RALLYING;
 	}
 	
-	public static void turn() throws GameActionException
+	
+	public static void bull()
 	{
 		if (rc.getRoundNum() == RoboScout.SIGNAL_ROUND)
 			Message.calcRallyLocation();
@@ -69,7 +77,9 @@ public class RoboArchon extends RobotPlayer
 		//repair anyone nearby
 		tryRepair();
 
-	}	
+	}
+	
+	
 
 	public static boolean tryRepair() throws GameActionException
 	{
@@ -224,21 +234,100 @@ public class RoboArchon extends RobotPlayer
 		}
 	}
 	
-	public static boolean amIBeingAttacked() throws GameActionException
+	public static DirectionSet getValidBuildDirections() throws GameActionException
 	{
-		if (rc.getRoundNum()-roundLastAttacked < 100 && roundLastAttacked > 0)
-		{
-			return true;
-		}
+		// what's next to build
+		RobotType nextRobotType = RobotType.values()[robotSchedule[scheduleCounter%robotSchedule.length]];
 		
-		if (rc.getHealth() < myHealth)
+		// check nearby open squares
+		DirectionSet d = new DirectionSet();
+		for (Direction dir : Direction.values()) // check all Directions around
 		{
-			myHealth = rc.getHealth();
-			locLastAttacked = here;
-			roundLastAttacked = rc.getRoundNum();
-			return true;
+			if (rc.canBuild(dir, nextRobotType))
+				d.add(dir); // add this direction to the DirectionSet of valid build directions
+		}
+		return d;
+	}
+	
+	public static boolean canBuildNow() throws GameActionException
+	{
+		// what's next to build
+		RobotType nextRobotType = RobotType.values()[robotSchedule[scheduleCounter%robotSchedule.length]];
+		
+		// check parts
+		if (rc.getTeamParts() >= nextRobotType.partCost) // we have enough parts to build the next robot
+		{
+			// check nearby open squares
+			for (Direction dir : Direction.values()) // check all Directions around
+			{
+				if (rc.canBuild(dir, nextRobotType))
+					return true; // stop as soon as we find a valid spot
+			}
 		}
 		
 		return false;
+	}
+	
+	public static void doRally() throws GameActionException
+	{
+		
+	}
+	
+	public static void doBuild() throws GameActionException
+	{
+		DirectionSet dValidBuild = getValidBuildDirections();
+	}
+	
+	public static void doSearch() throws GameActionException
+	{
+		
+	}
+	
+	private static void updateState() throws GameActionException // this will probably need tweaking
+	{
+		// priority 1: go to rally
+		if (!arrivedAtRally && rc.getRoundNum() < MAX_ROUNDS_TO_RALLY)
+		{
+			myState = State.RALLYING;
+			return;
+		}
+		
+		// priority 2: if we can build, build
+		if (canBuildNow())
+		{
+			myState = State.BUILDING;
+			return;
+		}
+			
+		// priority 3: search for stuff
+		myState = State.SEARCHING;
+		return;
+	}
+	
+	public static void turn() throws GameActionException
+	{
+		// avoiding taking damage is the top priority
+		if (!Micro.tryAvoidBeingShot())
+		{
+			// state machine update
+			updateState();
+			
+			// do turn according to state
+			switch (myState)
+			{
+			case RALLYING:
+				doRally();
+				break;
+			case BUILDING:
+				doBuild();
+				break;
+			case SEARCHING:
+				doSearch();
+				break;
+			default:
+				System.out.println("Archon state machine is messed up.");
+				break;
+			}
+		}
 	}
 }

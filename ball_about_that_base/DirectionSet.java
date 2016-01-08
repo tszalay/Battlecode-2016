@@ -17,14 +17,19 @@ public class DirectionSet extends RobotPlayer
 	{
 	}
 	
-	public void and(DirectionSet d)
+	private DirectionSet(int ds)
 	{
-		dirs &= d.dirs;
+		this.dirs = ds;
 	}
 	
-	public void or(DirectionSet d)
+	public DirectionSet and(DirectionSet d)
 	{
-		dirs |= d.dirs;
+		return new DirectionSet(dirs & d.dirs);
+	}
+	
+	public DirectionSet or(DirectionSet d)
+	{
+		return new DirectionSet(dirs | d.dirs);
 	}
 	
 	public boolean any()
@@ -90,5 +95,59 @@ public class DirectionSet extends RobotPlayer
 	public void add(Direction d)
 	{
 		dirs |= (1<<d.ordinal());
+	}
+	
+	public DirectionSet getOddSquares(MapLocation currentLoc)
+	{
+		// return the adjacent DirectionSet of squares (from currentLoc) that are odd
+		
+		if (currentLoc == null)
+			return null;
+		
+		DirectionSet odds = new DirectionSet();
+		
+		if ( ((currentLoc.x + currentLoc.y) % 2) == 0)  // currentLoc is even
+		{
+			odds.add(Direction.NORTH);
+			odds.add(Direction.SOUTH);
+			odds.add(Direction.EAST);
+			odds.add(Direction.WEST);
+		}
+		else // currentLoc is odd
+		{
+			odds.add(Direction.NORTH_EAST);
+			odds.add(Direction.SOUTH_EAST);
+			odds.add(Direction.SOUTH_WEST);
+			odds.add(Direction.NORTH_WEST);
+		}
+		
+		return odds;
+	}
+	
+	public DirectionSet getEvenSquares(MapLocation currentLoc)
+	{
+		// return the adjacent DirectionSet of squares (from currentLoc) that are even
+		
+		if (currentLoc == null)
+			return null;
+		
+		DirectionSet evens = new DirectionSet();
+		
+		if ( ((currentLoc.x + currentLoc.y) % 2) == 0)  // currentLoc is even
+		{
+			evens.add(Direction.NORTH_EAST);
+			evens.add(Direction.SOUTH_EAST);
+			evens.add(Direction.SOUTH_WEST);
+			evens.add(Direction.NORTH_WEST);
+		}
+		else // currentLoc is odd
+		{
+			evens.add(Direction.NORTH);
+			evens.add(Direction.SOUTH);
+			evens.add(Direction.EAST);
+			evens.add(Direction.WEST);
+		}
+		
+		return evens;
 	}
 }
