@@ -19,7 +19,6 @@ public class RobotPlayer
 	// BC Engine -> RobotPlayer.run -> RoboXXX.run
     public static void run(RobotController robotc)
 	{
-		DirectionSet d = new DirectionSet();
 		// globals in our class
 		RobotPlayer.rc = robotc;
 		RobotPlayer.rand = new Random(rc.getID());
