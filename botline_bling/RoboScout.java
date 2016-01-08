@@ -110,7 +110,7 @@ public class RoboScout extends RobotPlayer
 				// rush the nearest enemies
 				if (turrets != null)
 				{
-					MapLocation closestTurretLoc = dens[0].location;
+					MapLocation closestTurretLoc = turrets[0].location;
 					for (RobotInfo t : turrets)
 					{
 						if (here.distanceSquaredTo(t.location) < here.distanceSquaredTo(closestTurretLoc))
