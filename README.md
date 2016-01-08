@@ -6,8 +6,7 @@
 ## Master TODO
 
 ### _Short Term_
-- Archons moving around and building
-- Scouts moving and sighting
+- Scouts moving
 - Chaos scouts
 
 ### _Medium Term_
