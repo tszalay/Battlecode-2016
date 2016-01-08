@@ -7,7 +7,7 @@ import battlecode.common.*;
 // --- only extending RobotPlayer for rand(), not "here" or anything like that!!!
 public class DirectionSet extends RobotPlayer
 {
-	static final int[] dirOffsets = {0,1,7,2,6,3,5,4};
+	static final int[] dirOffsets = {1,7,2,6,3,5,4};
 	
 	
 	int dirs = 0;
@@ -17,19 +17,14 @@ public class DirectionSet extends RobotPlayer
 	{
 	}
 	
-	private DirectionSet(int ds)
+	public void and(DirectionSet d)
 	{
-		dirs = ds;
+		dirs &= d.dirs;
 	}
 	
-	public DirectionSet and(DirectionSet d)
+	public void or(DirectionSet d)
 	{
-		return new DirectionSet(dirs & d.dirs);
-	}
-	
-	public DirectionSet or(DirectionSet d)
-	{
-		return new DirectionSet(dirs | d.dirs);
+		dirs |= d.dirs;
 	}
 	
 	public boolean any()
@@ -68,13 +63,15 @@ public class DirectionSet extends RobotPlayer
 	
 	public Direction getDirectionTowards(MapLocation from, MapLocation to)
 	{
-		Direction best = from.directionTo(to);
-		
-		// first handle base case of NONE if from and to are equal
-		if (isValid(best))
-			return best;
+		// if they're just straight up null
 		if (to == null || from == null)
 			return getRandomValid();
+		
+		Direction best = from.directionTo(to);
+		
+		// first handle base case
+		if (isValid(best))
+			return best;
 		
 		// otherwise let's go through offsets
 		int i0 = best.ordinal();
@@ -87,7 +84,7 @@ public class DirectionSet extends RobotPlayer
 
 		}
 		
-		return best;
+		return null;
 	}
 	
 	public void add(Direction d)
