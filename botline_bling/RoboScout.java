@@ -72,10 +72,41 @@ public class RoboScout extends RobotPlayer
     	return numTurretsAdjacent;
     }
 	
+	public static boolean sendSightedTarget(RobotInfo[] nearbyTargets) throws GameActionException
+	{
+		RobotInfo closestTarget = null;
+		
+		// prioritize the target with the biggest attack radius
+		for (RobotInfo ri : nearbyTargets)
+		{
+			if (closestTarget == null || ri.type.attackRadiusSquared > closestTarget.type.attackRadiusSquared)
+				closestTarget = ri;
+		}
+		
+		if (closestTarget != null)
+		{
+			switch (closestTarget.type)
+			{
+				case TURRET:
+					Message.sendMessageSignal(7,MessageType.ENEMY_TURRET,closestTarget.location);
+					break;
+				case ZOMBIEDEN:
+					Message.sendMessageSignal(7,MessageType.ZOMBIE_DEN,closestTarget.location);
+					break;
+				default:
+					Message.sendMessageSignal(7,MessageType.SIGHT_TARGET,closestTarget.location);
+					break;
+			}
+			return true;
+		}
+		
+		return false;
+	}
+	
 	public static void turn() throws GameActionException
 	{
         // send out info about sighted targets
-		Zombie.sendSightedTarget();
+		sendSightedTarget(rc.senseHostileRobots(here, RobotType.SCOUT.sensorRadiusSquared));
 		
 		if (rc.isCoreReady())
         {

@@ -40,13 +40,23 @@ public class Zombie extends RobotPlayer
 		// maybe prioritize ranged zombies/enemies?
 		for (RobotInfo ri : nearbyTargets)
 		{
+			// prioritize enemy turrets
+			if (ri.type == RobotType.TURRET)
+			{
+				closestTarget = ri;
+				continue;
+			}
+			
 			if (closestTarget == null || ri.location.distanceSquaredTo(here) < closestTarget.location.distanceSquaredTo(here))
 				closestTarget = ri;
 		}
 		
 		if (closestTarget != null)
 		{
-			Message.sendMessageSignal(7,MessageType.SIGHT_TARGET,closestTarget.location);
+			if (closestTarget.type == RobotType.TURRET)
+				Message.sendMessageSignal(7,MessageType.ENEMY_TURRET,closestTarget.location);
+			else
+				Message.sendMessageSignal(7,MessageType.SIGHT_TARGET,closestTarget.location);
 			return true;
 		}
 		

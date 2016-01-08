@@ -10,6 +10,7 @@ enum MessageType
 	SPAWN,
 	ZOMBIE_DEN,
 	SIGHT_TARGET,
+	ENEMY_TURRET,
 	MAP_EDGE,
 	SPAM,
 	FREE_BEER,
@@ -41,6 +42,7 @@ public class Message extends RobotPlayer
 	public static ArrayList<SignalLocation> archonLocs = new ArrayList<SignalLocation>();
 	public static ArrayList<SignalLocation> zombieDenLocs = new ArrayList<SignalLocation>();
 	public static ArrayList<SignalLocation> sightLocs = new ArrayList<SignalLocation>();
+	public static ArrayList<SignalLocation> enemyTurretLocs = new ArrayList<SignalLocation>();
 	// and for any transmitted enemy messages, only keep recents (300 rounds)
 	public static ArrayList<Signal> enemySignals = new ArrayList<Signal>();
 	
@@ -93,6 +95,9 @@ public class Message extends RobotPlayer
 				break;
 			case SIGHT_TARGET:
 				sightLocs.add(new SignalLocation(sig,readLocation(vals)));
+				break;
+			case ENEMY_TURRET:
+				enemyTurretLocs.add(new SignalLocation(sig,readLocation(vals)));
 				break;
 			case ZOMBIE_DEN:
 				zombieDenLocs.add(new SignalLocation(sig,readLocation(vals)));

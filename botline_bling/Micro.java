@@ -1,5 +1,7 @@
 package botline_bling;
 
+import java.util.ArrayList;
+
 import battlecode.common.*;
 
 public class Micro extends RobotPlayer
@@ -29,27 +31,28 @@ public class Micro extends RobotPlayer
 	private static RobotInfo lowestHealthZombie = null;
 	private static boolean enemyViperInSightRange = false;
 	private static boolean inZombieSensorRange = false;
-	private static boolean isTargetSighted = false;
-	private static MapLocation sightedTargetLoc = null;
 	
 	public static void updateEnemyInfo() throws GameActionException
 	{
 		nearbyEnemies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, theirTeam);
         nearbyZombies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.ZOMBIE);
-        // try to additionally make use of scouted information and assume all scouted enemies are turrets to be ultra-skittish
-        //Debug.setStringSJF("pre-check");
-        MapLocation sightedTargetLoc = Zombie.getSightedTarget();
-        if (sightedTargetLoc != null)
-        	if (here.distanceSquaredTo(sightedTargetLoc) <= RobotType.TURRET.attackRadiusSquared)
+        
+        // additionally make use of scouted enemy turrets by adding them to enemy list
+        ArrayList<SignalLocation> knownEnemyTurretSignalLocs = Message.enemyTurretLocs;
+        if (knownEnemyTurretSignalLocs != null && knownEnemyTurretSignalLocs.size() > 0)
+        {
+	        RobotInfo[] enemiesNearAndFar = new RobotInfo[nearbyEnemies.length+knownEnemyTurretSignalLocs.size()];
+        	for (int i=0; i<nearbyEnemies.length; i++)
         	{
-        		//Debug.setStringSJF("sighted target exists and is in firing range of me.");
-        		amISafe = false;
-        		isTargetSighted = true;
+        		enemiesNearAndFar[i] = nearbyEnemies[i];
         	}
-        	//else
-        		//Debug.setStringSJF("sighted target exists but is not in firing range.");
-        //else
-        	//Debug.setStringSJF("no sighted target.");
+	        for (int i=0; i<knownEnemyTurretSignalLocs.size(); i++)
+	        {
+	        	MapLocation loc = knownEnemyTurretSignalLocs.get(i).loc;
+	        	enemiesNearAndFar[i+nearbyEnemies.length] = new RobotInfo(0, theirTeam, RobotType.TURRET, loc, 0, 0, RobotType.TURRET.attackPower, RobotType.TURRET.maxHealth, RobotType.TURRET.maxHealth, 0, 0); 
+	        }
+	        nearbyEnemies = enemiesNearAndFar; // replace with concatenated array
+        }
 	}
 	
 	public static void updateEnemyInfo(RobotInfo[] opponents, RobotInfo[] zombies) throws GameActionException
@@ -293,19 +296,7 @@ public class Micro extends RobotPlayer
 		// get the retreat direction
 		Direction retreatDir = null;
 		if (dirToClosestEnemy == Direction.NONE && dirToClosestZombie == Direction.NONE) // no attackers
-		{
-			// no enemies in our sight range, check for a sighted enemy
-			if (isTargetSighted)
-			{
-				retreatDir = here.directionTo(sightedTargetLoc).opposite();
-				Debug.setStringSJF("retreating to " + retreatDir.toString() + " from a sighted target");
-			}
-			else
-			{
-				Debug.setStringSJF("no enemies, no sighted enemies, we shouldn't have even tried to retreat");
-				return false;
-			}
-		}
+			return false;
 		
 		// figure out if we can safely retreat, and do it if we can
 		MapLocation retreatLoc = here.add(dirToClosestEnemy.opposite()).add(dirToClosestZombie.opposite());
@@ -377,6 +368,9 @@ public class Micro extends RobotPlayer
 	{
 		// get robot info
 		updateEnemyInfo();
+		
+		// loop through known enemy turret locations
+		
 		
 		// loop through zombies
 		zombieTotalDamagePerTurn = 0;
