@@ -11,7 +11,7 @@ public class DirectionSet
 	static final int[] dirOffsets = {1,7,2,6,3,5,4};
 	
 	
-	int dirs = 0;
+	public int dirs = 0;
 	
 	// don't really need to do any construction
 	public DirectionSet()
@@ -21,6 +21,11 @@ public class DirectionSet
 	private DirectionSet(int ds)
 	{
 		this.dirs = ds;
+	}
+	
+	public void add(Direction d)
+	{
+		dirs |= (1<<d.ordinal());
 	}
 	
 	public DirectionSet and(DirectionSet d)
@@ -67,6 +72,7 @@ public class DirectionSet
 		return null;
 	}
 	
+	// this function is a bit broken. should return NONE if no direction that moves us closer to destination
 	public Direction getDirectionTowards(MapLocation from, MapLocation to)
 	{
 		// if they're just straight up null
@@ -93,9 +99,15 @@ public class DirectionSet
 		return null;
 	}
 	
-	public void add(Direction d)
+	public ArrayList<Direction> getDirections()
 	{
-		dirs |= (1<<d.ordinal());
+		ArrayList<Direction> dirlist = new ArrayList<Direction>();
+		
+		for (int i=0; i<9; i++)
+			if (( (1<<i)&this.dirs) > 0)
+				dirlist.add(Direction.values()[i]);
+		
+		return dirlist;
 	}
 	
 	public static DirectionSet getOddSquares(MapLocation currentLoc)
@@ -152,14 +164,14 @@ public class DirectionSet
 		return evens;
 	}
 	
-	public Direction[] getDirections()
+	public static DirectionSet makeAll()
 	{
-		ArrayList<Direction> dirlist = new ArrayList<Direction>();
-		
-		for (int i=0; i<9; i++)
-			if (( (1<<i)&this.dirs) > 0)
-				dirlist.add(Direction.values()[i]);
-		
-		return (Direction[])dirlist.toArray();
+		return new DirectionSet(511);
+
+	}
+	
+	public static DirectionSet makeStay()
+	{
+		return new DirectionSet(1<<Direction.NONE.ordinal());
 	}
 }
