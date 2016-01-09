@@ -4,58 +4,55 @@ import java.util.ArrayList;
 
 import battlecode.common.*;
 
-public class MicroPhone extends RobotPlayer
+public class MicroBase extends RobotPlayer
 {
-	public static Direction dirToClosestZombie = Direction.NONE;
-	public static Direction dirToClosestEnemy = Direction.NONE;
-	public static RobotInfo[] nearbyEnemies = new RobotInfo[0];
-	public static RobotInfo[] nearbyZombies = new RobotInfo[0];
-	public static RobotInfo[] nearbyAllies = new RobotInfo[0];
-	public static boolean amISafe = true;
-	private static double enemyTotalDamagePerTurn = 0;
-	private static double zombieTotalDamagePerTurn = 0;
-	private static double allyTotalDamagePerTurn = 0;
-	private static double enemyTotalHealth = 0;
-	private static double zombieTotalHealth = 0;
-	private static double allyTotalHealth = 0;
-	private static int turnsUntilFirstZombieAttacks = 100;
-	private static RobotInfo enemyPriorityTarget = null;
-	private static RobotInfo closestEnemy = null;
-	private static RobotInfo closestZombie = null;
-	private static RobotInfo lowestHealthEnemy = null;
-	private static RobotInfo lowestHealthZombie = null;
-	private static boolean enemyViperInSightRange = false;
-	private static boolean inZombieSensorRange = false;
+	public RobotInfo[] nearbyEnemies = null;
+	public RobotInfo[] nearbyZombies = null;
+	public RobotInfo[] nearbyAllies = null;
 	
-	public static void updateEnemyInfo() throws GameActionException
+	public DirectionSet canMoveDirs = null;
+	public DirectionSet safeMoveDirs = null;
+	public DirectionSet reallySafeMoveDirs = null;
+	
+	public DirectionSet oddDirs = null;
+	
+	public Direction closestZombieDir = null;
+	public Direction closestEnemyDir = null;
+	public Direction bestEscapeDir = null;
+	
+	
+	public MicroBase()
 	{
+	}
+	
+	public RobotInfo[] getNearbyEnemies()
+	{
+		if (nearbyEnemies != null)
+			return nearbyEnemies;
+		
 		nearbyEnemies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, theirTeam);
-        nearbyZombies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.ZOMBIE);
-        
-        // additionally make use of scouted enemy turrets by adding them to enemy list
-        ArrayList<SignalLocation> knownEnemyTurretSignalLocs = Message.enemyTurretLocs;
-        if (knownEnemyTurretSignalLocs != null && knownEnemyTurretSignalLocs.size() > 0)
-        {
-	        RobotInfo[] enemiesNearAndFar = new RobotInfo[nearbyEnemies.length+knownEnemyTurretSignalLocs.size()];
-        	for (int i=0; i<nearbyEnemies.length; i++)
-        	{
-        		enemiesNearAndFar[i] = nearbyEnemies[i];
-        	}
-	        for (int i=0; i<knownEnemyTurretSignalLocs.size(); i++)
-	        {
-	        	MapLocation loc = knownEnemyTurretSignalLocs.get(i).loc;
-	        	enemiesNearAndFar[i+nearbyEnemies.length] = new RobotInfo(0, theirTeam, RobotType.TURRET, loc, 0, 0, RobotType.TURRET.attackPower, RobotType.TURRET.maxHealth, RobotType.TURRET.maxHealth, 0, 0); 
-	        }
-	        nearbyEnemies = enemiesNearAndFar; // replace with concatenated array
-        }
+		return nearbyEnemies;
 	}
 	
-	public static void updateEnemyInfo(RobotInfo[] opponents, RobotInfo[] zombies) throws GameActionException
+	public RobotInfo[] getNearbyAllies()
 	{
-		nearbyEnemies = opponents;
-		nearbyZombies = zombies;
+		if (nearbyAllies != null)
+			return nearbyAllies;
+		
+		nearbyAllies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, ourTeam);
+		return nearbyAllies;
 	}
 	
+	public RobotInfo[] getNearbyZombies()
+	{
+		if (nearbyZombies != null)
+			return nearbyZombies;
+		
+		nearbyZombies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.ZOMBIE);
+		return nearbyZombies;
+	}
+	
+	/*	
 	public static void updateAllies() throws GameActionException
 	{
 		// find allies within sensor range
@@ -73,204 +70,6 @@ public class MicroPhone extends RobotPlayer
 				allyTotalHealth += friend.health;
 			}
 		}
-	}
-	
-	public static boolean tryAvoidBeingShot() throws GameActionException
-	{
-		collateNearbyRobotInfo();
-		
-		// first priority is to attack an enemy archon
-		if (enemyPriorityTarget != null)
-			if (!tryAttackBot(enemyPriorityTarget))
-				return tryRetreat();
-		
-		// deal with the case of zombies nearby
-		if (!amISafe)
-		{
-			if (!tryRetreat())
-				return tryAttackSomebody();
-			else
-				return true;
-		}
-		
-		// did nothing
-		return false;
-	}
-	
-	public static boolean tryRetreatFromEveryone() throws GameActionException
-	{
-		collateNearbyRobotInfo();
-		NavSafetyPolicy saftey = new SafetyPolicyAvoidAllUnits();
-		
-		// first priority is to attack an enemy archon
-		if (enemyPriorityTarget != null)
-			return tryAttackBot(enemyPriorityTarget);
-		
-		// deal with the case of zombies nearby
-		if (nearbyEnemies.length > 0 || nearbyZombies.length > 0)
-			if (!tryRetreat())
-				return tryAttackSomebody();
-			else
-				return true;
-		
-		// did nothing
-		return false;
-	}
-	
-	public static boolean tryRetreatIfOverpowered() throws GameActionException
-	{
-		collateNearbyRobotInfo();
-		
-		// first priority is to attack an enemy archon
-		if (enemyPriorityTarget != null)
-			return tryAttackBot(enemyPriorityTarget);
-		
-		// deal with the case of zombies nearby
-		if (nearbyZombies.length > 0)
-		{
-			if (amOverpowered())
-			{
-				// first try to retreat, if we cannot, then attack
-				if (!tryRetreat())
-					return tryAttackSomebody();
-				else
-					return true;
-			}
-			else
-			{
-				if (willDieInfected())
-					return tryRushEnemies();
-				else
-				{
-					if (!tryRetreat())
-						return tryAttackSomebody();
-					else
-						return true;
-				}
-			}
-		}
-		
-		// deal with the case of enemies nearby
-		if (nearbyEnemies.length > 0)
-		{
-			if (amOverpowered())
-			{
-				// first try to retreat, if we cannot, then attack
-				if (!tryRetreat())
-					return tryAttackSomebody();
-				else
-					return true;
-			}
-			else
-			{
-				return tryAttackSomebody();
-			}
-		}
-		
-		// did nothing
-		return false;
-	}
-	
-	public static void doAvoidDyingInfectedAtAnyCost() throws GameActionException
-	{
-		collateNearbyRobotInfo();
-		
-		// check if we're in danger of dying infected
-		if (!willDieInfected())
-		{
-			if (imminentInfection())
-			{
-				// check if we can retreat to prevent infection
-				if (!tryRetreat())
-					// otherwise commit suicide
-					rc.disintegrate();
-			}
-			else // we are not in danger
-			{
-				if (nearbyZombies.length==0)
-					tryAttackSomebody();
-				else
-				{
-					if (!tryRetreat())
-						tryAttackSomebody();
-				}
-			}
-		}
-		else // we will die infected, try to rush enemies
-		{
-			if (!tryRushEnemies())
-				tryAttackSomebody();
-		}
-		
-	}
-	
-	public static boolean tryKiteZombies(MapLocation target) throws GameActionException
-	{
-		// fool around avoiding things until we are seen by zombies, then kite toward target
-		
-		// update enemies
-		collateNearbyRobotInfo();
-		
-		// check if we can be seen by zombies
-		if (inZombieSensorRange)
-		{
-			// if so, kite toward target
-			NavSafetyPolicy safety = new SafetyPolicyAvoidZombies(nearbyZombies);
-			Nav.goTo(target, safety);
-			return true;
-		}
-		else
-		{
-			// skittish behavior, avoidance tactics
-			// first try to retreat, if we cannot, then attack
-			if (!tryRetreat())
-				tryAttackSomebody();
-			return false;
-		}
-	}
-	
-	public static boolean amOverpowered() throws GameActionException
-	{
-		// add up friendly firepower
-		updateAllies();
-		
-		// compare enemy firepower with ours
-		double damageWeInflictBeforeDeath = allyTotalDamagePerTurn / ( rc.getHealth() / (enemyTotalDamagePerTurn + zombieTotalDamagePerTurn) );
-		double damageTheyInflictBeforeDeath = enemyTotalDamagePerTurn / (enemyTotalHealth / allyTotalDamagePerTurn);
-		return ( damageWeInflictBeforeDeath > damageTheyInflictBeforeDeath );
-	}
-
-	public static int howLongCanSurviveCurrentSkirmish() throws GameActionException
-	{
-		// add up friendly firepower
-		updateAllies();
-		
-		// figure out about how many rounds skirmish will take
-		int roundsToWin = (int) ( (enemyTotalHealth + zombieTotalHealth) / allyTotalDamagePerTurn );
-		int roundsToLose = (int) ( allyTotalHealth / (enemyTotalDamagePerTurn + zombieTotalDamagePerTurn) );
-		
-		// return the number of rounds after which the skirmish will be over
-		return Math.min(roundsToWin, roundsToLose);
-	}
-	
-	public static boolean imminentInfection() throws GameActionException
-	{
-		return ( (turnsUntilFirstZombieAttacks < 2) || enemyViperInSightRange);
-	}
-	
-	public static boolean willDieInfected() throws GameActionException
-	{
-		// get self infection status
-		int healingTime = 0; // rc.getInfectedTurns();
-		int roundsTillDeath = howLongCanSurviveCurrentSkirmish();
-		
-		// if another infection is imminent, add to healing time
-		if (imminentInfection())
-			healingTime += 10;
-		
-		// return whether we will be infected when we die
-		return (roundsTillDeath <= healingTime);
-
 	}
 	
 	public static boolean tryMove(MapLocation loc, NavSafetyPolicy safety) throws GameActionException
@@ -359,17 +158,12 @@ public class MicroPhone extends RobotPlayer
 	
 	private static void collateNearbyRobotInfo() throws GameActionException
 	{
-		// get robot info
-		updateEnemyInfo();
-		
-		// loop through known enemy turret locations
-		
-		
 		// loop through zombies
 		zombieTotalDamagePerTurn = 0;
 		zombieTotalHealth = 0;
 		lowestHealthZombie = null;
 		closestZombie = null;
+		
 		dirToClosestZombie = Direction.NONE;
 		inZombieSensorRange = false;
 		if (nearbyZombies.length>0)
@@ -480,7 +274,7 @@ public class MicroPhone extends RobotPlayer
 		else
 			amISafe = true;
 	}
-	
+	*/
 	public static RobotInfo getClosestRobot(RobotInfo[] nearby, MapLocation loc)
 	{
 		int minsqdist = 1000;
@@ -517,7 +311,21 @@ public class MicroPhone extends RobotPlayer
 		return closest;
 	}
 	
-	public static MapLocation getUnitCOM(RobotInfo[] nearby)
+	public MapLocation getAllyCOM()
+	{
+		return getUnitCOM(this.getNearbyAllies());
+	}
+	
+	public MapLocation getEnemyCOM()
+	{
+		return getUnitCOM(this.getNearbyEnemies());
+	}
+	
+	public MapLocation getZombieCOM()
+	{
+		return getUnitCOM(this.getNearbyZombies());
+	}
+	public MapLocation getUnitCOM(RobotInfo[] nearby)
 	{
 		int xtot = 0;
 		int ytot = 0;
