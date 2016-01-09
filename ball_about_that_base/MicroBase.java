@@ -160,6 +160,28 @@ public class MicroBase extends RobotPlayer
 		return canMoveDirs;
 	}
 	
+	public DirectionSet getCanFastMoveDirs() throws GameActionException
+	{
+		// returns moves without any rubble
+		// (except for scout who cares)
+		
+		// also we don't need to save it
+		
+		if (rc.getType() == RobotType.SCOUT)
+			return getCanMoveDirs();
+
+		DirectionSet dirs = new DirectionSet();
+		
+		if (rc.senseRubble(here) < GameConstants.RUBBLE_SLOW_THRESH)
+			dirs.add(Direction.NONE);
+		
+		for (Direction d : Direction.values())
+			if (rc.canMove(d) && rc.senseRubble(here.add(d)) < GameConstants.RUBBLE_SLOW_THRESH)
+				dirs.add(d);
+		
+		return dirs;
+	}
+	
 	public boolean isInDanger()
 	{
 		return getNearbyHostiles().length > 0;

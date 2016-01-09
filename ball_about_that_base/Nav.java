@@ -1,9 +1,6 @@
 package ball_about_that_base;
 
-import java.util.ArrayList;
-
 import battlecode.common.*;
-import team023.Micro;
 
 public class Nav extends RobotPlayer
 {
