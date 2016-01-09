@@ -2,7 +2,7 @@ package ball_about_that_base;
 
 import battlecode.common.*;
 
-import java.util.Random;
+import java.util.*;
 
 public class RobotPlayer
 {
@@ -30,7 +30,7 @@ public class RobotPlayer
 		Debug.setStringAK("A-aron");
 		Debug.setStringSJF("Stephen J. Fry");
 		Debug.setStringRR("Ryan");
-		
+				
 		// look for an archon close by, if we aren't an Archon
 		if (rc.getType() != RobotType.ARCHON)
 		{
@@ -100,7 +100,7 @@ public class RobotPlayer
 			while (true)
 			{
 				RobotPlayer.here = rc.getLocation();
-				Message.readSignalQueue();
+				//Message.readSignalQueue();
 				
 				// try to re-sense archon
 				if (myArchon != null)
