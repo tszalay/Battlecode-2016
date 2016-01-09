@@ -103,7 +103,7 @@ public class Nav extends RobotPlayer
         }
     }
 
-    private static void bugMove(Direction dir) throws GameActionException
+    private static boolean bugMove(Direction dir) throws GameActionException
     {
         if (MicroBase.tryMove(dir))
         {
@@ -114,6 +114,12 @@ public class Nav extends RobotPlayer
         		bugLookStartDir = dir.rotateLeft().rotateLeft();
         	else 
         		bugLookStartDir = dir.rotateRight().rotateRight();
+        	
+        	return true;
+        }
+        else
+        {
+        	return false;
         }
     }
 
@@ -135,17 +141,19 @@ public class Nav extends RobotPlayer
         startBug();
     }
 
-    private static void bugTurn() throws GameActionException
+    private static boolean bugTurn() throws GameActionException
     {
         if (detectBugIntoEdge())
         {
             reverseBugWallFollowDir();
         }
+        
         Direction dir = findBugMoveDir();
+        
         if (dir != null)
-        {
-            bugMove(dir);
-        }
+            return bugMove(dir);
+        else
+        	return false;
     }
 
     private static boolean canEndBug()
@@ -154,7 +162,7 @@ public class Nav extends RobotPlayer
         return (bugRotationCount <= 0 || bugRotationCount >= 8) && here.distanceSquaredTo(myDest) <= bugStartDistSq;
     }
 
-    private static void bugMove() throws GameActionException
+    private static boolean bugMove() throws GameActionException
     {
 
     	// Check if we can stop bugging at the *beginning* of the turn
@@ -167,20 +175,34 @@ public class Nav extends RobotPlayer
         // If DIRECT mode, try to go directly to target
         if (bugState == BugState.DIRECT)
         {
-            if (!tryMoveDirect())
+            if (tryMoveDirect())
             {
+            	// succeeded
+            	return true;
+            }
+            else
+            {
+            	// do bugging (below)
                 bugState = BugState.BUG;
-                startBug();
+                startBug();            	
             }
         }
 
         // If that failed, or if bugging, bug
         if (bugState == BugState.BUG)
-            bugTurn();
+        {
+            return bugTurn();
+        }
+        
+        // shouldn't be here, w/e
+        return false;
     }
 
-    public static void goTo(MapLocation dest, DirectionSet dirs) throws GameActionException
+    public static boolean tryGoTo(MapLocation dest, DirectionSet dirs) throws GameActionException
     {
+    	if (!rc.isCoreReady())
+    		return false;
+    	
     	myDirs = dirs;
     	
         if (!dest.equals(myDest))
@@ -190,8 +212,8 @@ public class Nav extends RobotPlayer
         }
         
         if (here.equals(dest))
-        	return;
+        	return true;
 
-        bugMove();
+        return bugMove();
     }
 }
