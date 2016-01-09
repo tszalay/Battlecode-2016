@@ -10,20 +10,18 @@ public class RoboGuard extends RobotPlayer
 	
 	public static void turn() throws GameActionException
 	{
-		MicroBase micro = new MicroBase();
-		
 		if (rc.isCoreReady())
 		{
-			DirectionSet dirs = micro.getCanMoveDirs();
+			DirectionSet dirs = Micro.getCanMoveDirs();
 			
-			if (micro.isInDanger())
+			if (Micro.isInDanger())
 			{
-				Direction d = micro.getBestEscapeDir();
-				micro.tryMove(d);
+				Direction d = Micro.getBestEscapeDir();
+				MicroBase.tryMove(d);
 			}
 			else
 			{
-				micro.tryMove(dirs.getRandomValid());
+				MicroBase.tryMove(dirs.getRandomValid());
 			}
 		}
 	}

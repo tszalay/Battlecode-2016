@@ -13,17 +13,19 @@ public class RoboSoldier extends RobotPlayer
 	
 	public static void turn() throws GameActionException
 	{
-        if (rc.isCoreReady()) {
-        	if (!Micro.tryRetreatIfOverpowered())
-        	{
-//        		NavSafetyPolicy safety = new SafetyPolicyAvoidZombies();
-//        		// diffuse randomly
-//        		int dx = rand.nextInt(3)-1;
-//        		int dy = rand.nextInt(3)-1;
-//        		Nav.goTo(here.add(dx,dy), safety);
-        		
-        		// do nothing
-        	}
-        }
+		if (rc.isCoreReady())
+		{
+			DirectionSet dirs = Micro.getCanMoveDirs();
+			
+			if (Micro.isInDanger())
+			{
+				Direction d = Micro.getBestEscapeDir();
+				MicroBase.tryMove(d);
+			}
+			else
+			{
+				MicroBase.tryMove(dirs.getRandomValid());
+			}
+		}
 	}
 }

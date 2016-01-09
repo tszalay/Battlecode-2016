@@ -94,12 +94,7 @@ public class RoboScout extends RobotPlayer
 						if (here.distanceSquaredTo(d.location) < here.distanceSquaredTo(closestDenLoc))
 							closestDenLoc = d.location;
 					}
-					if (!Micro.tryAvoidBeingShot()) // avoidance micro only when we're not rushing stuff
-			    	{
-						NavSafetyPolicy safety = new SafetyPolicyAvoidZombies();
-						Nav.goTo(closestDenLoc, safety);
-						return;
-			    	}
+					Nav.goTo(closestDenLoc, Micro.getSafeMoveDirs());
 					return;
 				}
 			}
@@ -116,8 +111,7 @@ public class RoboScout extends RobotPlayer
 						if (here.distanceSquaredTo(t.location) < here.distanceSquaredTo(closestTurretLoc))
 							closestTurretLoc = t.location;
 					}
-					NavSafetyPolicy safety = new SafetyPolicyRecklessAbandon();
-					Nav.goTo(closestTurretLoc, safety);
+					Nav.goTo(closestTurretLoc, Micro.getSafeMoveDirs());
 					return;
 				}
 				RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(here, RobotType.SCOUT.sensorRadiusSquared, theirTeam);
@@ -129,19 +123,14 @@ public class RoboScout extends RobotPlayer
 						if (here.distanceSquaredTo(en.location) < here.distanceSquaredTo(closestEnemyLoc))
 							closestEnemyLoc = en.location;
 					}
-					NavSafetyPolicy safety = new SafetyPolicyRecklessAbandon();
-					Nav.goTo(closestEnemyLoc, safety);
+					Nav.goTo(closestEnemyLoc, Micro.getSafeMoveDirs());
 					return;
 				}
 			}
 		}
 		
 		// and if we're still not involved in the action, go away from rally
-		if (!Micro.tryAvoidBeingShot()) // avoidance micro only when we're not rushing stuff
-    	{
-			NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
-			Nav.goTo(here.add(here.directionTo(rally).opposite()), safety);
-    	}
+		Nav.goTo(here.add(here.directionTo(rally).opposite()), Micro.getSafeMoveDirs());
 		
 	}
 	
@@ -184,10 +173,10 @@ public class RoboScout extends RobotPlayer
 	public static void doTurtleScout() throws GameActionException
 	{
 		// go to edge of turtle by moving away from rally location but staying in turtle
-		NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnitsAndStayInTurtle();
 		if (getNumTurretsNearby(here, 6) > 7 || getNumTurretsNearby(here, 3) < 2) // we're not at the edge
 		{
-			Nav.goTo(here.add(here.directionTo(rally).opposite()), safety); // move only if we're not at the edge
+			Nav.goTo(here.add(here.directionTo(rally).opposite()), Micro.getSafeMoveDirs());
+			//Nav.goTo(here.add(here.directionTo(rally).opposite()), safety); // move only if we're not at the edge
 			//Nav.goTo(MapUtil.findClosestTurtle(), safety);
 			
 			// free the scout if it is not at the turtle edge and sees more than one other scout
@@ -249,17 +238,7 @@ public class RoboScout extends RobotPlayer
 		
 		if (rc.isCoreReady())
         {
-        	if (isFreeScout)
-        	{
-        		doFreeScout();
-        	}
-        	else
-        	{
-        		if (!Micro.tryAvoidBeingShot()) // avoidance micro
-            	{
-        			doTurtleScout();
-            	}
-        	}
+    		doFreeScout();
         }
 	}
 }

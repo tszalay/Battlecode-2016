@@ -315,10 +315,10 @@ public class RoboArchon extends RobotPlayer
 		}
 		else
 		{
-			NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
 			if (rc.isCoreReady())
-			{ 
-				Nav.goTo(Message.rallyLocation, safety);
+			{
+				Nav.goTo(Message.rallyLocation, Micro.getSafeMoveDirs());
+				//System.out.println("Moving to " + Message.rallyLocation);
 			}
 		}	
 	}
@@ -392,8 +392,7 @@ public class RoboArchon extends RobotPlayer
 	public static void turn() throws GameActionException
 	{
 		// avoiding taking damage is the top priority
-		MicroBase micro = new MicroBase();
-		if (!micro.tryAvoidBeingShot())
+		if (!Micro.tryAvoidBeingShot())
 		{
 			// state machine update
 			updateState();

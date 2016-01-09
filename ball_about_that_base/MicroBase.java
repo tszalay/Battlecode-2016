@@ -4,14 +4,14 @@ import battlecode.common.*;
 
 public class MicroBase extends RobotPlayer
 {
-	public RobotInfo[] nearbyEnemies = null;
-	public RobotInfo[] nearbyZombies = null;
-	public RobotInfo[] nearbyHostiles = null;
-	public RobotInfo[] nearbyAllies = null;
+	private RobotInfo[] nearbyEnemies = null;
+	private RobotInfo[] nearbyZombies = null;
+	private RobotInfo[] nearbyHostiles = null;
+	private RobotInfo[] nearbyAllies = null;
 	
-	public DirectionSet canMoveDirs = null;
-	public DirectionSet safeMoveDirs = null;
-	public DirectionSet noTurretMoveDirs = null;
+	private DirectionSet canMoveDirs = null;
+	private DirectionSet safeMoveDirs = null;
+	private DirectionSet noTurretMoveDirs = null;
 	
 	private int[] distToClosestHostile = null;
 
@@ -160,16 +160,41 @@ public class MicroBase extends RobotPlayer
 		return canMoveDirs;
 	}
 	
+	public DirectionSet getCanFastMoveDirs() throws GameActionException
+	{
+		// returns moves without any rubble
+		// (except for scout who cares)
+		
+		// also we don't need to save it
+		
+		if (rc.getType() == RobotType.SCOUT)
+			return getCanMoveDirs();
+
+		DirectionSet dirs = new DirectionSet();
+		
+		if (rc.senseRubble(here) < GameConstants.RUBBLE_SLOW_THRESH)
+			dirs.add(Direction.NONE);
+		
+		for (Direction d : Direction.values())
+			if (rc.canMove(d) && rc.senseRubble(here.add(d)) < GameConstants.RUBBLE_SLOW_THRESH)
+				dirs.add(d);
+		
+		return dirs;
+	}
+	
 	public boolean isInDanger()
 	{
 		return getNearbyHostiles().length > 0;
 	}
 	
-	public boolean tryMove(Direction d) throws GameActionException
+	public static boolean tryMove(Direction d) throws GameActionException
 	{
 		// don't do anything, but don't throw error, this is ok
 		if (d == Direction.NONE)
+		{
+			//System.out.println("Given a NONE!");
 			return false;
+		}
 		
 		// double check!
 		if (d != null && rc.canMove(d) && rc.isCoreReady())
