@@ -7,20 +7,19 @@ enum State
 {
 	RALLYING,
 	BUILDING,
-	REPAIRING,
 	SEARCHING
 }
 
 public class RoboArchon extends RobotPlayer
 {	
+	static MapLocation nextTurretLoc = null;
 	static int robotSchedule[] = {10, 10, 10, 6}; // 10-turret 6 - scout
 	static int scheduleCounter = rand.nextInt(100);
-	
+	static int waitingToBuild = 0;
+	static int maxWaitBuildTime = 10;
 	static final int MAX_ROUNDS_TO_RALLY = 600;
-	
 	static boolean arrivedAtRally = false;
-	static boolean builtMyScout = false;
-	
+	static boolean canBuildNow = false;
 	static State myState;
 
 	public static void init() throws GameActionException
@@ -163,6 +162,27 @@ public class RoboArchon extends RobotPlayer
 		// failed to find any build locations
 		return false;
 	}
+	
+	public static boolean tryMoveNearRally() throws GameActionException
+	{
+		if(Message.rallyLocation == null)
+		{
+			// have to wait until rally loc arrives. is this robust??
+		}
+		else if(here.distanceSquaredTo(Message.rallyLocation) > 4)
+		{
+			NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
+			if (rc.isCoreReady())
+			{ 
+				Nav.goTo(Message.rallyLocation, safety);
+			}
+		}
+		else
+		{
+			return true;
+		}
+		return false;		
+	}
 
 	public static boolean tryBuildUnit(RobotType nextRobot, Direction dir) throws GameActionException
 	{
@@ -179,6 +199,26 @@ public class RoboArchon extends RobotPlayer
 		
 		rc.build(dir, nextRobot);
 		return true;
+	}
+
+	public static boolean tryMoveNearTurretDest(MapLocation nextTurretLoc) throws GameActionException
+	{
+		if (nextTurretLoc == null)
+			return false;
+		
+		if (here.isAdjacentTo(nextTurretLoc))
+			return false;
+		
+		if (rc.isCoreReady())
+		{
+			NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
+			Nav.goTo(nextTurretLoc, safety);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	}
 	
 	public static DirectionSet getCanBuildDirectionSet(RobotType nextRobotType) throws GameActionException
@@ -209,131 +249,23 @@ public class RoboArchon extends RobotPlayer
 		return allowedParity;
 	}
 	
-	private static RobotType getNextBuildRobotType() throws GameActionException
-	{
-		// what's next to build: the old thing is not working?
-		// RobotType nextRobotType = RobotType.values()[robotSchedule[scheduleCounter%robotSchedule.length]];
-		
-		// make a turret if we don't have enough around in our ball
-		RobotInfo[] allies = rc.senseNearbyRobots(2, ourTeam);
-		int numTurretsAround = 0;
-		for (RobotInfo ri : allies)
-		{
-			if (ri.type == RobotType.TURRET || ri.type == RobotType.TTM)
-				numTurretsAround += 1;
-		}
-		
-		RobotType nextRobotType = RobotType.TURRET;
-		if (numTurretsAround >= 3)
-		{
-			nextRobotType = RobotType.SCOUT;
-		}
-		
-		return nextRobotType;
-	}
-	
-	private static boolean canBuildNow() throws GameActionException
-	{
-		// what's next to build
-		RobotType nextRobotType = getNextBuildRobotType();
-		
-		// return false quickly if we cannot build for an obvious reason
-		if (nextRobotType == null)
-			return false;
-		if (!rc.isCoreReady())
-			return false;
-		if (!rc.hasBuildRequirements(nextRobotType))
-			return false;
-		
-		// find okay direction set
-		DirectionSet canBuild = getCanBuildDirectionSet(nextRobotType);
-		DirectionSet parity = getParityAllowedDirectionSet(nextRobotType);
-		DirectionSet validBuildDirectionSet = canBuild.and(parity);
-		
-		// other considerations like safety can be considered here
-		
-		// if we have a valid direction return true
-		return (validBuildDirectionSet.any());
-	}
-	
-	public static boolean canRepair() throws GameActionException
-	{
-		RobotInfo[] nearbyFriends = rc.senseNearbyRobots(rc.getType().attackRadiusSquared,ourTeam);
-		RobotInfo minBot = null;
-
-		for (RobotInfo ri : nearbyFriends)
-		{
-			if (ri.type == RobotType.ARCHON)
-				continue;
-
-			if (minBot == null || (ri.maxHealth - ri.health) > (minBot.maxHealth - minBot.health) || minBot.zombieInfectedTurns < ri.zombieInfectedTurns)
-				minBot = ri;
-		}
-
-		if (minBot != null && minBot.health < minBot.maxHealth-1)
-			return true;
-		
-		return false;
-	}
-	
-	public static void doSearch() throws GameActionException
-	{
-		// look for nearby neutrals
-		
-		
-		// look for nearby parts
-		
-		// move at random
-		for (int i = 0; i < 10; i ++)
-		{
-			Direction dir = Direction.values()[rand.nextInt(8)];
-			if (rc.canMove(dir) && rc.isCoreReady())
-				rc.move(dir);
-		}
-	}
-	
 	public static void doRally() throws GameActionException
 	{
-		// update rally location
-		if (rc.getRoundNum() == RoboScout.SIGNAL_ROUND)
-			Message.calcRallyLocation();
 		
-		// make sure i built one scout
-		if (!builtMyScout)
-		{
-			builtMyScout = tryBuildEven(RobotType.SCOUT);
-		}
-		
-		// rally
-		if (Message.rallyLocation == null)
-			return;
-		
-		if (here.distanceSquaredTo(Message.rallyLocation) < 20)
-		{
-			arrivedAtRally = true;
-			return;
-		}
-		else
-		{
-			NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
-			if (rc.isCoreReady())
-			{ 
-				Nav.goTo(Message.rallyLocation, safety);
-			}
-		}	
 	}
 	
-	private static void doBuild() throws GameActionException
+	public static boolean tryBuilding() throws GameActionException
 	{
-		RobotType nextRobotType = getNextBuildRobotType();
+		// what's next to build
+		RobotType nextRobotType = RobotType.values()[robotSchedule[scheduleCounter%robotSchedule.length]];
 		
 		// return false quickly if we cannot build for an obvious reason
 		if (nextRobotType == null)
-			return;
+			return false;
 		if (!rc.isCoreReady())
-			return;
+			return false;
 		if (!rc.hasBuildRequirements(nextRobotType))
-			return;
+			return false;
 		
 		// find okay direction set
 		DirectionSet canBuild = getCanBuildDirectionSet(nextRobotType);
@@ -346,23 +278,26 @@ public class RoboArchon extends RobotPlayer
 		Direction dir = validBuildDirectionSet.getRandomValid();
 		
 		// convert to directions and try to build
-		tryBuildUnit(nextRobotType, dir);
-		return;
+		return (tryBuildUnit(nextRobotType, dir));
 	}
 	
-	public static void doRepair() throws GameActionException
+	public static void doSearch() throws GameActionException
 	{
-		tryRepair();
+		
+	}
+	
+	private static boolean canBuildNow()
+	{
+		return false;
+	}
+	
+	private static void doBuild()
+	{
+		
 	}
 	
 	private static void updateState() throws GameActionException // this will probably need tweaking
 	{
-		// fact 0: if we are mid-building, we are still building
-		if (myState == State.BUILDING && !rc.isCoreReady())
-		{
-			return;
-		}
-		
 		// priority 1: go to rally
 		if (!arrivedAtRally && rc.getRoundNum() < MAX_ROUNDS_TO_RALLY)
 		{
@@ -370,21 +305,14 @@ public class RoboArchon extends RobotPlayer
 			return;
 		}
 		
-		// priority 2: repair bots
-		if (canRepair())
-		{
-			myState = State.REPAIRING;
-			return;
-		}
-		
-		// priority 3: if we can build, build
-		if (canBuildNow()) // problem with this logic flow is i am calculating where to build twice...
+		// priority 2: if we can build, build
+		if (canBuildNow())
 		{
 			myState = State.BUILDING;
 			return;
 		}
 			
-		// priority 4: search for stuff
+		// priority 3: search for stuff
 		myState = State.SEARCHING;
 		return;
 	}
@@ -392,34 +320,26 @@ public class RoboArchon extends RobotPlayer
 	public static void turn() throws GameActionException
 	{
 		// avoiding taking damage is the top priority
-		MicroBase micro = new MicroBase();
-		if (!micro.tryAvoidBeingShot())
+		if (!Micro.tryAvoidBeingShot())
 		{
 			// state machine update
 			updateState();
-			Debug.setStringSJF(myState.toString());
 			
-			if (rc.isCoreReady())
+			// do turn according to state
+			switch (myState)
 			{
-				// do turn according to state
-				switch (myState)
-				{
-				case RALLYING:
-					doRally();
-					break;
-				case BUILDING:
-					doBuild();
-					break;
-				case REPAIRING:
-					doRepair();
-					break;
-				case SEARCHING:
-					doSearch();
-					break;
-				default:
-					System.out.println("Archon state machine is messed up.");
-					break;
-				}
+			case RALLYING:
+				doRally();
+				break;
+			case BUILDING:
+				doBuild();
+				break;
+			case SEARCHING:
+				doSearch();
+				break;
+			default:
+				System.out.println("Archon state machine is messed up.");
+				break;
 			}
 		}
 	}
