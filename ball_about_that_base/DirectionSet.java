@@ -9,6 +9,7 @@ public class DirectionSet
 {
 	static final Random rand = new Random();
 	static final int[] dirOffsets = {1,7,2,6,3,5,4};
+	static final int[] dirOffsetsTowards = {1,7};
 	
 	
 	public int dirs = 0;
@@ -72,7 +73,8 @@ public class DirectionSet
 		return null;
 	}
 	
-	// this function is a bit broken. should return NONE if no direction that moves us closer to destination
+	// this function is a bit broken. should return null
+	// if no direction that moves us closer to destination
 	public Direction getDirectionTowards(MapLocation from, MapLocation to)
 	{
 		// if they're just straight up null
@@ -85,9 +87,28 @@ public class DirectionSet
 		if (isValid(best))
 			return best;
 		
-		// otherwise let's go through offsets
-		int i0 = best.ordinal();
+		// how far are we
+		int distSq = from.distanceSquaredTo(to);
 		
+		// try both left and right turns
+		// if these didn't work
+		int rightDist = distSq;
+		int leftDist = distSq;
+		
+		if (isValid(best.rotateRight()))
+			rightDist = from.add(best.rotateRight()).distanceSquaredTo(to);
+		if (isValid(best.rotateLeft()))
+			leftDist = from.add(best.rotateLeft()).distanceSquaredTo(to);
+		
+		// pew pew pew
+		if (rightDist < leftDist)
+			return best.rotateRight();
+		else if (leftDist < rightDist || leftDist < distSq)
+			return best.rotateLeft();
+		
+		return null;
+		
+/*		
 		for (int i=0; i<dirOffsets.length; i++)
 		{
 			int d = (i0 + dirOffsets[i]) & 7;
@@ -95,8 +116,7 @@ public class DirectionSet
 				return Direction.values()[d];
 
 		}
-		
-		return null;
+*/		
 	}
 	
 	public ArrayList<Direction> getDirections()

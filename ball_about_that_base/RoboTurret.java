@@ -52,7 +52,7 @@ public class RoboTurret extends RobotPlayer
 			return false;
 		
         // prioritize shooting at enemies first
-        RobotInfo target = Micro.getClosestTurretTarget(rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, theirTeam), here);
+        /*RobotInfo target = Micro.getClosestTurretTarget(rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, theirTeam), here);
         // if we didn't find any, try closest zombies
         if (target == null)
         	target = Micro.getClosestTurretTarget(rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.ZOMBIE), here);
@@ -74,7 +74,7 @@ public class RoboTurret extends RobotPlayer
 			lastFiredRound = rc.getRoundNum();
 			return true;
         }
-        
+        */
         return false;
 	}
 
@@ -107,8 +107,7 @@ public class RoboTurret extends RobotPlayer
 			}
 			else
 			{
-				NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
-				Nav.goTo(unpackDest, safety);
+				Nav.goTo(unpackDest, Micro.getSafeMoveDirs());
 			}
 		}
 	}

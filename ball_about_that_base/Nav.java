@@ -183,12 +183,12 @@ public class Nav extends RobotPlayer
     {
     	myDirs = dirs;
     	
-        if (!myDest.equals(dest))
+        if (!dest.equals(myDest))
         {
             myDest = dest;
             bugState = BugState.DIRECT;
         }
-
+        
         if (here.equals(dest))
         	return;
 

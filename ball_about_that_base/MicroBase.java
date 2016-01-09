@@ -4,14 +4,14 @@ import battlecode.common.*;
 
 public class MicroBase extends RobotPlayer
 {
-	public RobotInfo[] nearbyEnemies = null;
-	public RobotInfo[] nearbyZombies = null;
-	public RobotInfo[] nearbyHostiles = null;
-	public RobotInfo[] nearbyAllies = null;
+	private RobotInfo[] nearbyEnemies = null;
+	private RobotInfo[] nearbyZombies = null;
+	private RobotInfo[] nearbyHostiles = null;
+	private RobotInfo[] nearbyAllies = null;
 	
-	public DirectionSet canMoveDirs = null;
-	public DirectionSet safeMoveDirs = null;
-	public DirectionSet noTurretMoveDirs = null;
+	private DirectionSet canMoveDirs = null;
+	private DirectionSet safeMoveDirs = null;
+	private DirectionSet noTurretMoveDirs = null;
 	
 	private int[] distToClosestHostile = null;
 
@@ -191,7 +191,10 @@ public class MicroBase extends RobotPlayer
 	{
 		// don't do anything, but don't throw error, this is ok
 		if (d == Direction.NONE)
+		{
+			//System.out.println("Given a NONE!");
 			return false;
+		}
 		
 		// double check!
 		if (d != null && rc.canMove(d) && rc.isCoreReady())

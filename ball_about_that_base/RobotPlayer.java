@@ -13,7 +13,9 @@ public class RobotPlayer
 	public static MapLocation here;
 	
 	public static RobotInfo myArchon = null;
-	public static int myArchonSenseRound = 0; 
+	public static int myArchonSenseRound = 0;
+	
+	public static MicroBase Micro = null;
 	
 	@SuppressWarnings("unused")
 	// BC Engine -> RobotPlayer.run -> RoboXXX.run
@@ -100,7 +102,10 @@ public class RobotPlayer
 			while (true)
 			{
 				RobotPlayer.here = rc.getLocation();
-				//Message.readSignalQueue();
+				// clear all outstanding micro stuff
+				Micro = new MicroBase();
+				// process incoming messages
+				Message.readSignalQueue();
 				
 				// try to re-sense archon
 				if (myArchon != null)
