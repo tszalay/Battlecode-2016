@@ -286,6 +286,16 @@ public class RoboArchon extends RobotPlayer
 		
 	}
 	
+	private static boolean canBuildNow()
+	{
+		return false;
+	}
+	
+	private static void doBuild()
+	{
+		
+	}
+	
 	private static void updateState() throws GameActionException // this will probably need tweaking
 	{
 		// priority 1: go to rally
