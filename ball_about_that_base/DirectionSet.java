@@ -1,12 +1,13 @@
 package ball_about_that_base;
 
 import battlecode.common.*;
+import java.util.*;
 
 // uses bitmasks to keep track of a list of directions
 // (including NONE)
-// --- only extending RobotPlayer for rand(), not "here" or anything like that!!!
-public class DirectionSet extends RobotPlayer
+public class DirectionSet
 {
+	static final Random rand = new Random();
 	static final int[] dirOffsets = {1,7,2,6,3,5,4};
 	
 	
@@ -97,7 +98,7 @@ public class DirectionSet extends RobotPlayer
 		dirs |= (1<<d.ordinal());
 	}
 	
-	public DirectionSet getOddSquares(MapLocation currentLoc)
+	public static DirectionSet getOddSquares(MapLocation currentLoc)
 	{
 		// return the adjacent DirectionSet of squares (from currentLoc) that are odd
 		
@@ -124,7 +125,7 @@ public class DirectionSet extends RobotPlayer
 		return odds;
 	}
 	
-	public DirectionSet getEvenSquares(MapLocation currentLoc)
+	public static DirectionSet getEvenSquares(MapLocation currentLoc)
 	{
 		// return the adjacent DirectionSet of squares (from currentLoc) that are even
 		
@@ -149,5 +150,16 @@ public class DirectionSet extends RobotPlayer
 		}
 		
 		return evens;
+	}
+	
+	public Direction[] getDirections()
+	{
+		ArrayList<Direction> dirlist = new ArrayList<Direction>();
+		
+		for (int i=0; i<9; i++)
+			if (( (1<<i)&this.dirs) > 0)
+				dirlist.add(Direction.values()[i]);
+		
+		return (Direction[])dirlist.toArray();
 	}
 }

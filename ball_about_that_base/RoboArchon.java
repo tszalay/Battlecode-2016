@@ -28,56 +28,56 @@ public class RoboArchon extends RobotPlayer
 	}
 	
 	
-	public static void bull()
-	{
-		if (rc.getRoundNum() == RoboScout.SIGNAL_ROUND)
-			Message.calcRallyLocation();
-
-		if(rc.getRoundNum()== 1)
-		{
-			if (tryBuildEven(RobotType.SCOUT)) 
-			{
-				Message.sendBuiltMessage();
-			}
-		}
-		
-		if (!Micro.tryAvoidBeingShot())
-		{
-			if (amIBeingAttacked())
-			{
-				Micro.updateAllies();
-				// find closest turtle location, and move away
-				NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
-				if (rc.isCoreReady())
-					Nav.goTo(Micro.getUnitCOM(Micro.nearbyAllies), safety);
-			}
-			else
-			{
-				if (!arrivedAtRally) 
-				{
-					arrivedAtRally = tryMoveNearRally();
-				}
-				else
-				{
-					nextTurretLoc = MapUtil.findClosestTurtle();
-					
-					// if it's too close to where i was last shot, change the nextTurretLoc
-					if (nextTurretLoc != null && locLastAttacked != null  && nextTurretLoc.distanceSquaredTo(locLastAttacked)<2 )
-						nextTurretLoc = here.add(here.directionTo(locLastAttacked).opposite());
-					
-					if	(!tryBuildUnits(nextTurretLoc))
-					{
-						Debug.setStringAK("trying to move to turret dest" + nextTurretLoc);
-						tryMoveNearTurretDest(nextTurretLoc);
-					}
-				}
-			}
-		}
-		
-		//repair anyone nearby
-		tryRepair();
-
-	}
+//	public static void bull()
+//	{
+//		if (rc.getRoundNum() == RoboScout.SIGNAL_ROUND)
+//			Message.calcRallyLocation();
+//
+//		if(rc.getRoundNum()== 1)
+//		{
+//			if (tryBuildEven(RobotType.SCOUT)) 
+//			{
+//				Message.sendBuiltMessage();
+//			}
+//		}
+//		
+//		if (!Micro.tryAvoidBeingShot())
+//		{
+//			if (amIBeingAttacked())
+//			{
+//				Micro.updateAllies();
+//				// find closest turtle location, and move away
+//				NavSafetyPolicy safety = new SafetyPolicyAvoidAllUnits();
+//				if (rc.isCoreReady())
+//					Nav.goTo(Micro.getUnitCOM(Micro.nearbyAllies), safety);
+//			}
+//			else
+//			{
+//				if (!arrivedAtRally) 
+//				{
+//					arrivedAtRally = tryMoveNearRally();
+//				}
+//				else
+//				{
+//					nextTurretLoc = MapUtil.findClosestTurtle();
+//					
+//					// if it's too close to where i was last shot, change the nextTurretLoc
+//					//if (nextTurretLoc != null && locLastAttacked != null  && nextTurretLoc.distanceSquaredTo(locLastAttacked)<2 )
+//					//	nextTurretLoc = here.add(here.directionTo(locLastAttacked).opposite());
+//					
+//					if	(!tryBuildUnits(nextTurretLoc))
+//					{
+//						Debug.setStringAK("trying to move to turret dest" + nextTurretLoc);
+//						tryMoveNearTurretDest(nextTurretLoc);
+//					}
+//				}
+//			}
+//		}
+//		
+//		//repair anyone nearby
+//		tryRepair();
+//
+//	}
 	
 	
 
@@ -234,35 +234,52 @@ public class RoboArchon extends RobotPlayer
 		}
 	}
 	
-	public static DirectionSet getValidBuildDirections() throws GameActionException
+	public static DirectionSet getCanBuildDirectionSet(RobotType nextRobotType) throws GameActionException
 	{
-		// what's next to build
-		RobotType nextRobotType = RobotType.values()[robotSchedule[scheduleCounter%robotSchedule.length]];
-		
 		// check nearby open squares
-		DirectionSet d = new DirectionSet();
+		DirectionSet valid = new DirectionSet();
 		for (Direction dir : Direction.values()) // check all Directions around
 		{
 			if (rc.canBuild(dir, nextRobotType))
-				d.add(dir); // add this direction to the DirectionSet of valid build directions
+				valid.add(dir); // add this direction to the DirectionSet of valid build directions
 		}
-		return d;
+		return valid;
+	}
+	
+	public static DirectionSet getParityAllowedDirectionSet(RobotType nextRobotType) throws GameActionException
+	{
+		DirectionSet allowedParity = null;
+		if (nextRobotType == RobotType.TURRET)
+		{
+			// build turrets only on odd squares
+			allowedParity = DirectionSet.getOddSquares(here);
+		}
+		else
+		{
+			// build all else only on even squares
+			allowedParity = DirectionSet.getEvenSquares(here);
+		}
+		return allowedParity;
 	}
 	
 	public static boolean canBuildNow() throws GameActionException
 	{
 		// what's next to build
 		RobotType nextRobotType = RobotType.values()[robotSchedule[scheduleCounter%robotSchedule.length]];
+		if (nextRobotType == null)
+			return false;
 		
 		// check parts
 		if (rc.getTeamParts() >= nextRobotType.partCost) // we have enough parts to build the next robot
 		{
-			// check nearby open squares
-			for (Direction dir : Direction.values()) // check all Directions around
-			{
-				if (rc.canBuild(dir, nextRobotType))
-					return true; // stop as soon as we find a valid spot
-			}
+			// only on the evens or odds as you please
+			DirectionSet allowedParity = getParityAllowedDirectionSet(nextRobotType);
+			
+			// check build validity
+			DirectionSet validBuild = getCanBuildDirectionSet(nextRobotType);
+			
+			// determine whether the intersection has any legit spaces
+			return (allowedParity.and(validBuild).any());
 		}
 		
 		return false;
@@ -275,6 +292,10 @@ public class RoboArchon extends RobotPlayer
 	
 	public static void doBuild() throws GameActionException
 	{
+		// what's next to build
+		RobotType nextRobotType = RobotType.values()[robotSchedule[scheduleCounter%robotSchedule.length]];
+		
+		// find okay directions
 		DirectionSet dValidBuild = getValidBuildDirections();
 	}
 	
