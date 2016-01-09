@@ -13,6 +13,7 @@ public class MicroBase extends RobotPlayer
 	public DirectionSet canMoveDirs = null;
 	public DirectionSet safeMoveDirs = null;
 	public DirectionSet reallySafeMoveDirs = null;
+	public DirectionSet canBeSeenDirs = null;
 	
 	public DirectionSet oddDirs = null;
 	

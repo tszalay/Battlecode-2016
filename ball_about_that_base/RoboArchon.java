@@ -184,34 +184,21 @@ public class RoboArchon extends RobotPlayer
 		return false;		
 	}
 
-	public static boolean tryBuildUnits(MapLocation nextTurretLoc) throws GameActionException
+	public static boolean tryBuildUnit(RobotType nextRobot, Direction dir) throws GameActionException
 	{
+		// final checks
+		if (!rc.isCoreReady())
+			return false;
+		if (!rc.hasBuildRequirements(nextRobot))
+			return false;
+		if (!rc.canBuild(dir, nextRobot))
+			return false;
+		
 		// so other archons might get a chance to build.
-		if (rand.nextBoolean()) return false;
+		//if (rand.nextBoolean()) return false;
 		
-		RobotType nextRobot = RobotType.values()[robotSchedule[scheduleCounter%robotSchedule.length]];
-		if (nextRobot == RobotType.SCOUT)
-		{
-			if (tryBuildEven(nextRobot)) 
-			{
-				scheduleCounter++;
-				return true;
-			}
-		}
-		else if (nextRobot == RobotType.TURRET) 
-		{
-			// Debug.setStringAK("NextTurretDest: " + nextTurretLoc);
-
-			if (tryBuildOdd(nextRobot))
-			{
-				waitingToBuild = 0;
-				scheduleCounter++;
-				Message.sendBuiltMessage();
-				return true;
-			}
-		}
-		
-		return false;
+		rc.build(dir, nextRobot);
+		return true;
 	}
 
 	public static boolean tryMoveNearTurretDest(MapLocation nextTurretLoc) throws GameActionException
@@ -262,41 +249,36 @@ public class RoboArchon extends RobotPlayer
 		return allowedParity;
 	}
 	
-	public static boolean canBuildNow() throws GameActionException
-	{
-		// what's next to build
-		RobotType nextRobotType = RobotType.values()[robotSchedule[scheduleCounter%robotSchedule.length]];
-		if (nextRobotType == null)
-			return false;
-		
-		// check parts
-		if (rc.getTeamParts() >= nextRobotType.partCost) // we have enough parts to build the next robot
-		{
-			// only on the evens or odds as you please
-			DirectionSet allowedParity = getParityAllowedDirectionSet(nextRobotType);
-			
-			// check build validity
-			DirectionSet validBuild = getCanBuildDirectionSet(nextRobotType);
-			
-			// determine whether the intersection has any legit spaces
-			return (allowedParity.and(validBuild).any());
-		}
-		
-		return false;
-	}
-	
 	public static void doRally() throws GameActionException
 	{
 		
 	}
 	
-	public static void doBuild() throws GameActionException
+	public static boolean tryBuilding() throws GameActionException
 	{
 		// what's next to build
 		RobotType nextRobotType = RobotType.values()[robotSchedule[scheduleCounter%robotSchedule.length]];
 		
-		// find okay directions
-		DirectionSet dValidBuild = getValidBuildDirections();
+		// return false quickly if we cannot build for an obvious reason
+		if (nextRobotType == null)
+			return false;
+		if (!rc.isCoreReady())
+			return false;
+		if (!rc.hasBuildRequirements(nextRobotType))
+			return false;
+		
+		// find okay direction set
+		DirectionSet canBuild = getCanBuildDirectionSet(nextRobotType);
+		DirectionSet parity = getParityAllowedDirectionSet(nextRobotType);
+		DirectionSet validBuildDirectionSet = canBuild.and(parity);
+		
+		// other considerations like safety can be considered here
+		
+		// pick one of the allowed directions at random
+		Direction dir = validBuildDirectionSet.getRandomValid();
+		
+		// convert to directions and try to build
+		return (tryBuildUnit(nextRobotType, dir));
 	}
 	
 	public static void doSearch() throws GameActionException
