@@ -112,56 +112,37 @@ public class DirectionSet
 	
 	public static DirectionSet getOddSquares(MapLocation currentLoc)
 	{
-		// return the adjacent DirectionSet of squares (from currentLoc) that are odd
-		
-		if (currentLoc == null)
-			return null;
-		
-		DirectionSet odds = new DirectionSet();
-		
-		if ( ((currentLoc.x + currentLoc.y) % 2) == 0)  // currentLoc is even
-		{
-			odds.add(Direction.NORTH);
-			odds.add(Direction.SOUTH);
-			odds.add(Direction.EAST);
-			odds.add(Direction.WEST);
-		}
-		else // currentLoc is odd
-		{
-			odds.add(Direction.NORTH_EAST);
-			odds.add(Direction.SOUTH_EAST);
-			odds.add(Direction.SOUTH_WEST);
-			odds.add(Direction.NORTH_WEST);
-		}
-		
-		return odds;
+		return getParitySquares(currentLoc, true);
 	}
 	
 	public static DirectionSet getEvenSquares(MapLocation currentLoc)
 	{
-		// return the adjacent DirectionSet of squares (from currentLoc) that are even
-		
-		if (currentLoc == null)
+		return getParitySquares(currentLoc, false);
+	}
+	
+	public static DirectionSet getParitySquares(MapLocation loc, boolean isOdd)
+	{
+		if (loc == null)
 			return null;
+
+		DirectionSet ds = new DirectionSet();		
 		
-		DirectionSet evens = new DirectionSet();
+		Direction d0 = Direction.NORTH;
 		
-		if ( ((currentLoc.x + currentLoc.y) % 2) == 0)  // currentLoc is even
+		if (MapUtil.isLocOdd(loc) == isOdd)
 		{
-			evens.add(Direction.NORTH_EAST);
-			evens.add(Direction.SOUTH_EAST);
-			evens.add(Direction.SOUTH_WEST);
-			evens.add(Direction.NORTH_WEST);
-		}
-		else // currentLoc is odd
-		{
-			evens.add(Direction.NORTH);
-			evens.add(Direction.SOUTH);
-			evens.add(Direction.EAST);
-			evens.add(Direction.WEST);
+			// d0 should be diagonal, and add here
+			d0 = d0.rotateRight();
+			ds.add(Direction.NONE);
 		}
 		
-		return evens;
+		for (int i=0; i<4; i++)
+		{
+			ds.add(d0);
+			d0 = d0.rotateRight().rotateRight();
+		}
+		
+		return ds;
 	}
 	
 	public static DirectionSet makeAll()
