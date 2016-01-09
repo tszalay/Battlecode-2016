@@ -165,7 +165,7 @@ public class MicroBase extends RobotPlayer
 		return getNearbyHostiles().length > 0;
 	}
 	
-	public boolean tryMove(Direction d) throws GameActionException
+	public static boolean tryMove(Direction d) throws GameActionException
 	{
 		// don't do anything, but don't throw error, this is ok
 		if (d == Direction.NONE)
