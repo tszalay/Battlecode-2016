@@ -333,19 +333,11 @@ public class MicroBase extends RobotPlayer
 		if (!rc.isCoreReady())
 			return this.tryAttackSomeone();
 		
-		// hack for now: just move directly away from COM
-		MapLocation enemyLoc = this.getEnemyCOM();
-		MapLocation zombieLoc = this.getZombieCOM();
+		Direction escapeDir = this.getBestEscapeDir();
 		
-		if (rc.canMove(here.directionTo(zombieLoc).opposite()))
+		if (escapeDir != null)
 		{
-			rc.move(here.directionTo(zombieLoc).opposite());
-			return true;
-		}
-		
-		if (rc.canMove(here.directionTo(enemyLoc).opposite()))
-		{
-			rc.move(here.directionTo(enemyLoc).opposite());
+			rc.move(escapeDir);
 			return true;
 		}
 		
