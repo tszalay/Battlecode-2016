@@ -203,6 +203,8 @@ public class Nav extends RobotPlayer
     	if (!rc.isCoreReady())
     		return false;
     	
+    	Debug.setStringTS("Nav dest: " + dest);
+    	
     	myDirs = dirs;
     	
         if (!dest.equals(myDest))

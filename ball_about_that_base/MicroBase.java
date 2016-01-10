@@ -335,6 +335,9 @@ public class MicroBase extends RobotPlayer
 	
 	public boolean tryAvoidBeingShot() throws GameActionException
 	{
+		if (this.getNearbyHostiles().length == 0)
+			return false;
+		
 		if (!rc.isCoreReady())
 			return this.tryAttackSomeone();
 		

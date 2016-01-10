@@ -49,11 +49,6 @@ public class Message extends RobotPlayer
 	// and other things
 	public static MapLocation rallyLocation = null;
 	
-	public static int mapMinX = 0;
-	public static int mapMinY = 0;
-	public static int mapMaxX = 0;
-	public static int mapMaxY = 0;
-	
 	public static void readSignalQueue()
 	{
 		Signal[] sigs = rc.emptySignalQueue();
