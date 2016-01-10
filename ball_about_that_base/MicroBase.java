@@ -56,6 +56,19 @@ public class MicroBase extends RobotPlayer
 		return nearbyHostiles;
 	}
 	
+	public RobotInfo getLowestHealth(RobotInfo[] bots)
+	{
+		RobotInfo target = null;
+		
+		for (RobotInfo ri : bots)
+		{
+			if (target == null || ri.health < target.health)
+				target = ri;
+		}
+		
+		return target;
+	}
+	
 	// this gets called by other functions to compile various stats and info
 	// before they return the computed values
 	private void computeSafetyStats()
@@ -297,31 +310,22 @@ public class MicroBase extends RobotPlayer
 		return closest;
 	}
 	
-	
 	public boolean tryAttackSomeone() throws GameActionException
 	{
-		RobotInfo target = null;
+		// attack someone in range if possible, low health first, prioritizing zombies
 		
-		RobotInfo[] zombies = this.getNearbyZombies();
-		if (zombies==null || zombies.length==0)
+		RobotInfo zombieTarget = this.getLowestHealth(this.getNearbyZombies());
+		RobotInfo enemyTarget = this.getLowestHealth(this.getNearbyEnemies());
+		
+		if (zombieTarget != null && rc.canAttackLocation(zombieTarget.location))
 		{
-			RobotInfo[] enemies = this.getNearbyEnemies();
-			if (enemies==null || enemies.length==0)
-			{
-				return false;
-			}
-			else
-			{
-				target = getClosestUnitTo(enemies, here);
-			}
+			rc.attackLocation(zombieTarget.location);
+			return true;
 		}
-		else
+		
+		if (enemyTarget != null && rc.canAttackLocation(enemyTarget.location))
 		{
-			target = getClosestUnitTo(zombies, here);
-		}
-		if (target != null && rc.canAttackLocation(target.location))
-		{
-			rc.attackLocation(target.location);
+			rc.attackLocation(enemyTarget.location);
 			return true;
 		}
 		
@@ -334,12 +338,9 @@ public class MicroBase extends RobotPlayer
 			return this.tryAttackSomeone();
 		
 		Direction escapeDir = this.getBestEscapeDir();
+		DirectionSet safeMoveDirSet = this.getSafeMoveDirs();
 		
-		if (escapeDir != null)
-		{
-			rc.move(escapeDir);
-			return true;
-		}
+		Nav.tryGoTo(here.add(escapeDir), safeMoveDirSet);
 		
 		return this.tryAttackSomeone();
 	}
