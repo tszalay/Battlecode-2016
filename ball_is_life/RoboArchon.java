@@ -288,7 +288,6 @@ public class RoboArchon extends RobotPlayer
 		// if no rally loc or it's off the map or you got there, randomly generate a new one and broadcast it.
 		boolean needNewRally = searchRallyLoc == null || !rc.onTheMap(here.add(here.directionTo(searchRallyLoc))) || here.distanceSquaredTo(searchRallyLoc) < 10;
 		
-		Debug.setStringAK("begin doSearch");
 		if (needNewRally) 
 			{
 			searchRallyLoc = here.add(rand.nextInt(200)-100,rand.nextInt(200)-100);
@@ -296,7 +295,9 @@ public class RoboArchon extends RobotPlayer
 			}
 		else
 		{
+		// update location and dest to locate allies every few rounds.
 			
+		if (rc.getRoundNum()%10 == 0)Message.sendMessageSignal(10, MessageType.ARCHON_DEST, searchRallyLoc);
 		//Nav.tryGoTo(searchRallyLoc, Micro.getCanMoveDirs());
 		Direction dir = Micro.getCanMoveDirs().getDirectionTowards(here,searchRallyLoc);
 
@@ -308,7 +309,7 @@ public class RoboArchon extends RobotPlayer
 		else
 		{
 			//if all else fails, move at random
-			for (int i = 0; i < 10; i ++)
+			for (int i = 0; i < 10; i++)
 			{
 				dir = Direction.values()[rand.nextInt(8)];
 				if (rc.canMove(dir) && rc.isCoreReady())

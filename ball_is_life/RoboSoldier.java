@@ -13,29 +13,22 @@ public class RoboSoldier extends RobotPlayer
 	
 	public static void turn() throws GameActionException
 	{
+		// update archon and dest locations
+		MapLocation archonLoc = Message.recentArchonLocation;
+		MapLocation destLoc = Message.recentArchonDest;
+		if (archonLoc == null) archonLoc = here;
+		if (destLoc == null) destLoc = here;
+		
 		if (rc.isCoreReady())	
 		{
 			DirectionSet dirs = Micro.getCanMoveDirs();
-			
-			// AK Testing Soldier Behavior. Use with Soldier Ball Test Map.
-			MapLocation archonLoc = Message.recentArchonLocation;
-			//rc.setIndicatorDot(archonLoc, 0, 0, 255);
-			MapLocation destLoc = Message.recentArchonDest;
-			
-			if (archonLoc == null) archonLoc = here;
-			if (destLoc == null) destLoc = here;
-			//rc.setIndicatorDot(destLoc, 0, 255, 0);
 			Direction archonDir = archonLoc.directionTo(destLoc);
 			MapLocation gotoLoc = archonLoc;
 			
 			// Offset gotoLoc towards dest to make soldiers shortcut a little
 			int goToOffset = 3;
 			for (int i=0;i<goToOffset;i++) gotoLoc = gotoLoc.add(archonDir);
-			//rc.setIndicatorDot(gotoLoc, 255, 0, 0);
-			
-			
-			
-			
+	
 			Nav.tryGoTo(gotoLoc, dirs);
 			
 //			if (Micro.isInDanger())
