@@ -1,5 +1,7 @@
 package ball_about_that_base;
 
+import java.util.ArrayList;
+
 import battlecode.common.*;
 
 //enum for encoding state
@@ -16,7 +18,7 @@ public class RoboArchon extends RobotPlayer
 	static int robotSchedule[] = {10, 10, 10, 6}; // 10-turret 6 - scout
 	static int scheduleCounter = rand.nextInt(100);
 	
-	static final int MAX_ROUNDS_TO_RALLY = 600;
+	static final int MAX_ROUNDS_TO_RALLY = 200;
 	
 	static boolean arrivedAtRally = false;
 	static boolean builtMyScout = false;
@@ -278,16 +280,36 @@ public class RoboArchon extends RobotPlayer
 	
 	public static void doSearch() throws GameActionException
 	{
-		// look for nearby neutrals
-		
-		
-		// look for nearby parts
-		
-		// move at random
 		MicroBase micro = new MicroBase();
 		DirectionSet safeDirs = micro.getSafeMoveDirs();
-		Direction randomSafeDir = safeDirs.getRandomValid();
-		Nav.tryAdjacentSafeMove(randomSafeDir, safeDirs);
+		ArrayList<Direction> safeDirArray = safeDirs.getDirections();
+		
+		return;
+		
+		// look for nearby neutrals and parts
+		MapLocation[] parts = Message.partsLocs.loc;  // WANTED
+		MapLocation[] neutrals = Message.neutralsLocs.loc;  // WANTED
+		
+		// move toward closest
+		MapLocation closest = null;
+		if (neutrals != null && neutrals.length > 0)
+		{
+			for (MapLocation loc : neutrals)
+			{
+				if (closest == null || here.distanceSquaredTo(loc) < here.distanceSquaredTo(closest))
+					closest = loc;
+			}
+		}
+		if (closest == null && parts != null && parts.length > 0)
+		{
+			for (MapLocation loc : parts)
+			{
+				if (closest == null || here.distanceSquaredTo(loc) < here.distanceSquaredTo(closest))
+					closest = loc;
+			}
+		}
+		
+		Nav.tryAdjacentSafeMove(here.directionTo(closest), safeDirs);
 	}
 	
 	public static void doRally() throws GameActionException
