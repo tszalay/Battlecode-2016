@@ -17,11 +17,11 @@ public class RoboGuard extends RobotPlayer
 			if (Micro.isInDanger())
 			{
 				Direction d = Micro.getBestEscapeDir();
-				MicroBase.tryMove(d);
+				Micro.tryMove(d);
 			}
 			else
 			{
-				MicroBase.tryMove(dirs.getRandomValid());
+				Micro.tryMove(dirs.getRandomValid());
 			}
 		}
 	}

@@ -200,7 +200,8 @@ public class MicroBase extends RobotPlayer
 		return getNearbyHostiles().length > 0;
 	}
 	
-	public static boolean tryMove(Direction d) throws GameActionException
+	// tryMove expects to be given a valid direction
+	public boolean tryMove(Direction d) throws GameActionException
 	{
 		// don't do anything, but don't throw error, this is ok
 		if (d == Direction.NONE)
@@ -338,9 +339,9 @@ public class MicroBase extends RobotPlayer
 			return this.tryAttackSomeone();
 		
 		Direction escapeDir = this.getBestEscapeDir();
-		DirectionSet safeMoveDirSet = this.getSafeMoveDirs();
 		
-		Nav.tryGoTo(here.add(escapeDir), safeMoveDirSet);
+		// escape
+		tryMove(escapeDir);
 		
 		return this.tryAttackSomeone();
 	}

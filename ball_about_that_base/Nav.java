@@ -32,7 +32,7 @@ public class Nav extends RobotPlayer
         if (toDest == null)
         	return false;
         
-        return MicroBase.tryMove(toDest);
+        return Micro.tryMove(toDest);
     }
 
     private static void startBug() throws GameActionException
@@ -105,7 +105,7 @@ public class Nav extends RobotPlayer
 
     private static boolean bugMove(Direction dir) throws GameActionException
     {
-        if (MicroBase.tryMove(dir))
+        if (Micro.tryMove(dir))
         {
             bugRotationCount += calculateBugRotation(dir);
         	bugLastMoveDir = dir;

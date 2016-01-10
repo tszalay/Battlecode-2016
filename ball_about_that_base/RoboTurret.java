@@ -107,7 +107,7 @@ public class RoboTurret extends RobotPlayer
 			}
 			else
 			{
-				Nav.goTo(unpackDest, Micro.getSafeMoveDirs());
+				Nav.tryGoTo(unpackDest, Micro.getSafeMoveDirs());
 			}
 		}
 	}

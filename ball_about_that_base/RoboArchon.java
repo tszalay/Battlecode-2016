@@ -317,7 +317,7 @@ public class RoboArchon extends RobotPlayer
 		{
 			if (rc.isCoreReady())
 			{
-				Nav.goTo(Message.rallyLocation, Micro.getSafeMoveDirs());
+				Nav.tryGoTo(Message.rallyLocation, Micro.getSafeMoveDirs());
 				//System.out.println("Moving to " + Message.rallyLocation);
 			}
 		}	
