@@ -14,7 +14,9 @@ public class MapInfo extends RobotPlayer
 	
 	public static boolean mapMinUpdated = false;
 	public static boolean mapMaxUpdated = false;
+	
 	public static MapLocation newZombieDen = null;
+	public static MapLocation newParts = null;
 
 	// the following functions are to be called mainly by Archons to set destinations
 	
@@ -48,6 +50,21 @@ public class MapInfo extends RobotPlayer
 			return partloc;
 		
 		return denloc;
+	}
+	
+	// distance required to cover the full map, for scout transmission
+	public static int fullMapDistanceSq()
+	{
+		int maxDx = Math.abs(mapMin.x-here.x);
+		int maxDy = Math.abs(mapMin.y-here.y);
+		maxDx = Math.max(maxDx, Math.abs(mapMax.x-here.x));
+		maxDy = Math.max(maxDy, Math.abs(mapMax.y-here.y));
+		
+		int maxDistSq = maxDx*maxDx + maxDy*maxDy;
+		if (maxDistSq > Message.FULL_MAP_DIST_SQ)
+			maxDistSq = Message.FULL_MAP_DIST_SQ;
+		
+		return maxDistSq;
 	}
 	
 	// these are to be called by scouts or by Message,
@@ -86,19 +103,15 @@ public class MapInfo extends RobotPlayer
 			newZombieDen = loc;
 	}
 	
-	// distance required to cover the full map, for scout transmission
-	public static int fullMapDistanceSq()
+	public static void updateParts(MapLocation loc, boolean sendUpdate)
 	{
-		int maxDx = Math.abs(mapMin.x-here.x);
-		int maxDy = Math.abs(mapMin.y-here.y);
-		maxDx = Math.max(maxDx, Math.abs(mapMax.x-here.x));
-		maxDy = Math.max(maxDy, Math.abs(mapMax.y-here.y));
+		if (goodPartsLocations.contains(loc) || newParts != null)
+			return;
 		
-		int maxDistSq = maxDx*maxDx + maxDy*maxDy;
-		if (maxDistSq > Message.FULL_MAP_DIST_SQ)
-			maxDistSq = Message.FULL_MAP_DIST_SQ;
-		
-		return maxDistSq;
+		goodPartsLocations.add(loc);
+
+		if (sendUpdate)
+			newParts = loc;
 	}
 	
 	// function to send updated info as a scout
@@ -126,7 +139,33 @@ public class MapInfo extends RobotPlayer
 			newZombieDen = null;
 			return true;
 		}
+		if (newParts != null)
+		{
+			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.GOOD_PARTS, newParts);
+			newParts = null;
+			return true;
+		}
 		
 		return false;
+	}
+	
+	// function to look for nearby parts
+	private static int offsetInd = 0;
+	
+	public static void scoutAnalyzeSurroundings() throws GameActionException
+	{
+		while (Clock.getBytecodesLeft() > 8000)
+		{
+			MapLocation loc = new MapLocation(MapUtil.allOffsX[offsetInd], MapUtil.allOffsY[offsetInd]);
+			offsetInd = (offsetInd+1) % MapUtil.allOffsX.length;
+			
+			// check for parts first
+			if (rc.senseParts(loc) > 50)
+				updateParts(loc, true);
+			
+			// and if it's off the map
+			if (!rc.onTheMap(loc))
+				updateMapEdges(loc, true);
+		}
 	}
 }
