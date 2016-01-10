@@ -287,8 +287,9 @@ public class RoboArchon extends RobotPlayer
 		return;
 		
 		// look for nearby neutrals and parts
-		MapLocation[] parts = Message.partsLocs.loc;  // WANTED
-		MapLocation[] neutrals = Message.neutralsLocs.loc;  // WANTED
+		/*
+		MapLocation[] parts = new MapLocation[0];// Message.partsLocs.loc;  // WANTED
+		MapLocation[] neutrals = new MapLocation[0]; //Message.neutralsLocs.loc;  // WANTED
 		
 		// move toward closest
 		MapLocation closest = null;
@@ -309,7 +310,7 @@ public class RoboArchon extends RobotPlayer
 			}
 		}
 		
-		Nav.tryAdjacentSafeMove(here.directionTo(closest), safeDirs);
+		Nav.tryAdjacentSafeMove(here.directionTo(closest), safeDirs);*/
 	}
 	
 	public static void doRally() throws GameActionException
