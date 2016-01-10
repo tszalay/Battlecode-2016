@@ -14,7 +14,9 @@ enum MessageType
 	MAP_EDGE,
 	SPAM,
 	FREE_BEER,
-	RALLY_LOCATION
+	RALLY_LOCATION,
+	MAP_MIN,
+	MAP_MAX
 }
 
 class SignalLocation extends RobotPlayer
@@ -34,9 +36,11 @@ class SignalLocation extends RobotPlayer
 public class Message extends RobotPlayer
 {	
 	// bookkeeping stuff
-	private static final int TYPE_BITS = 4;
+	private static final int TYPE_BITS = 5;
 	private static final int SHIFT_BITS = 32-TYPE_BITS;
-	private static final int LOC_OFFSET = 17000;
+	private static final int LOC_OFFSET = 20000;
+	public static final int FULL_MAP_DIST_SQ = GameConstants.MAP_MAX_HEIGHT*GameConstants.MAP_MAX_HEIGHT +
+											   GameConstants.MAP_MAX_WIDTH*GameConstants.MAP_MAX_WIDTH;
 	
 	// storage for received/accumulated message info
 	public static ArrayList<SignalLocation> archonLocs = new ArrayList<SignalLocation>();
@@ -84,8 +88,6 @@ public class Message extends RobotPlayer
 				break;
 			case FREE_BEER:
 				break;
-			case MAP_EDGE:
-				break;
 			case SPAM:
 				break;
 			case SIGHT_TARGET:
@@ -99,6 +101,10 @@ public class Message extends RobotPlayer
 				break;
 			case RALLY_LOCATION:
 				rallyLocation = readLocation(vals);
+				break;
+			case MAP_MIN:
+				break;
+			case MAP_MAX:
 				break;
 			}
 		}
@@ -138,28 +144,21 @@ public class Message extends RobotPlayer
 	}
 	
 	
-	public static void sendMessageSignal(int lin_distance, MessageType type, MapLocation loc) throws GameActionException
+	public static void sendMessageSignal(int sq_distance, MessageType type, MapLocation loc) throws GameActionException
 	{
 		int v1 = (type.ordinal() << SHIFT_BITS);
-		sendMessageSignal(lin_distance, v1 | (loc.x+LOC_OFFSET), (loc.y+LOC_OFFSET));
+		sendMessageSignal(sq_distance, v1 | (loc.x+LOC_OFFSET), (loc.y+LOC_OFFSET));
 	}
 
 	
-	private static void sendMessageSignal(int lin_distance, int v1, int v2) throws GameActionException
+	private static void sendMessageSignal(int sq_distance, int v1, int v2) throws GameActionException
 	{
-		int x = lin_distance*lin_distance/rc.getType().sensorRadiusSquared - 2;
-		if (x<0) x=0;
-		
-		//rc.broadcastMessageSignal(v1,v2,x);
-		rc.broadcastMessageSignal(v1,v2,lin_distance*lin_distance);
+		rc.broadcastMessageSignal(v1,v2,sq_distance*sq_distance);
 	}
 	
 	// sends a message-free signal
-	public static void sendSignal(int lin_distance) throws GameActionException
+	public static void sendSignal(int sq_distance) throws GameActionException
 	{
-		int x = lin_distance*lin_distance/rc.getType().sensorRadiusSquared - 2;
-		if (x<0) x=0;
-		
-		rc.broadcastSignal(lin_distance*lin_distance);
+		rc.broadcastSignal(sq_distance);
 	}
 }

@@ -19,7 +19,7 @@ public class RoboScout extends RobotPlayer
 		{
 			if (myArchon != null)
 			{
-				Message.sendMessageSignal(100, MessageType.SPAWN, myArchon.location);
+				Message.sendMessageSignal(Message.FULL_MAP_DIST_SQ, MessageType.SPAWN, myArchon.location);
 			}
 		}
 		target = here.add(rand.nextInt(200)-100,rand.nextInt(200)-100);
@@ -216,13 +216,13 @@ public class RoboScout extends RobotPlayer
 			switch (closestTarget.type)
 			{
 				case TURRET:
-					Message.sendMessageSignal(7,MessageType.ENEMY_TURRET,closestTarget.location);
+					Message.sendMessageSignal(49,MessageType.ENEMY_TURRET,closestTarget.location);
 					break;
 				case ZOMBIEDEN:
-					Message.sendMessageSignal(7,MessageType.ZOMBIE_DEN,closestTarget.location);
+					Message.sendMessageSignal(49,MessageType.ZOMBIE_DEN,closestTarget.location);
 					break;
 				default:
-					Message.sendMessageSignal(7,MessageType.SIGHT_TARGET,closestTarget.location);
+					Message.sendMessageSignal(49,MessageType.SIGHT_TARGET,closestTarget.location);
 					break;
 			}
 			return true;
