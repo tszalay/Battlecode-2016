@@ -41,4 +41,9 @@ public class FastLocSet
         has = new boolean[HASH][HASH];
         locations.clear();
     }
+    
+    public List<MapLocation> elements()
+    {
+    	return locations;
+    }
 }
