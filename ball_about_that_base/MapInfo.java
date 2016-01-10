@@ -14,8 +14,11 @@ public class MapInfo extends RobotPlayer
 	
 	public static boolean mapMinUpdated = false;
 	public static boolean mapMaxUpdated = false;
+	public static MapLocation newZombieDen = null;
 
 	// the following functions are to be called mainly by Archons to set destinations
+	
+	// just do something random for now
 	public static MapLocation getExplorationWaypoint()
 	{
 		// this one should get transmitted to a scout
@@ -49,22 +52,38 @@ public class MapInfo extends RobotPlayer
 	
 	// these are to be called by scouts or by Message,
 	// using a new point that is known to be off the map
-	public static void updateMapEdges(MapLocation loc)
+	public static void updateMapEdges(MapLocation loc, boolean sendUpdate)
 	{
 		if (loc.x > mapMin.x || loc.y > mapMin.y)
 		{
 			mapMin = new MapLocation(
 					Math.max(loc.x,mapMin.x),
 					Math.max(loc.y,mapMin.y));
-			mapMinUpdated = true;
+			if (sendUpdate)
+				mapMinUpdated = true;
 		}
 		if (loc.x < mapMax.x || loc.y < mapMax.y)
 		{
 			mapMax = new MapLocation(
 					Math.min(loc.x,mapMax.x),
 					Math.min(loc.y,mapMax.y));
-			mapMaxUpdated = true;
+			if (sendUpdate)
+				mapMaxUpdated = true;
 		}
+	}
+	
+	// these are to be called by scouts/message to add a zombie den if it isn't in there already
+	public static void updateZombieDens(MapLocation loc, boolean sendUpdate)
+	{
+		// if we already reported it, or we already have one queued to send,
+		// don't do anything
+		if (zombieDenLocations.contains(loc) || newZombieDen != null)
+			return;
+		
+		zombieDenLocations.add(loc);
+		// flag that we want to send this location
+		if (sendUpdate)
+			newZombieDen = loc;
 	}
 	
 	// distance required to cover the full map, for scout transmission
@@ -99,6 +118,12 @@ public class MapInfo extends RobotPlayer
 		{
 			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.MAP_MAX, mapMax);
 			mapMaxUpdated = false;
+			return true;
+		}
+		if (newZombieDen != null)
+		{
+			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.ZOMBIE_DEN, newZombieDen);
+			newZombieDen = null;
 			return true;
 		}
 		

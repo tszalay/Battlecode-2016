@@ -155,6 +155,7 @@ public class RoboScout extends RobotPlayer
 	public static RobotInfo[] doRelayDens() throws GameActionException
 	{
         // dens
+		/*
         ArrayList<SignalLocation> knownDenSignalLocs = Message.zombieDenLocs;
         if (knownDenSignalLocs != null && knownDenSignalLocs.size() > 0)
         {
@@ -168,6 +169,8 @@ public class RoboScout extends RobotPlayer
 	        return dens;
         }
         return null;
+        */
+		return null;
 	}
 	
 	public static void doTurtleScout() throws GameActionException

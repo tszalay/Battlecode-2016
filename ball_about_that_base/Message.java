@@ -43,7 +43,6 @@ public class Message extends RobotPlayer
 	
 	// storage for received/accumulated message info
 	public static ArrayList<SignalLocation> archonLocs = new ArrayList<SignalLocation>();
-	public static ArrayList<SignalLocation> zombieDenLocs = new ArrayList<SignalLocation>();
 	public static ArrayList<SignalLocation> sightLocs = new ArrayList<SignalLocation>();
 	public static ArrayList<SignalLocation> enemyTurretLocs = new ArrayList<SignalLocation>();
 	
@@ -97,16 +96,16 @@ public class Message extends RobotPlayer
 				enemyTurretLocs.add(new SignalLocation(sig,readLocation(vals)));
 				break;
 			case ZOMBIE_DEN:
-				zombieDenLocs.add(new SignalLocation(sig,readLocation(vals)));
+				MapInfo.updateZombieDens(readLocation(vals),false);
 				break;
 			case RALLY_LOCATION:
 				rallyLocation = readLocation(vals);
 				break;
 			case MAP_MIN:
-				MapInfo.updateMapEdges(readLocation(vals));
+				MapInfo.updateMapEdges(readLocation(vals),false);
 				break;
 			case MAP_MAX:
-				MapInfo.updateMapEdges(readLocation(vals));
+				MapInfo.updateMapEdges(readLocation(vals),false);
 				break;
 			}
 		}
