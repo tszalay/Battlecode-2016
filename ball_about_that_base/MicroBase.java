@@ -1,6 +1,7 @@
 package ball_about_that_base;
 
 import battlecode.common.*;
+import java.util.*;
 
 public class MicroBase extends RobotPlayer
 {
@@ -290,7 +291,7 @@ public class MicroBase extends RobotPlayer
 		return new MapLocation(xtot,ytot);
 	}
 	
-	public static RobotInfo getClosestUnitTo(RobotInfo[] nearby, MapLocation loc)
+	public RobotInfo getClosestUnitTo(RobotInfo[] nearby, MapLocation loc)
 	{
 		if (nearby.length == 0)
 			return null;
@@ -305,6 +306,24 @@ public class MicroBase extends RobotPlayer
 			{
 				closest = ri;
 				closestDistSq = distSq;
+			}
+		}
+		
+		return closest;
+	}
+	
+	public MapLocation getClosestLocationTo(List<MapLocation> locs, MapLocation center)
+	{
+		int minDistSq = 1000000;
+		MapLocation closest = null;
+		
+		for (MapLocation ml : locs)
+		{
+			int dsq = ml.distanceSquaredTo(center);
+			if (dsq < minDistSq)
+			{
+				minDistSq = dsq;
+				closest = ml;
 			}
 		}
 		

@@ -7,7 +7,7 @@ public class MapInfo extends RobotPlayer
 {
 	public static FastLocSet zombieDenLocations = new FastLocSet();
 	public static FastLocSet goodPartsLocations = new FastLocSet();
-	public static FastLocSet exploredMapWaypoints = new FastLocSet();
+	//public static FastLocSet exploredMapWaypoints = new FastLocSet();
 	
 	public static MapLocation mapMin = new MapLocation(-18000,-18000);
 	public static MapLocation mapMax = new MapLocation(18000,18000);
@@ -18,22 +18,33 @@ public class MapInfo extends RobotPlayer
 	// the following functions are to be called mainly by Archons to set destinations
 	public static MapLocation getExplorationWaypoint()
 	{
-		return null;
+		// this one should get transmitted to a scout
+		return new MapLocation(rand.nextInt(mapMax.x - mapMin.x) + mapMax.x,
+							   rand.nextInt(mapMax.y - mapMin.y) + mapMax.y);
 	}
 	
 	public static MapLocation getClosestPart()
 	{
-		return null;
+		return Micro.getClosestLocationTo(goodPartsLocations.elements(), here);
 	}
 	
 	public static MapLocation getClosestDen()
 	{
-		return null;
+		return Micro.getClosestLocationTo(zombieDenLocations.elements(), here);
 	}
 	
 	public static MapLocation getClosestPartOrDen()
 	{
-		return null;
+		MapLocation partloc = getClosestPart();
+		MapLocation denloc = getClosestDen();
+		
+		if (partloc == null)
+			return denloc;
+		
+		if (denloc == null || here.distanceSquaredTo(partloc) < here.distanceSquaredTo(denloc))
+			return partloc;
+		
+		return denloc;
 	}
 	
 	// these are to be called by scouts or by Message,
@@ -72,8 +83,25 @@ public class MapInfo extends RobotPlayer
 	}
 	
 	// function to send updated info as a scout
-	public static boolean tryScoutSendUpdates()
+	public static boolean tryScoutSendUpdates() throws GameActionException
 	{
+		if (Micro.isInDanger())
+			return false;
+		
+		// only send one at a time
+		if (mapMinUpdated)
+		{
+			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.MAP_MIN, mapMin);
+			mapMinUpdated = false;
+			return true;
+		}
+		if (mapMaxUpdated)
+		{
+			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.MAP_MAX, mapMax);
+			mapMaxUpdated = false;
+			return true;
+		}
+		
 		return false;
 	}
 }
