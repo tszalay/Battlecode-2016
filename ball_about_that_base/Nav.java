@@ -202,7 +202,7 @@ public class Nav extends RobotPlayer
 
     public static boolean tryAdjacentSafeMove(Direction dir, DirectionSet safeDirs) throws GameActionException
     {
-    	if (!rc.isCoreReady())
+    	if (!rc.isCoreReady() || dir == null || !safeDirs.any())
     		return false;
     	
     	// get direction set that is all moves not away from dir
