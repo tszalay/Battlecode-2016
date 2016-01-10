@@ -149,11 +149,17 @@ public class MapInfo extends RobotPlayer
 		return false;
 	}
 	
-	// function to look for nearby parts
+	// function to look for nearby parts, neutrals, etc
 	private static int offsetInd = 0;
 	
 	public static void scoutAnalyzeSurroundings() throws GameActionException
 	{
+		// neutral robot code goes hear
+		RobotInfo[] nearbyNeutrals = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.NEUTRAL);
+		if (nearbyNeutrals.length > 0)
+			for (RobotInfo ri : nearbyNeutrals)
+				updateParts(ri.location, true);
+		
 		while (Clock.getBytecodesLeft() > 8000)
 		{
 			MapLocation loc = new MapLocation(MapUtil.allOffsX[offsetInd], MapUtil.allOffsY[offsetInd]);
