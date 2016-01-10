@@ -284,12 +284,10 @@ public class RoboArchon extends RobotPlayer
 		// look for nearby parts
 		
 		// move at random
-		for (int i = 0; i < 10; i ++)
-		{
-			Direction dir = Direction.values()[rand.nextInt(8)];
-			if (rc.canMove(dir) && rc.isCoreReady())
-				rc.move(dir);
-		}
+		MicroBase micro = new MicroBase();
+		DirectionSet safeDirs = micro.getSafeMoveDirs();
+		Direction randomSafeDir = safeDirs.getRandomValid();
+		Nav.tryAdjacentSafeMove(randomSafeDir, safeDirs);
 	}
 	
 	public static void doRally() throws GameActionException
@@ -315,7 +313,9 @@ public class RoboArchon extends RobotPlayer
 		}
 		else
 		{
-			Nav.tryGoTo(Message.rallyLocation, Micro.getSafeMoveDirs());
+			
+			MicroBase micro = new MicroBase();
+			Nav.tryGoTo(Message.rallyLocation, micro.getSafeMoveDirs());
 		}	
 	}
 	
