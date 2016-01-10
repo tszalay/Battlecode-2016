@@ -27,7 +27,7 @@ public class RobotPlayer
 		RobotPlayer.ourTeam = rc.getTeam();
 		RobotPlayer.theirTeam = ourTeam.opponent();
 		RobotPlayer.here = rc.getLocation();
-
+		
 		Debug.setStringTS("Tamas");
 		Debug.setStringAK("A-aron");
 		Debug.setStringSJF("Stephen J. Fry");
