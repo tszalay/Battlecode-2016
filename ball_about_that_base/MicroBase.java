@@ -12,6 +12,7 @@ public class MicroBase extends RobotPlayer
 	private RobotInfo[] nearbyAllies = null;
 	
 	private MapLocation[] sightedHostileLocs = null;
+	private MapLocation[] sightedTurretLocs = null;
 	
 	private DirectionSet canMoveDirs = null;
 	private DirectionSet safeMoveDirs = null;
@@ -84,6 +85,30 @@ public class MicroBase extends RobotPlayer
 		return sightedHostileLocs;
 	}
 	
+	public MapLocation[] getSightedTurretLocs()
+	{
+		if (sightedTurretLocs != null)
+			return sightedTurretLocs;
+		
+		// get this information from Message, from scout sighting
+		ArrayList<SignalLocation> sightedTurretSigLocs = Message.enemyTurretLocs;
+		
+		if (sightedTurretSigLocs == null || sightedTurretSigLocs.size() == 0)
+		{
+			sightedTurretLocs = null;
+		}
+		else
+		{
+			sightedTurretLocs = new MapLocation[sightedTurretSigLocs.size()];
+			for (int i = 0; i < sightedTurretSigLocs.size(); i ++)
+			{
+				sightedTurretLocs[i] = sightedTurretSigLocs.get(i).loc;
+			}
+		}
+		
+		return sightedTurretLocs;
+	}
+	
 	public RobotInfo getLowestHealth(RobotInfo[] bots)
 	{
 		RobotInfo target = null;
@@ -135,6 +160,17 @@ public class MicroBase extends RobotPlayer
 						isThisSquareTurretSafe = false;
 				}
 
+			}
+			
+			// additionally check if squares are turret safe by looking at sighted enemy turrets
+			sightedTurretLocs = getSightedTurretLocs();
+			if (sightedTurretLocs != null || sightedTurretLocs.length > 0)
+			{
+				for (MapLocation turretLoc : sightedTurretLocs)
+				{
+					if (testloc.distanceSquaredTo(turretLoc) <= RobotType.TURRET.attackRadiusSquared)
+						isThisSquareTurretSafe = false;
+				}
 			}
 			
 			distToClosestHostile[d.ordinal()] = closestDistSq;
