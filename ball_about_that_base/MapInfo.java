@@ -8,7 +8,6 @@ public class MapInfo extends RobotPlayer
 {
 	public static FastLocSet zombieDenLocations = new FastLocSet();
 	public static FastLocSet goodPartsLocations = new FastLocSet();
-	//public static FastLocSet exploredMapWaypoints = new FastLocSet();
 	
 	public static MapLocation mapMin = new MapLocation(-18000,-18000);
 	public static MapLocation mapMax = new MapLocation(18001,18001);
@@ -126,10 +125,7 @@ public class MapInfo extends RobotPlayer
 		{
 			newMapDir = dir;
 			newMapVal = val;
-		}
-		
-		if (rc.getType() == RobotType.ARCHON)
-			System.out.println("New map edge: " + mapMin + ", " + mapMax);
+		}		
 	}
 
 	
