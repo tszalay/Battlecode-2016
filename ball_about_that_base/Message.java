@@ -107,6 +107,7 @@ public class Message extends RobotPlayer
 				MapInfo.updateMapEdge(Direction.values()[ml.x],ml.y,false);
 				break;
 			case GOOD_PARTS:
+				MapInfo.updateParts(readLocation(vals),false);				
 				break;
 			}
 		}

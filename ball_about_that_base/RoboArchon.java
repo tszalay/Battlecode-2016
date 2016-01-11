@@ -440,5 +440,8 @@ public class RoboArchon extends RobotPlayer
 				}
 			}
 		}
+		
+		Debug.setStringTS("D:" + MapInfo.zombieDenLocations.elements().size()
+				+ ",P:" + MapInfo.goodPartsLocations.elements().size());
 	}
 }

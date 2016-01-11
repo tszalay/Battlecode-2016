@@ -56,7 +56,7 @@ public class MapInfo extends RobotPlayer
 	public static boolean isOnMap(MapLocation loc)
 	{
 		return (loc.x > mapMin.x) && (loc.y > mapMin.y) &&
-				(loc.y < mapMax.x) && (loc.y < mapMax.y);
+				(loc.x < mapMax.x) && (loc.y < mapMax.y);
 	}
 	
 	// distance required to cover the full map, for scout transmission
@@ -138,6 +138,7 @@ public class MapInfo extends RobotPlayer
 			return;
 		
 		zombieDenLocations.add(loc);
+		
 		// flag that we want to send this location
 		if (sendUpdate)
 			newZombieDen = loc;
@@ -149,7 +150,7 @@ public class MapInfo extends RobotPlayer
 			return;
 		
 		goodPartsLocations.add(loc);
-
+		
 		if (sendUpdate)
 			newParts = loc;
 	}
@@ -186,11 +187,14 @@ public class MapInfo extends RobotPlayer
 	
 	public static void scoutAnalyzeSurroundings() throws GameActionException
 	{
-		// neutral robot code goes hear
-		RobotInfo[] nearbyNeutrals = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.NEUTRAL);
-		if (nearbyNeutrals.length > 0)
-			for (RobotInfo ri : nearbyNeutrals)
-				updateParts(ri.location, true);
+		// neutral robot check
+		for (RobotInfo ri : rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.NEUTRAL))
+			updateParts(ri.location, true);
+		
+		// zombie den check
+		for (RobotInfo ri : Micro.getNearbyHostiles())
+			if (ri.type == RobotType.ZOMBIEDEN)
+				updateZombieDens(ri.location, true);
 		
 		// monkeypatch for now
 		here = rc.getLocation();

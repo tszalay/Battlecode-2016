@@ -53,8 +53,9 @@ public class RoboScout extends RobotPlayer
 			}
 		}
 		
-        // send out info about sighted targets
-		//sendSightedTarget(rc.senseHostileRobots(here, RobotType.SCOUT.sensorRadiusSquared));
+        // always send out info about sighted targets
+		sendSightedTarget(Micro.getNearbyHostiles());
+		
 		// and use spare bytecodes to look for stuff
 		MapInfo.scoutAnalyzeSurroundings();
 		// and send the updates
@@ -75,14 +76,7 @@ public class RoboScout extends RobotPlayer
 		if (myTarget == null || here.distanceSquaredTo(myTarget) < 24 || !MapInfo.isOnMap(myTarget))
 			myTarget = MapInfo.getExplorationWaypoint();
 		
-		if (Micro.isInDanger())
-		{
-			Micro.tryMove(Micro.getBestEscapeDir());
-		}
-		else
-		{
-			Nav.tryGoTo(myTarget, Micro.getCanMoveDirs());
-		}
+		Behavior.tryGoToWithoutBeingShot(myTarget);
 	}
 
 	private static void doScoutSighting()
@@ -94,6 +88,35 @@ public class RoboScout extends RobotPlayer
 	private static void doScoutShadowing()
 	{
 		// stay close to the target we are shadowing
+	}
+	
+	
+	public static boolean sendSightedTarget(RobotInfo[] nearbyTargets) throws GameActionException
+	{
+		RobotInfo closestTarget = null;
+		
+		// prioritize the target with the biggest attack radius
+		for (RobotInfo ri : nearbyTargets)
+		{
+			if (closestTarget == null || ri.type.attackRadiusSquared > closestTarget.type.attackRadiusSquared)
+				closestTarget = ri;
+		}
+		
+		if (closestTarget != null)
+		{
+			switch (closestTarget.type)
+			{
+				case TURRET:
+					Message.sendMessageSignal(63,MessageType.ENEMY_TURRET,closestTarget.location);
+					break;
+				default:
+					Message.sendMessageSignal(63,MessageType.SIGHT_TARGET,closestTarget.location);
+					break;
+			}
+			return true;
+		}
+		
+		return false;
 	}
 	
 /*
@@ -199,27 +222,6 @@ public class RoboScout extends RobotPlayer
         return null;
 	}
 	
-	public static RobotInfo[] doRelayDens() throws GameActionException
-	{
-        // dens
-		
-        ArrayList<SignalLocation> knownDenSignalLocs = Message.zombieDenLocs;
-        if (knownDenSignalLocs != null && knownDenSignalLocs.size() > 0)
-        {
-	        RobotInfo[] dens = new RobotInfo[knownDenSignalLocs.size()];
-        	for (int i=0; i<knownDenSignalLocs.size(); i++)
-	        {
-	        	MapLocation loc = knownDenSignalLocs.get(i).loc;
-	        	dens[i] = new RobotInfo(0, Team.ZOMBIE, RobotType.ZOMBIEDEN, loc, 0, 0, RobotType.ZOMBIEDEN.attackPower, RobotType.ZOMBIEDEN.maxHealth, RobotType.ZOMBIEDEN.maxHealth, 0, 0); 
-	        }
-	        sendSightedTarget(dens);
-	        return dens;
-        }
-        return null;
-        
-		return null;
-	}
-	
 	public static void doTurtleScout() throws GameActionException
 	{
 		// go to edge of turtle by moving away from rally location but staying in turtle
@@ -250,35 +252,6 @@ public class RoboScout extends RobotPlayer
     	return numTurretsAdjacent;
     }
 	
-	public static boolean sendSightedTarget(RobotInfo[] nearbyTargets) throws GameActionException
-	{
-		RobotInfo closestTarget = null;
-		
-		// prioritize the target with the biggest attack radius
-		for (RobotInfo ri : nearbyTargets)
-		{
-			if (closestTarget == null || ri.type.attackRadiusSquared > closestTarget.type.attackRadiusSquared)
-				closestTarget = ri;
-		}
-		
-		if (closestTarget != null)
-		{
-			switch (closestTarget.type)
-			{
-				case TURRET:
-					Message.sendMessageSignal(49,MessageType.ENEMY_TURRET,closestTarget.location);
-					break;
-				case ZOMBIEDEN:
-					Message.sendMessageSignal(49,MessageType.ZOMBIE_DEN,closestTarget.location);
-					break;
-				default:
-					Message.sendMessageSignal(49,MessageType.SIGHT_TARGET,closestTarget.location);
-					break;
-			}
-			return true;
-		}
-		
-		return false;
-	}
+
 	*/
 }
