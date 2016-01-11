@@ -60,57 +60,6 @@ public class MicroBase extends RobotPlayer
 		return nearbyHostiles;
 	}
 	
-	public MapLocation[] getSightedHostileLocs()
-	{
-		return null;
-		
-		/*if (sightedHostileLocs != null)
-			return sightedHostileLocs;
-		
-		// get this information from Message, from scout sighting
-		ArrayList<SignalLocation> sightedHostileSigLocs = Message.sightLocs;
-		
-		if (sightedHostileSigLocs == null || sightedHostileSigLocs.size() == 0)
-		{
-			sightedHostileLocs = null;
-		}
-		else
-		{
-			sightedHostileLocs = new MapLocation[sightedHostileSigLocs.size()];
-			for (int i = 0; i < sightedHostileSigLocs.size(); i ++)
-			{
-				sightedHostileLocs[i] = sightedHostileSigLocs.get(i).loc;
-			}
-		}
-		
-		return sightedHostileLocs;*/
-	}
-	
-	public MapLocation[] getSightedTurretLocs()
-	{
-		return null;
-		/*if (sightedTurretLocs != null)
-			return sightedTurretLocs;
-		
-		// get this information from Message, from scout sighting
-		ArrayList<SignalLocation> sightedTurretSigLocs = Message.enemyTurretLocs;
-		
-		if (sightedTurretSigLocs == null || sightedTurretSigLocs.size() == 0)
-		{
-			sightedTurretLocs = new MapLocation[0];
-		}
-		else
-		{
-			sightedTurretLocs = new MapLocation[sightedTurretSigLocs.size()];
-			for (int i = 0; i < sightedTurretSigLocs.size(); i ++)
-			{
-				sightedTurretLocs[i] = sightedTurretSigLocs.get(i).loc;
-			}
-		}
-		
-		return sightedTurretLocs;*/
-	}
-	
 	public RobotInfo getLowestHealth(RobotInfo[] bots)
 	{
 		RobotInfo target = null;
