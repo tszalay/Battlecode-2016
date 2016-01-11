@@ -51,6 +51,7 @@ public class Message extends RobotPlayer
 	public static MapLocation recentArchonLocation = null;
 	public static MapLocation recentArchonDest = null;
 	public static int 		  recentArchonRound = 0;
+	public static int		  recentArchonID = 1000;
 	
 	// and other things
 	public static MapLocation rallyLocation = null;
@@ -114,13 +115,14 @@ public class Message extends RobotPlayer
 	
 	private static void updateRecentArchon(Signal s, int[] vals)
 	{
-		if (recentArchonLocation != null && here.distanceSquaredTo(s.getLocation()) > here.distanceSquaredTo(recentArchonLocation)
+		if (recentArchonLocation != null && s.getID() > recentArchonID
 					&& rc.getRoundNum() - recentArchonRound < 20)
 			return;
 		
 		recentArchonLocation = s.getLocation();
 		recentArchonDest = readLocation(vals);
 		recentArchonRound = rc.getRoundNum();
+		recentArchonID = s.getID();
 	}
 	
 	private static int readByte(int val, int ind)
