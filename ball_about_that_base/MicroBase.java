@@ -19,6 +19,12 @@ public class MicroBase extends RobotPlayer
 	private DirectionSet noTurretMoveDirs = null;
 	
 	private int[] distToClosestHostile = null;
+	
+	private int roundsUntilDanger = -1;
+	
+	private static boolean[] isRangedUnit = {
+	
+	};
 
 	
 	public MicroBase()
@@ -180,6 +186,49 @@ public class MicroBase extends RobotPlayer
 			if (isThisSquareTurretSafe)
 				noTurretMoveDirs.add(d);
 		}
+	}
+	
+	// get number of rounds until we are in danger
+	public int getRoundsUntilDanger()
+	{
+		if (roundsUntilDanger >= 0)
+			return roundsUntilDanger;
+		
+		roundsUntilDanger = 100;
+		
+		double ourDelayDecrement = 1; // valid for bytecode use <= 2000.  if we are going over this, we'll need to use the formula in the future
+		// 
+		int roundsForUsToShootAndMove = (int)Math.floor( Math.max((rc.getWeaponDelay()+rc.getType().cooldownDelay), rc.getCoreDelay()) / ourDelayDecrement);
+		
+		for (RobotInfo ri : getNearbyHostiles())
+		{
+			if (isRangedUnit[ri.type.ordinal()])
+			{
+				// time to shoot us is rounds until
+				// coreDelay + cooldownDelay
+				int dangerTime = (int)Math.floor(ri.coreDelay + ri.type.cooldownDelay);
+				if (dangerTime < roundsUntilDanger)
+					roundsUntilDanger = dangerTime;
+			}
+			else
+			{
+				// move one square closer to enemy
+				// the square enemy needs to get to to attack us
+				MapLocation onecloser = here.add(here.directionTo(ri.location));
+				int dx = Math.abs(onecloser.x-ri.location.x);
+				int dy = Math.abs(onecloser.y-ri.location.y);
+
+				// number of longest straight steps + 1.4 * number of diagonal steps
+				// scaling of movement delay to get here
+				double effDistanceTo = Math.min(dx, dy)*0.4 + Math.max(dx, dy);
+				
+				int dangerTime = (int)Math.floor(ri.coreDelay + ri.type.movementDelay*effDistanceTo + ri.type.cooldownDelay);
+				if (dangerTime < roundsUntilDanger)
+					roundsUntilDanger = dangerTime;
+			}			
+		}
+
+		return roundsUntilDanger;
 	}
 	
 	// compute which direction moves us the farthest from the closest enemy
