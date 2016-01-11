@@ -1,4 +1,4 @@
-package ball_about_that_base;
+package ball_me_maybe;
 
 import battlecode.common.*;
 
@@ -16,6 +16,7 @@ public class MicroBase extends RobotPlayer
 	
 	private DirectionSet canMoveDirs = null;
 	private DirectionSet safeMoveDirs = null;
+	private DirectionSet noPartsDirs = null;
 	private DirectionSet noTurretMoveDirs = null;
 	
 	private int[] distToClosestHostile = null;
@@ -140,6 +141,7 @@ public class MicroBase extends RobotPlayer
 		
 		safeMoveDirs = new DirectionSet();
 		noTurretMoveDirs = new DirectionSet();
+		noPartsDirs = new DirectionSet();
 
 		// only check directions we can actually move
 		for (Direction d : getCanMoveDirs().getDirections())
@@ -182,6 +184,10 @@ public class MicroBase extends RobotPlayer
 				safeMoveDirs.add(d);
 			if (isThisSquareTurretSafe)
 				noTurretMoveDirs.add(d);
+			
+			// keep track of directions without parts
+			if (rc.senseParts(here.add(d)) == 0)
+				noPartsDirs.add(d);
 		}
 	}
 	
@@ -197,30 +203,46 @@ public class MicroBase extends RobotPlayer
 		
 		for (RobotInfo ri : getNearbyHostiles())
 		{
-			if (true)//isRangedUnit[ri.type.ordinal()])
+			switch (ri.type)
 			{
-				// time to shoot us is rounds until
-				// coreDelay + cooldownDelay
+			case ZOMBIEDEN:
+				break;
+			case ARCHON:
+				break;
+			case SCOUT:
+				break;
+			default:
 				int dangerTime = (int)Math.floor(ri.coreDelay + ri.type.cooldownDelay);
 				if (dangerTime < roundsUntilDanger)
 					roundsUntilDanger = dangerTime;
+				break;
 			}
-			else
-			{
-				// move one square closer to enemy
-				// the square enemy needs to get to to attack us
-				MapLocation onecloser = here.add(here.directionTo(ri.location));
-				int dx = Math.abs(onecloser.x-ri.location.x);
-				int dy = Math.abs(onecloser.y-ri.location.y);
-
-				// number of longest straight steps + 1.4 * number of diagonal steps
-				// scaling of movement delay to get here
-				double effDistanceTo = Math.min(dx, dy)*0.4 + Math.max(dx, dy);
-				
-				int dangerTime = (int)Math.floor(ri.coreDelay + ri.type.movementDelay*effDistanceTo + ri.type.cooldownDelay);
-				if (dangerTime < roundsUntilDanger)
-					roundsUntilDanger = dangerTime;
-			}			
+			
+			
+			//			if (true)//isRangedUnit[ri.type.ordinal()])
+//			{
+//				// time to shoot us is rounds until
+//				// coreDelay + cooldownDelay
+//				int dangerTime = (int)Math.floor(ri.coreDelay + ri.type.cooldownDelay);
+//				if (dangerTime < roundsUntilDanger)
+//					roundsUntilDanger = dangerTime;
+//			}
+//			else
+//			{
+//				// move one square closer to enemy
+//				// the square enemy needs to get to to attack us
+//				MapLocation onecloser = here.add(here.directionTo(ri.location));
+//				int dx = Math.abs(onecloser.x-ri.location.x);
+//				int dy = Math.abs(onecloser.y-ri.location.y);
+//
+//				// number of longest straight steps + 1.4 * number of diagonal steps
+//				// scaling of movement delay to get here
+//				double effDistanceTo = Math.min(dx, dy)*0.4 + Math.max(dx, dy);
+//				
+//				int dangerTime = (int)Math.floor(ri.coreDelay + ri.type.movementDelay*effDistanceTo + ri.type.cooldownDelay);
+//				if (dangerTime < roundsUntilDanger)
+//					roundsUntilDanger = dangerTime;
+//			}			
 		}
 
 		return roundsUntilDanger;
@@ -234,7 +256,10 @@ public class MicroBase extends RobotPlayer
 		
 		// if there are no safe moves, just do something
 		if (!dirs.any())
-			dirs = getCanMoveDirs();
+		{
+			dirs = getCanMoveDirs().clone();
+			dirs.remove(Direction.NONE);
+		}
 		
 		if (!dirs.any())
 			return Direction.NONE;
@@ -244,7 +269,7 @@ public class MicroBase extends RobotPlayer
 		
 		for (Direction d : dirs.getDirections())
 		{
-			if (distToClosestHostile[d.ordinal()] > distToClosest)
+			if (bestDir == null || distToClosestHostile[d.ordinal()] > distToClosest)
 			{
 				distToClosest = distToClosestHostile[d.ordinal()];
 				bestDir = d;
@@ -260,6 +285,12 @@ public class MicroBase extends RobotPlayer
 		return noTurretMoveDirs;
 	}
 
+	public DirectionSet getNoPartsDirs()
+	{
+		computeSafetyStats();
+		return noPartsDirs;
+	}
+	
 	public DirectionSet getSafeMoveDirs()
 	{
 		computeSafetyStats();
@@ -324,23 +355,24 @@ public class MicroBase extends RobotPlayer
 			rc.move(d);
 			return true;
 		}
-		else
-		{
-			System.out.println("Movement exception: tried to move but couldn't!");
-			if (d == null)
-			{
-				System.out.println("Reason: null direction");
-				return false;
-			}
-			if (!rc.isCoreReady())
-				System.out.println("Reason: core not ready");
-			if (rc.isLocationOccupied(here.add(d)))
-				System.out.println("Reason: location occupied");
-			if (rc.senseRubble(here.add(d)) > GameConstants.RUBBLE_OBSTRUCTION_THRESH)
-				System.out.println("Reason: too much rubble");
-			
-			return false;
-		}
+//		else
+//		{
+//			System.out.println("Movement exception: tried to move but couldn't!");
+//			if (d == null)
+//			{
+//				System.out.println("Reason: null direction");
+//				return false;
+//			}
+//			if (!rc.isCoreReady())
+//				System.out.println("Reason: core not ready");
+//			if (rc.isLocationOccupied(here.add(d)))
+//				System.out.println("Reason: location occupied");
+//			if (rc.senseRubble(here.add(d)) > GameConstants.RUBBLE_OBSTRUCTION_THRESH)
+//				System.out.println("Reason: too much rubble");
+//			
+//			return false;
+//		}
+		return false;
 	}
 	
 	public static RobotInfo getClosestTurretTarget(RobotInfo[] nearby, MapLocation loc)
