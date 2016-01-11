@@ -164,7 +164,7 @@ public class MicroBase extends RobotPlayer
 			
 			// additionally check if squares are turret safe by looking at sighted enemy turrets
 			sightedTurretLocs = getSightedTurretLocs();
-			if (sightedTurretLocs != null || sightedTurretLocs.length > 0)
+			if (sightedTurretLocs != null && sightedTurretLocs.length > 0)
 			{
 				for (MapLocation turretLoc : sightedTurretLocs)
 				{

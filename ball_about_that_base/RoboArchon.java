@@ -72,7 +72,6 @@ public class RoboArchon extends RobotPlayer
 			}
 			break;
 			
-			
 		case RALLYING:
 			if (arrivedAtRally() || rc.getRoundNum() > MAX_ROUNDS_TO_RALLY)
 				myState = ArchonState.WAYPOINT;			
