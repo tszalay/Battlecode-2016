@@ -54,7 +54,7 @@ public class RoboScout extends RobotPlayer
 		}
 		
         // always send out info about sighted targets
-		sendSightedTarget(Micro.getNearbyHostiles());
+		Sighting.doSendSightingMessage();
 		
 		// and use spare bytecodes to look for stuff
 		MapInfo.scoutAnalyzeSurroundings();
@@ -88,27 +88,6 @@ public class RoboScout extends RobotPlayer
 	private static void doScoutShadowing()
 	{
 		// stay close to the target we are shadowing
-	}
-	
-	
-	public static boolean sendSightedTarget(RobotInfo[] nearbyTargets) throws GameActionException
-	{
-		RobotInfo closestTarget = null;
-		
-		// prioritize the target with the biggest attack radius
-		for (RobotInfo ri : nearbyTargets)
-		{
-			if (closestTarget == null || ri.type.attackRadiusSquared > closestTarget.type.attackRadiusSquared)
-				closestTarget = ri;
-		}
-		
-		if (closestTarget != null)
-		{
-			Message.sendMessageSignal(63,MessageType.SIGHT_TARGET,closestTarget.location);
-			return true;
-		}
-		
-		return false;
 	}
 	
 /*

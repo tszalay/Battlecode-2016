@@ -10,9 +10,11 @@ public class Sighting extends RobotPlayer
 	public static FastLocSet enemySightedTurrets = new FastLocSet();
 	
 	public static final int SIGHT_MESSAGE_RADIUS = 63;
+	public static final int TURRET_MESSAGE_RADIUS = 255;
+	public static final int TURRET_TIMEOUT_ROUNDS = 200;
 	
 	// to be called by scouts and archons
-	public static void doSendSightingMessages() throws GameActionException
+	public static void doSendSightingMessage() throws GameActionException
 	{
 		RobotInfo bestTarget = null;
 		
@@ -25,7 +27,10 @@ public class Sighting extends RobotPlayer
 		
 		if (bestTarget != null)
 		{
-			Message.sendMessageSignal(SIGHT_MESSAGE_RADIUS,MessageType.SIGHT_TARGET,bestTarget.location);
+			if (bestTarget.type == RobotType.TURRET)
+				Message.sendMessageSignal(TURRET_MESSAGE_RADIUS,MessageType.SIGHT_TARGET,bestTarget.location);
+			else
+				Message.sendMessageSignal(SIGHT_MESSAGE_RADIUS,MessageType.SIGHT_TARGET,bestTarget.location);
 		}
 	}
 
@@ -55,5 +60,30 @@ public class Sighting extends RobotPlayer
 		enemySightedTargets.clear();
 		
 		return closest;
+	}
+	
+	public static DirectionSet getTurretSafeDirs()
+	{
+		// find out which directions are safe vis-a-vis enemy turrets
+		DirectionSet dirs = DirectionSet.makeAll();
+		
+		int curround = rc.getRoundNum();
+		
+		for (MapLocation ml : enemySightedTurrets.elements())
+		{
+			// is there any chance we're close to turret, and is it maybe still there?
+			if (here.distanceSquaredTo(ml) < RobotType.SCOUT.sensorRadiusSquared 
+					&& (curround-enemySightedTurrets.get(ml)) < TURRET_TIMEOUT_ROUNDS)
+			{
+				// loop through and remove directions that are still safe
+				for (Direction d : dirs.getDirections())
+				{
+					if (here.add(d).distanceSquaredTo(ml) <= RobotType.TURRET.attackRadiusSquared)
+						dirs.remove(d);
+				}
+			}
+		}
+				
+		return dirs;
 	}
 }
