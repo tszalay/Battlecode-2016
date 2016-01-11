@@ -10,7 +10,6 @@ enum MessageType
 	SPAWN,
 	ZOMBIE_DEN,
 	SIGHT_TARGET,
-	ENEMY_TURRET,
 	SPAM,
 	FREE_BEER,
 	GOOD_PARTS,
@@ -36,7 +35,7 @@ class SignalLocation extends RobotPlayer
 public class Message extends RobotPlayer
 {	
 	// bookkeeping stuff
-	private static final int TYPE_BITS = 5;
+	private static final int TYPE_BITS = 8;
 	private static final int SHIFT_BITS = 32-TYPE_BITS;
 	private static final int SHIFT_MASK = ((1 << SHIFT_BITS)-1);
 	private static final int LOC_OFFSET = 20000;
@@ -45,11 +44,9 @@ public class Message extends RobotPlayer
 	
 	// storage for received/accumulated message info
 	public static ArrayList<SignalLocation> archonLocs = new ArrayList<SignalLocation>();
-	public static ArrayList<SignalLocation> sightLocs = new ArrayList<SignalLocation>();
-	public static ArrayList<SignalLocation> enemyTurretLocs = new ArrayList<SignalLocation>();
 	
 	// and for any transmitted enemy messages, only keep recents (300 rounds)
-	public static ArrayList<Signal> enemySignals = new ArrayList<Signal>();
+//	public static ArrayList<Signal> enemySignals = new ArrayList<Signal>();
 	
 	public static MapLocation recentArchonLocation = null;
 	public static MapLocation recentArchonDest = null;
@@ -74,15 +71,9 @@ public class Message extends RobotPlayer
 			int[] vals = sig.getMessage();
 			MessageType type;
 			if (vals == null)
-			{
 				type = MessageType.NONE;
-			}
 			else
-			{
-				vals = vals.clone();
-				type = MessageType.values()[vals[0] >>> SHIFT_BITS];
-				vals[0] &= SHIFT_MASK;
-			}
+				type = MessageType.values()[readByte(vals[0],3)];
 
 			switch (type)
 			{
@@ -97,10 +88,9 @@ public class Message extends RobotPlayer
 			case SPAM:
 				break;
 			case SIGHT_TARGET:
-				sightLocs.add(new SignalLocation(sig,readLocation(vals)));
-				break;
-			case ENEMY_TURRET:
-				enemyTurretLocs.add(new SignalLocation(sig,readLocation(vals)));
+				Sighting.addSightedTarget(readLocation(vals),
+						RobotType.values()[readByte(vals[1],3)],
+						rc.getRoundNum()-1);
 				break;
 			case ZOMBIE_DEN:
 				MapInfo.updateZombieDens(readLocation(vals),false);
@@ -132,12 +122,16 @@ public class Message extends RobotPlayer
 		recentArchonDest = readLocation(vals);
 		recentArchonRound = rc.getRoundNum();
 	}
-
-	private static MapLocation readLocation(int[] vals)
+	
+	private static int readByte(int val, int ind)
 	{
-		return new MapLocation(vals[0]-LOC_OFFSET, vals[1]-LOC_OFFSET);
+		return (val>>>(ind*8))&255;
 	}
 	
+	private static MapLocation readLocation(int[] vals)
+	{
+		return new MapLocation((vals[0]&SHIFT_MASK)-LOC_OFFSET, vals[1]-LOC_OFFSET);
+	}
 	
 	// to be called by Archon
 	public static void sendBuiltMessage() throws GameActionException

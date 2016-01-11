@@ -19,6 +19,17 @@ public class FastLocSet
             locations.add(loc);
         }
     }
+    
+    public void add(MapLocation loc, int val)
+    {
+        int x = loc.x % HASH;
+        int y = loc.y % HASH;
+        if (value[x][y] != val)
+        {
+            value[x][y] = val;
+            locations.add(loc);
+        }
+    }
 
     public void remove(MapLocation loc)
     {
