@@ -6,15 +6,21 @@ import java.util.*;
 
 public class RoboScout extends RobotPlayer
 {
+	private enum ScoutState
+	{
+		SIGHTING,
+		EXPLORING,
+		SHADOWING
+	}
+
 	public static final int SIGNAL_ROUND = 30; 
-	public static MapLocation target = null;
-	public static boolean isFreeScout = false;
-	public static MapLocation rally = null;
+	
+	public static ScoutState myState = ScoutState.EXPLORING;
+	public static MapLocation myTarget;
 	
 	public static void init() throws GameActionException
 	{
 		// first-spawn scout, send the message right away
-		// to a distance of 100 units
 		if (rc.getRoundNum() < SIGNAL_ROUND)
 		{
 			if (myArchon != null)
@@ -22,26 +28,75 @@ public class RoboScout extends RobotPlayer
 				Message.sendMessageSignal(Message.FULL_MAP_DIST_SQ, MessageType.SPAWN, myArchon.location);
 			}
 		}
-		target = here.add(rand.nextInt(200)-100,rand.nextInt(200)-100);
-		
-//		// =========================================================
-//		// for now, a hacked way of deciding if you are a free scout
-//		Micro.updateAllies();
-//		int numOtherScouts = 0;
-//		for (RobotInfo bot : Micro.nearbyAllies)
-//		{
-//			if (bot.type == RobotType.SCOUT)
-//				numOtherScouts += 1;
-//		}
-//		if (numOtherScouts >= 1)
-//			isFreeScout = true;
-//		// =========================================================
-		isFreeScout = false;
-		
-		rally = here.add(0,1);
-			
 	}
 	
+	
+	public static void turn() throws GameActionException
+	{
+		// state machine update
+		updateState();
+			
+		if (rc.isCoreReady())
+		{
+			// do turn according to state
+			switch (myState)
+			{
+			case EXPLORING:
+				doScoutExploring();
+				break;
+			case SHADOWING:
+				doScoutShadowing();
+				break;
+			case SIGHTING:
+				doScoutSighting();
+				break;
+			}
+		}
+		
+        // send out info about sighted targets
+		//sendSightedTarget(rc.senseHostileRobots(here, RobotType.SCOUT.sensorRadiusSquared));
+		// and use spare bytecodes to look for stuff
+		MapInfo.scoutAnalyzeSurroundings();
+		// and send the updates
+		if (!Micro.isInDanger())
+			MapInfo.doScoutSendUpdates();
+	}
+	
+	private static void updateState() throws GameActionException
+	{
+		// do nothing!
+	}
+	
+	
+	private static void doScoutExploring() throws GameActionException
+	{
+		Debug.setStringTS("Exploring to " + myTarget);
+		// get a random waypoint and move towards it
+		if (myTarget == null || here.distanceSquaredTo(myTarget) < 24 || !MapInfo.isOnMap(myTarget))
+			myTarget = MapInfo.getExplorationWaypoint();
+		
+		if (Micro.isInDanger())
+		{
+			Micro.tryMove(Micro.getBestEscapeDir());
+		}
+		else
+		{
+			Nav.tryGoTo(myTarget, Micro.getCanMoveDirs());
+		}
+	}
+
+	private static void doScoutSighting()
+	{
+		// stay close-ish to closest archon
+		// move away from nearby scouts
+	}
+
+	private static void doScoutShadowing()
+	{
+		// stay close to the target we are shadowing
+	}
+	
+/*
 	public static int[] getNumAlliedScoutsAndTurretsInRange() throws GameActionException
 	{
 		RobotInfo[] allies = rc.senseNearbyRobots(here, RobotType.SCOUT.sensorRadiusSquared, ourTeam);
@@ -64,11 +119,7 @@ public class RoboScout extends RobotPlayer
 		int[] allyInfo = getNumAlliedScoutsAndTurretsInRange();
 		int numAlliedScoutsInRange = allyInfo[0];
 		int numAlliedTurretsInRange = allyInfo[1];
-		if (numAlliedScoutsInRange == 0 && numAlliedTurretsInRange > 0)
-		{
-			isFreeScout = false;
-			return;
-		}
+
 		
 		// relay important sightings
 		RobotInfo[] dens = doRelayDens();
@@ -128,10 +179,6 @@ public class RoboScout extends RobotPlayer
 				}
 			}
 		}
-		
-		// and if we're still not involved in the action, go away from rally
-		Nav.tryGoTo(here.add(here.directionTo(rally).opposite()), Micro.getSafeMoveDirs());
-		
 	}
 	
 	public static RobotInfo[] doRelayTurrets() throws GameActionException
@@ -155,7 +202,7 @@ public class RoboScout extends RobotPlayer
 	public static RobotInfo[] doRelayDens() throws GameActionException
 	{
         // dens
-		/*
+		
         ArrayList<SignalLocation> knownDenSignalLocs = Message.zombieDenLocs;
         if (knownDenSignalLocs != null && knownDenSignalLocs.size() > 0)
         {
@@ -169,7 +216,7 @@ public class RoboScout extends RobotPlayer
 	        return dens;
         }
         return null;
-        */
+        
 		return null;
 	}
 	
@@ -233,15 +280,5 @@ public class RoboScout extends RobotPlayer
 		
 		return false;
 	}
-	
-	public static void turn() throws GameActionException
-	{
-        // send out info about sighted targets
-		sendSightedTarget(rc.senseHostileRobots(here, RobotType.SCOUT.sensorRadiusSquared));
-		
-		if (rc.isCoreReady())
-        {
-    		doFreeScout();
-        }
-	}
+	*/
 }

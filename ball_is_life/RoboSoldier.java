@@ -13,41 +13,58 @@ public class RoboSoldier extends RobotPlayer
 	
 	public static void turn() throws GameActionException
 	{
+		
+		MapLocation[] locs = updateDests(); // updates archon and archon destination using messaging
+		MapLocation archonLoc = locs[0];
+		MapLocation destLoc = locs[1];
+		
 		if (rc.isCoreReady())	
 		{
-			DirectionSet dirs = Micro.getCanMoveDirs();
-			
-			// AK Testing Soldier Behavior. Use with Soldier Ball Test Map.
-			MapLocation archonLoc = Message.recentArchonLocation;
-			//rc.setIndicatorDot(archonLoc, 0, 0, 255);
-			MapLocation destLoc = Message.recentArchonDest;
-			
-			if (archonLoc == null) archonLoc = here;
-			if (destLoc == null) destLoc = here;
-			//rc.setIndicatorDot(destLoc, 0, 255, 0);
-			Direction archonDir = archonLoc.directionTo(destLoc);
-			MapLocation gotoLoc = archonLoc;
-			
-			// Offset gotoLoc towards dest to make soldiers shortcut a little
-			int goToOffset = 3;
-			for (int i=0;i<goToOffset;i++) gotoLoc = gotoLoc.add(archonDir);
-			//rc.setIndicatorDot(gotoLoc, 255, 0, 0);
-			
-			
-			
-			
-			Nav.tryGoTo(gotoLoc, dirs);
-			
-//			if (Micro.isInDanger())
-//			{
-//				Direction d = Micro.getBestEscapeDir();
-//				Micro.tryMove(d);
-//			}
-//			else
-//			{
-//
-//				// Micro.tryMove(dirs.getRandomValid());
-//			}
+			ballMove(archonLoc, destLoc);
 		}
 	}
+	
+	public static MapLocation[] updateDests() throws GameActionException
+	{
+		MapLocation[] locs = new MapLocation[]{null, null};
+		RobotInfo[] allies = Micro.getNearbyAllies();
+		boolean archonInSight = false;
+
+		// update archon and dest locations
+		MapLocation archonLoc = Message.recentArchonLocation;
+		MapLocation destLoc = Message.recentArchonDest;
+		if (archonLoc == null) archonLoc = here;
+		if (destLoc == null) destLoc = here;
+
+		// if you see an archon update your location
+		for (RobotInfo ri : allies)
+		{
+			if (ri.type == RobotType.ARCHON) archonLoc = ri.location;
+			archonInSight = true;
+		}
+
+		// If you can see your saved archonLoc but can't find the archon, assume archon is at Dest
+		if (rc.canSenseLocation(archonLoc) && !archonInSight) archonLoc = destLoc;
+		
+		locs[0] = archonLoc;
+		locs[1] = destLoc;
+		return locs;
+	}
+
+	public static void ballMove(MapLocation archonLoc, MapLocation destLoc) throws GameActionException
+	{
+		Direction dir = null;
+		DirectionSet dirs = Micro.getCanMoveDirs();
+		Direction archonDir = archonLoc.directionTo(destLoc);
+		MapLocation gotoLoc = archonLoc;
+		
+		// Offset gotoLoc towards dest to make soldiers shortcut a little
+		int goToOffset = 5;
+		for (int i=0;i<goToOffset;i++) gotoLoc = gotoLoc.add(archonDir);
+		
+		
+		Nav.tryGoTo(gotoLoc, dirs);
+		
+	}
+	
 }

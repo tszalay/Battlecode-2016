@@ -15,8 +15,7 @@ enum MessageType
 	FREE_BEER,
 	GOOD_PARTS,
 	RALLY_LOCATION,
-	MAP_MIN,
-	MAP_MAX
+	MAP_EDGE
 }
 
 class SignalLocation extends RobotPlayer
@@ -38,6 +37,7 @@ public class Message extends RobotPlayer
 	// bookkeeping stuff
 	private static final int TYPE_BITS = 5;
 	private static final int SHIFT_BITS = 32-TYPE_BITS;
+	private static final int SHIFT_MASK = ((1 << SHIFT_BITS)-1);
 	private static final int LOC_OFFSET = 20000;
 	public static final int FULL_MAP_DIST_SQ = GameConstants.MAP_MAX_HEIGHT*GameConstants.MAP_MAX_HEIGHT +
 											   GameConstants.MAP_MAX_WIDTH*GameConstants.MAP_MAX_WIDTH;
@@ -75,7 +75,7 @@ public class Message extends RobotPlayer
 			else
 			{
 				type = MessageType.values()[vals[0] >>> SHIFT_BITS];
-				vals[0] &= ((1 << SHIFT_BITS)-1);
+				vals[0] &= SHIFT_MASK;
 			}
 
 			switch (type)
@@ -102,16 +102,15 @@ public class Message extends RobotPlayer
 			case RALLY_LOCATION:
 				rallyLocation = readLocation(vals);
 				break;
-			case MAP_MIN:
-				MapInfo.updateMapEdges(readLocation(vals),false);
+			case MAP_EDGE:
+				MapLocation ml = readLocation(vals);
+				MapInfo.updateMapEdge(Direction.values()[ml.x],ml.y,false);
 				break;
-			case MAP_MAX:
-				MapInfo.updateMapEdges(readLocation(vals),false);
+			case GOOD_PARTS:
 				break;
 			}
 		}
 	}
-	
 
 	private static MapLocation readLocation(int[] vals)
 	{
@@ -145,7 +144,6 @@ public class Message extends RobotPlayer
 		rallyLocation = bestloc;
 	}
 	
-	
 	public static void sendMessageSignal(int sq_distance, MessageType type, MapLocation loc) throws GameActionException
 	{
 		int v1 = (type.ordinal() << SHIFT_BITS);
@@ -155,7 +153,7 @@ public class Message extends RobotPlayer
 	
 	private static void sendMessageSignal(int sq_distance, int v1, int v2) throws GameActionException
 	{
-		rc.broadcastMessageSignal(v1,v2,sq_distance*sq_distance);
+		rc.broadcastMessageSignal(v1,v2,sq_distance);
 	}
 	
 	// sends a message-free signal
