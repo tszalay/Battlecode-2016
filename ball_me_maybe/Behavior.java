@@ -38,7 +38,7 @@ public class Behavior extends RobotPlayer
 		
 		MapLocation targetLoc = Sighting.getClosestSightedTarget();
 		
-		if (rc.canAttackLocation(targetLoc))
+		if (targetLoc != null && rc.canAttackLocation(targetLoc))
 		{
 			rc.attackLocation(targetLoc);
 			return true;
