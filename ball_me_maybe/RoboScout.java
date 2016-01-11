@@ -57,7 +57,7 @@ public class RoboScout extends RobotPlayer
 		Sighting.doSendSightingMessage();
 		
 		// and use spare bytecodes to look for stuff
-		MapInfo.scoutAnalyzeSurroundings();
+		MapInfo.analyzeSurroundings();
 		// and send the updates
 		if (!Micro.isInDanger())
 			MapInfo.doScoutSendUpdates();

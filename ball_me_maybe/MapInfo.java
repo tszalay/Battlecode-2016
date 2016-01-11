@@ -189,25 +189,25 @@ public class MapInfo extends RobotPlayer
 		return false;
 	}
 	
-	// function to look for nearby parts, neutrals, etc
-	private static int offsetInd = 0;
-	
-	public static void scoutAnalyzeSurroundings() throws GameActionException
+	// function to look for nearby parts, neutrals, etc, can be used by scouts or archons
+	public static void analyzeSurroundings() throws GameActionException
 	{
-		double visibleparts = 0;
+		double visibleParts = 0;
+		
+		boolean isScout = (rc.getType() == RobotType.SCOUT);
 		
 		// neutral robot check
 		RobotInfo[] neutralRobots = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.NEUTRAL);
 		for (RobotInfo ri : neutralRobots)
 		{
-			updateParts(ri.location, true);
-			visibleparts += ri.type.partCost;
+			updateParts(ri.location, isScout);
+			visibleParts += ri.type.partCost;
 		}
 		
 		// zombie den check
 		for (RobotInfo ri : Micro.getNearbyHostiles())
 			if (ri.type == RobotType.ZOMBIEDEN)
-				updateZombieDens(ri.location, true);
+				updateZombieDens(ri.location, isScout);
 		
 		// monkeypatch for now
 		here = rc.getLocation();
@@ -218,7 +218,8 @@ public class MapInfo extends RobotPlayer
 		{
 			int newval = 0;
 			// loop until we hit a location on the map
-			for (int i=7; i>=1; i--)
+			int i = isScout ? 7 : 5;
+			for (; i>=1; i--)
 			{
 				MapLocation loc = here.add(d,i);
 				if (rc.onTheMap(loc))
@@ -235,22 +236,19 @@ public class MapInfo extends RobotPlayer
 			d = d.rotateRight().rotateRight();
 		}
 		
-		int nchecked = 0;
+		MapLocation[] locs = MapLocation.getAllMapLocationsWithinRadiusSq(here,rc.getType().sensorRadiusSquared);
 		
-		while (Clock.getBytecodesLeft() > 8000)
+		for (MapLocation loc : locs)
 		{
-			MapLocation loc = here.add(MapUtil.allOffsX[offsetInd], MapUtil.allOffsY[offsetInd]);
-			offsetInd = (offsetInd+1) % MapUtil.allOffsX.length;
-			
+			if (Clock.getBytecodesLeft() < 8000)
+				break;
+
 			// check for parts first
 			double nparts = rc.senseParts(loc);
-			if (nparts > 50)
-				updateParts(loc, true);
-			visibleparts += nparts;
-			
-			nchecked++;
-			if (nchecked == MapUtil.allOffsX.length)
-				break;
+			if (nparts > 30)
+				updateParts(loc, isScout);
+
+			visibleParts += nparts;
 		}
 		//System.out.println("Scanned " + nchecked + "/" + MapUtil.allOffsX.length + " locations");
 	}

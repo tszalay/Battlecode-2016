@@ -57,6 +57,8 @@ public class RoboArchon extends RobotPlayer
 		
 			// always do this, no reason not to
 			tryRepair();
+			// and this - uses spare bytecodes up to soft limit
+			MapInfo.analyzeSurroundings();
 			
 			Debug.setStringTS("D:" + MapInfo.zombieDenLocations.elements().size()
 					+ ",P:" + MapInfo.goodPartsLocations.elements().size());
