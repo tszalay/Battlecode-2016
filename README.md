@@ -5,24 +5,18 @@
 
 ## Master TODO
 
-### _Shorter Term_
-- Functions to find distance to edge of turtle and move along edge of turtle in a direction
-  - Should prevent archons from getting stuck in a corner
-- Prioritize turtle build locations that have more adjacent turrets
-  - Should help prevent long branches
-- Sighting scouts moving to/along edge, idle ones (no enemies or movement) clear rubble
-- Free scouts fighting for freedom
-- Add Archon scouts: make sure each Archon ALWAYS has an adjacent scout
-  - If archon scouts senses turret, backs up to give Archon enough room to retreat
-- Create separate turret signal from zombie signal so everyone knows where turrets are
-- Archons can remember all seen turrets and know not to build/go there
-- Scouts have sense of what parts of the map have been explored, know to cover all of it
+### _For Sprint Submission_
+- Archons go to and pick up parts
+- Units clear rubble in the way of Archon
+- Soldiers follow archons and swarm enemies
+- Picked up parts and destroyed zombie dens get removed from map info
+- Scouts can do sighting and shadow units, either turrets or archons
+- Units flee from zombies away from our base
 
 ### _Longer Term_
-- Use simplified/not-bug nav to move inside ball
-- Micro overhaul to account for different enemy considerations
-- Keep track of interesting waypoints (estimated/observed den locations, seen parts, seen enemies)
 - Bored turrets pack up and move to more interesting directions
+- Scouts can steer big zombies and other units will pick off other zombies
+- More intelligent global strategy as it develops
 
 
 
