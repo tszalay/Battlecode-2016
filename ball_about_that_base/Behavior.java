@@ -35,7 +35,7 @@ public class Behavior extends RobotPlayer
 		return false;
 	}
 	
-	public static boolean tryAvoidBeingShot() throws GameActionException
+	public static boolean tryShootAndAvoidBeingShot() throws GameActionException
 	{
 		// this method only performs an action if we are in imminent danger of being shot
 		// otherwise it does nothing and returns false
@@ -48,15 +48,11 @@ public class Behavior extends RobotPlayer
 			return false;
 		}
 		
-		// if we are not safe, but cannot move at all, try to shoot
-		if (!rc.isCoreReady())
-			return tryAttackSomeone();
-		
-		// we are not safe, and we can move, so try to retreat
-		if (tryRetreat())
+		// if we are not safe, try to retreat and get in as many pot shots as possible
+		// if we cannot move, shoot
+		if (tryShootWhileRetreating())
 			return true;
 		
-		// if we cannot move in a safe retreat direction, default to trying to shoot
 		return tryAttackSomeone();
 	}
 	
@@ -123,10 +119,7 @@ public class Behavior extends RobotPlayer
 		}
 		else
 		{
-			if (!tryRetreat())
-				return tryAttackSomeone();
-			else
-				return true;
+			return tryRetreat();
 		}
 	}
 	
