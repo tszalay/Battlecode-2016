@@ -6,16 +6,16 @@ import java.util.*;
 public class FastLocSet
 {
     private static final int HASH = Math.max(GameConstants.MAP_MAX_WIDTH, GameConstants.MAP_MAX_HEIGHT);
-    private boolean[][] has = new boolean[HASH][HASH];
+    private int[][] value = new int[HASH][HASH];
     private List<MapLocation> locations = new ArrayList<MapLocation>();
 
     public void add(MapLocation loc)
     {
         int x = loc.x % HASH;
         int y = loc.y % HASH;
-        if (!has[x][y])
+        if (value[x][y] == 0)
         {
-            has[x][y] = true;
+            value[x][y] = 1;
             locations.add(loc);
         }
     }
@@ -24,21 +24,26 @@ public class FastLocSet
     {
         int x = loc.x % HASH;
         int y = loc.y % HASH;
-        if (has[x][y])
+        if (value[x][y] > 0)
         {
-            has[x][y] = false;
+            value[x][y] = 0;
             locations.remove(loc);
         }
+    }
+    
+    public int get(MapLocation loc)
+    {
+    	return value[loc.x%HASH][loc.y%HASH];
     }
 
     public boolean contains(MapLocation loc)
     {
-        return has[loc.x % HASH][loc.y % HASH];
+        return value[loc.x % HASH][loc.y % HASH] > 0;
     }
     
     public void clear()
     {
-        has = new boolean[HASH][HASH];
+        value = new int[HASH][HASH];
         locations.clear();
     }
     
