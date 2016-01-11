@@ -18,6 +18,8 @@ public class RoboArchon extends RobotPlayer
 	static int scheduleCounter = rand.nextInt(100);
 	
 	static final int MAX_ROUNDS_TO_RALLY = 200;
+	static final int DEST_MESSAGE_FREQ = 10;
+	static final int DEST_MESSAGE_RANGE = 63;
 	
 	static ArchonState myState = ArchonState.INIT;
 
@@ -33,7 +35,7 @@ public class RoboArchon extends RobotPlayer
 		
 		// always try this if we can, before moving
 		tryActivateNeutrals();
-			
+		
 		// do turn according to state
 		switch (myState)
 		{
@@ -102,6 +104,10 @@ public class RoboArchon extends RobotPlayer
 		MapLocation dest = MapInfo.getClosestPart();
 		if (dest == null)
 			dest = MapInfo.getExplorationWaypoint();
+		
+		// and send a message every certain few rounds
+		if (rc.getRoundNum() % DEST_MESSAGE_FREQ == 0)
+			Message.sendMessageSignal(DEST_MESSAGE_RANGE, MessageType.ARCHON_DEST, dest);
 
 		Behavior.tryGoToWithoutBeingShot(dest);
 	}
@@ -299,7 +305,7 @@ public class RoboArchon extends RobotPlayer
 		// RobotType nextRobotType = RobotType.values()[robotSchedule[scheduleCounter%robotSchedule.length]];
 		
 		// make a turret if we don't have enough around in our ball
-		RobotInfo[] allies = rc.senseNearbyRobots(2, ourTeam);
+/*		RobotInfo[] allies = rc.senseNearbyRobots(2, ourTeam);
 		int numTurretsAround = 0;
 		for (RobotInfo ri : allies)
 		{
@@ -312,6 +318,8 @@ public class RoboArchon extends RobotPlayer
 		{
 			nextRobotType = RobotType.SCOUT;
 		}
+*/		
+		RobotType nextRobotType = (rand.nextInt(5) == 0) ? RobotType.SCOUT : RobotType.SOLDIER;
 		
 		return nextRobotType;
 	}

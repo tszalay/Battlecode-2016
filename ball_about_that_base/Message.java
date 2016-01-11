@@ -15,7 +15,8 @@ enum MessageType
 	FREE_BEER,
 	GOOD_PARTS,
 	RALLY_LOCATION,
-	MAP_EDGE
+	MAP_EDGE,
+	ARCHON_DEST
 }
 
 class SignalLocation extends RobotPlayer
@@ -49,6 +50,10 @@ public class Message extends RobotPlayer
 	
 	// and for any transmitted enemy messages, only keep recents (300 rounds)
 	public static ArrayList<Signal> enemySignals = new ArrayList<Signal>();
+	
+	public static MapLocation recentArchonLocation = null;
+	public static MapLocation recentArchonDest = null;
+	public static int 		  recentArchonRound = 0;
 	
 	// and other things
 	public static MapLocation rallyLocation = null;
@@ -110,8 +115,22 @@ public class Message extends RobotPlayer
 			case GOOD_PARTS:
 				MapInfo.updateParts(readLocation(vals),false);				
 				break;
+			case ARCHON_DEST:
+				updateRecentArchon(sig, vals);
+				break;
 			}
 		}
+	}
+	
+	private static void updateRecentArchon(Signal s, int[] vals)
+	{
+		if (recentArchonLocation != null && here.distanceSquaredTo(s.getLocation()) > here.distanceSquaredTo(recentArchonLocation)
+					&& rc.getRoundNum() - recentArchonRound < 20)
+			return;
+		
+		recentArchonLocation = s.getLocation();
+		recentArchonDest = readLocation(vals);
+		recentArchonRound = rc.getRoundNum();
 	}
 
 	private static MapLocation readLocation(int[] vals)
