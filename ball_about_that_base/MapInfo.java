@@ -194,9 +194,15 @@ public class MapInfo extends RobotPlayer
 	
 	public static void scoutAnalyzeSurroundings() throws GameActionException
 	{
+		double visibleparts = 0;
+		
 		// neutral robot check
-		for (RobotInfo ri : rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.NEUTRAL))
+		RobotInfo[] neutralRobots = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.NEUTRAL);
+		for (RobotInfo ri : neutralRobots)
+		{
 			updateParts(ri.location, true);
+			visibleparts += ri.type.partCost;
+		}
 		
 		// zombie den check
 		for (RobotInfo ri : Micro.getNearbyHostiles())
@@ -229,6 +235,8 @@ public class MapInfo extends RobotPlayer
 			d = d.rotateRight().rotateRight();
 		}
 		
+		int nchecked = 0;
+		
 		while (Clock.getBytecodesLeft() > 8000)
 		{
 			MapLocation loc = here.add(MapUtil.allOffsX[offsetInd], MapUtil.allOffsY[offsetInd]);
@@ -238,6 +246,12 @@ public class MapInfo extends RobotPlayer
 			double nparts = rc.senseParts(loc);
 			if (nparts > 50)
 				updateParts(loc, true);
+			visibleparts += nparts;
+			
+			nchecked++;
+			if (nchecked == MapUtil.allOffsX.length)
+				break;
 		}
+		//System.out.println("Scanned " + nchecked + "/" + MapUtil.allOffsX.length + " locations");
 	}
 }
