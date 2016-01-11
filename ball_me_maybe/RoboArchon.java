@@ -104,7 +104,7 @@ public class RoboArchon extends RobotPlayer
 		if (here.equals(loc))
 			MapInfo.removeWaypoint(loc);
 		
-		MapLocation dest = MapInfo.getClosestPart();
+		MapLocation dest = MapInfo.getClosestPartOrDen();
 		if (dest == null)
 			dest = MapInfo.getExplorationWaypoint();
 		
