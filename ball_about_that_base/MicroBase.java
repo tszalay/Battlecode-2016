@@ -1,6 +1,7 @@
 package ball_about_that_base;
 
 import battlecode.common.*;
+
 import java.util.*;
 
 public class MicroBase extends RobotPlayer
@@ -9,6 +10,8 @@ public class MicroBase extends RobotPlayer
 	private RobotInfo[] nearbyZombies = null;
 	private RobotInfo[] nearbyHostiles = null;
 	private RobotInfo[] nearbyAllies = null;
+	
+	private MapLocation[] sightedHostileLocs = null;
 	
 	private DirectionSet canMoveDirs = null;
 	private DirectionSet safeMoveDirs = null;
@@ -55,6 +58,30 @@ public class MicroBase extends RobotPlayer
 		
 		nearbyHostiles = rc.senseHostileRobots(here, rc.getType().sensorRadiusSquared);
 		return nearbyHostiles;
+	}
+	
+	public MapLocation[] getSightedHostileLocs()
+	{
+		if (sightedHostileLocs != null)
+			return sightedHostileLocs;
+		
+		// get this information from Message, from scout sighting
+		ArrayList<SignalLocation> sightedHostileSigLocs = Message.sightLocs;
+		
+		if (sightedHostileSigLocs == null || sightedHostileSigLocs.size() == 0)
+		{
+			sightedHostileLocs = null;
+		}
+		else
+		{
+			sightedHostileLocs = new MapLocation[sightedHostileSigLocs.size()];
+			for (int i = 0; i < sightedHostileSigLocs.size(); i ++)
+			{
+				sightedHostileLocs[i] = sightedHostileSigLocs.get(i).loc;
+			}
+		}
+		
+		return sightedHostileLocs;
 	}
 	
 	public RobotInfo getLowestHealth(RobotInfo[] bots)

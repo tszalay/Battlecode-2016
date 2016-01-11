@@ -32,6 +32,20 @@ public class Behavior extends RobotPlayer
 			return true;
 		}
 		
+		// attack a sighted target if possible
+		MapLocation[] sightedTargetLocs = Micro.getSightedHostileLocs();
+		if (sightedTargetLocs == null || sightedTargetLocs.length == 0)
+			return false;
+		
+		for (MapLocation targetLoc : sightedTargetLocs)
+		{
+			if (rc.canAttackLocation(targetLoc))
+			{
+				rc.attackLocation(targetLoc);
+				return true;
+			}
+		}
+		
 		return false;
 	}
 	

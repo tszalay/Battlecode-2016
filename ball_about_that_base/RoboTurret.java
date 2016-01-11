@@ -29,9 +29,14 @@ public class RoboTurret extends RobotPlayer
 	public static void turn() throws GameActionException
 	{
 		if (rc.getType() == RobotType.TURRET)
-			turnTurret();
+		{
+			//turnTurret();
+			Behavior.tryAttackSomeone();
+		}
 		else
+		{
 			turnTTM();
+		}
 	}
 	
 	public static void turnTurret() throws GameActionException
