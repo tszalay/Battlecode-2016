@@ -22,11 +22,6 @@ public class MicroBase extends RobotPlayer
 	
 	private int roundsUntilDanger = -1;
 	
-	private static boolean[] isRangedUnit = {
-	
-	};
-
-	
 	public MicroBase()
 	{
 	}
@@ -69,7 +64,9 @@ public class MicroBase extends RobotPlayer
 	
 	public MapLocation[] getSightedHostileLocs()
 	{
-		if (sightedHostileLocs != null)
+		return null;
+		
+		/*if (sightedHostileLocs != null)
 			return sightedHostileLocs;
 		
 		// get this information from Message, from scout sighting
@@ -88,7 +85,7 @@ public class MicroBase extends RobotPlayer
 			}
 		}
 		
-		return sightedHostileLocs;
+		return sightedHostileLocs;*/
 	}
 	
 	public MapLocation[] getSightedTurretLocs()
@@ -101,7 +98,7 @@ public class MicroBase extends RobotPlayer
 		
 		if (sightedTurretSigLocs == null || sightedTurretSigLocs.size() == 0)
 		{
-			sightedTurretLocs = null;
+			sightedTurretLocs = new MapLocation[0];
 		}
 		else
 		{
@@ -168,7 +165,7 @@ public class MicroBase extends RobotPlayer
 
 			}
 			
-			// additionally check if squares are turret safe by looking at sighted enemy turrets
+			/*// additionally check if squares are turret safe by looking at sighted enemy turrets
 			sightedTurretLocs = getSightedTurretLocs();
 			if (sightedTurretLocs != null && sightedTurretLocs.length > 0)
 			{
@@ -177,7 +174,7 @@ public class MicroBase extends RobotPlayer
 					if (testloc.distanceSquaredTo(turretLoc) <= RobotType.TURRET.attackRadiusSquared)
 						isThisSquareTurretSafe = false;
 				}
-			}
+			}*/
 			
 			distToClosestHostile[d.ordinal()] = closestDistSq;
 			
@@ -202,7 +199,7 @@ public class MicroBase extends RobotPlayer
 		
 		for (RobotInfo ri : getNearbyHostiles())
 		{
-			if (isRangedUnit[ri.type.ordinal()])
+			if (true)//isRangedUnit[ri.type.ordinal()])
 			{
 				// time to shoot us is rounds until
 				// coreDelay + cooldownDelay

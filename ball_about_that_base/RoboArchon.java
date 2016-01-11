@@ -30,6 +30,9 @@ public class RoboArchon extends RobotPlayer
 		// state machine update
 		updateState();
 		Debug.setStringSJF(myState.toString());
+		
+		// always try this if we can, before moving
+		tryActivateNeutrals();
 			
 		// do turn according to state
 		switch (myState)
@@ -92,7 +95,15 @@ public class RoboArchon extends RobotPlayer
 	
 	public static void doWaypoint() throws GameActionException
 	{
-		Behavior.tryGoToWithoutBeingShot(MapInfo.getClosestPart());
+		MapLocation loc = MapInfo.getClosestPart(); 
+		if (here.equals(loc))
+			MapInfo.removeWaypoint(loc);
+		
+		MapLocation dest = MapInfo.getClosestPart();
+		if (dest == null)
+			dest = MapInfo.getExplorationWaypoint();
+
+		Behavior.tryGoToWithoutBeingShot(dest);
 	}
 	
 	public static void doRally() throws GameActionException
@@ -133,6 +144,26 @@ public class RoboArchon extends RobotPlayer
 		// convert to directions and try to build
 		tryBuildUnit(nextRobotType, dir);
 		return;
+	}
+	
+	public static boolean tryActivateNeutrals() throws GameActionException
+	{
+		if (!rc.isCoreReady())
+			return false;
+		
+		// check adjacent squares for neutrals
+		RobotInfo[] adjNeutrals = rc.senseNearbyRobots(2, Team.NEUTRAL);
+		
+		if (adjNeutrals.length > 0)
+		{
+			// activate just the first one
+			rc.activate(adjNeutrals[0].location);
+			// remove it from parts list
+			MapInfo.removeWaypoint(adjNeutrals[0].location);
+			return true;
+		}
+		
+		return false;
 	}
 	
 	public static boolean tryRepair() throws GameActionException

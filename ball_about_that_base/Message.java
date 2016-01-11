@@ -66,7 +66,7 @@ public class Message extends RobotPlayer
 				continue;
 			}
 			
-			int[] vals = sig.getMessage().clone();
+			int[] vals = sig.getMessage();
 			MessageType type;
 			if (vals == null)
 			{
@@ -74,6 +74,7 @@ public class Message extends RobotPlayer
 			}
 			else
 			{
+				vals = vals.clone();
 				type = MessageType.values()[vals[0] >>> SHIFT_BITS];
 				vals[0] &= SHIFT_MASK;
 			}

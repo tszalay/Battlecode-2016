@@ -129,7 +129,7 @@ public class MapInfo extends RobotPlayer
 	}
 
 	
-	// these are to be called by scouts/message to add a zombie den if it isn't in there already
+	// these are to be called by scouts/message to add a zombie den/part if it isn't in there already
 	public static void updateZombieDens(MapLocation loc, boolean sendUpdate)
 	{
 		// if we already reported it, or we already have one queued to send,
@@ -153,6 +153,13 @@ public class MapInfo extends RobotPlayer
 		
 		if (sendUpdate)
 			newParts = loc;
+	}
+	
+	public static void removeWaypoint(MapLocation loc)
+	{
+		// remove the part, and send that it got removed
+		goodPartsLocations.remove(loc);
+		zombieDenLocations.remove(loc);
 	}
 	
 	// function to send updated info as a scout
