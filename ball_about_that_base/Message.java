@@ -121,9 +121,15 @@ public class Message extends RobotPlayer
 	// to be called by Archon
 	public static void sendBuiltMessage() throws GameActionException
 	{
-		// our rally location should have been set by the Archon already
-		if (Message.rallyLocation != null)
-			sendMessageSignal(2, MessageType.RALLY_LOCATION, Message.rallyLocation);
+		// send all four map edge signals
+		Message.sendMessageSignal(MapInfo.fullMapDistanceSq(), MessageType.MAP_EDGE,
+				new MapLocation(Direction.NORTH.ordinal(), MapInfo.mapMin.y));
+		Message.sendMessageSignal(MapInfo.fullMapDistanceSq(), MessageType.MAP_EDGE,
+				new MapLocation(Direction.EAST.ordinal(), MapInfo.mapMax.x));
+		Message.sendMessageSignal(MapInfo.fullMapDistanceSq(), MessageType.MAP_EDGE,
+				new MapLocation(Direction.SOUTH.ordinal(), MapInfo.mapMax.y));
+		Message.sendMessageSignal(MapInfo.fullMapDistanceSq(), MessageType.MAP_EDGE,
+				new MapLocation(Direction.WEST.ordinal(), MapInfo.mapMin.x));
 	}
 	
 	// also by archon
