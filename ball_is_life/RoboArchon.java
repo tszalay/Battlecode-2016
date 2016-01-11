@@ -286,9 +286,9 @@ public class RoboArchon extends RobotPlayer
 	{
 		// sets a rally loc and goes to it. If it's there or on edge of map, picks a new one. 
 		// Periodically sends messages to update location and destination.
-		int messageFreq = 10; // sends update every n ticks
-		int newDestRange = 100; // messages in this sq radius when getting new rally
-		int updateRange = 100; // update messages sent within this sq radius
+		int messageFreq = 7; // sends update every n ticks
+		int newDestRange = 150; // messages in this sq radius when getting new rally
+		int updateRange = 150; // update messages sent within this sq radius
 		
 		boolean needNewRally = searchRallyLoc == null || !rc.onTheMap(here.add(here.directionTo(searchRallyLoc))) || here.distanceSquaredTo(searchRallyLoc) < 10;
 

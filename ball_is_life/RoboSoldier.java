@@ -13,21 +13,22 @@ public class RoboSoldier extends RobotPlayer
 	
 	public static void turn() throws GameActionException
 	{
+		RobotInfo[] allies = Micro.getNearbyAllies();
 		
-		MapLocation[] locs = updateDests(); // updates archon and archon destination using messaging
+		MapLocation[] locs = updateDests(allies); // updates archon and archon destination using messaging
 		MapLocation archonLoc = locs[0];
 		MapLocation destLoc = locs[1];
 		
 		if (rc.isCoreReady())	
 		{
-			ballMove(archonLoc, destLoc);
+			ballMove(archonLoc, destLoc, allies);
 		}
 	}
 	
-	public static MapLocation[] updateDests() throws GameActionException
+	public static MapLocation[] updateDests(RobotInfo[] allies) throws GameActionException
 	{
 		MapLocation[] locs = new MapLocation[]{null, null};
-		RobotInfo[] allies = Micro.getNearbyAllies();
+
 		boolean archonInSight = false;
 
 		// update archon and dest locations
@@ -51,9 +52,13 @@ public class RoboSoldier extends RobotPlayer
 		return locs;
 	}
 
-	public static void ballMove(MapLocation archonLoc, MapLocation destLoc) throws GameActionException
+	public static void ballMove(MapLocation archonLoc, MapLocation destLoc, RobotInfo[] allies) throws GameActionException
 	{
+		int tooManyAdjAllies = 1;
 		Direction dir = null;
+		MapLocation repelLoc = here;
+		int numAdjAllies = 0;
+
 		DirectionSet dirs = Micro.getCanMoveDirs();
 		Direction archonDir = archonLoc.directionTo(destLoc);
 		MapLocation gotoLoc = archonLoc;
@@ -62,8 +67,17 @@ public class RoboSoldier extends RobotPlayer
 		int goToOffset = 5;
 		for (int i=0;i<goToOffset;i++) gotoLoc = gotoLoc.add(archonDir);
 		
+		for (RobotInfo ri : allies)
+		{
+			if (ri.location.isAdjacentTo(here))
+			{
+				numAdjAllies++;
+				repelLoc = repelLoc.add(ri.location.directionTo(here));
+			}
+		}
 		
-		Nav.tryGoTo(gotoLoc, dirs);
+		if (numAdjAllies >= tooManyAdjAllies) Nav.tryGoTo(repelLoc, dirs);
+		else Nav.tryGoTo(gotoLoc, dirs);
 		
 	}
 	
