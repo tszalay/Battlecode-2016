@@ -1,6 +1,7 @@
 package ball_about_that_base;
 
 import battlecode.common.*;
+
 import java.util.*;
 
 public class MapInfo extends RobotPlayer
@@ -10,10 +11,11 @@ public class MapInfo extends RobotPlayer
 	//public static FastLocSet exploredMapWaypoints = new FastLocSet();
 	
 	public static MapLocation mapMin = new MapLocation(-18000,-18000);
-	public static MapLocation mapMax = new MapLocation(18000,18000);
+	public static MapLocation mapMax = new MapLocation(18001,18001);
 	
-	public static boolean mapMinUpdated = false;
-	public static boolean mapMaxUpdated = false;
+	// update the boundary on one of the map min/maxes
+	public static Direction newMapDir = null;
+	public static int newMapVal;
 	
 	public static MapLocation newZombieDen = null;
 	public static MapLocation newParts = null;
@@ -24,8 +26,8 @@ public class MapInfo extends RobotPlayer
 	public static MapLocation getExplorationWaypoint()
 	{
 		// this one should get transmitted to a scout
-		return new MapLocation(rand.nextInt(mapMax.x - mapMin.x) + mapMax.x,
-							   rand.nextInt(mapMax.y - mapMin.y) + mapMax.y);
+		return new MapLocation(rand.nextInt(mapMax.x - mapMin.x) + mapMin.x,
+							   rand.nextInt(mapMax.y - mapMin.y) + mapMin.y);
 	}
 	
 	public static MapLocation getClosestPart()
@@ -52,6 +54,12 @@ public class MapInfo extends RobotPlayer
 		return denloc;
 	}
 	
+	public static boolean isOnMap(MapLocation loc)
+	{
+		return (loc.x > mapMin.x) && (loc.y > mapMin.y) &&
+				(loc.y < mapMax.x) && (loc.y < mapMax.y);
+	}
+	
 	// distance required to cover the full map, for scout transmission
 	public static int fullMapDistanceSq()
 	{
@@ -68,26 +76,62 @@ public class MapInfo extends RobotPlayer
 	}
 	
 	// these are to be called by scouts or by Message,
-	// using a new point that is known to be off the map
-	public static void updateMapEdges(MapLocation loc, boolean sendUpdate)
+	// to update the given edge
+	public static void updateMapEdge(Direction dir, int val, boolean sendUpdate)
 	{
-		if (loc.x > mapMin.x || loc.y > mapMin.y)
+		boolean newval = false;
+		
+		// update the correct direction
+		switch (dir)
 		{
-			mapMin = new MapLocation(
-					Math.max(loc.x,mapMin.x),
-					Math.max(loc.y,mapMin.y));
-			if (sendUpdate)
-				mapMinUpdated = true;
+		case NORTH:
+			if (val > mapMin.y)
+			{
+				mapMin = new MapLocation(mapMin.x,val);
+				if (sendUpdate)
+					newval = true;
+			}
+			break;
+		case EAST:
+			if (val < mapMax.x)
+			{
+				mapMax = new MapLocation(val,mapMax.y);
+				if (sendUpdate)
+					newval = true;
+			}
+			break;
+		case WEST:
+			if (val > mapMin.x)
+			{
+				mapMin = new MapLocation(val,mapMin.y);
+				if (sendUpdate)
+					newval = true;
+			}
+			break;
+		case SOUTH:
+			if (val < mapMax.y)
+			{
+				mapMax = new MapLocation(mapMax.x,val);
+				if (sendUpdate)
+					newval = true;
+			}
+			break;
+		default:
+			System.out.print("Invalid direction to updateMapEdge");
+			break;
 		}
-		if (loc.x < mapMax.x || loc.y < mapMax.y)
+		
+		// and post it to be sent
+		if (newval)
 		{
-			mapMax = new MapLocation(
-					Math.min(loc.x,mapMax.x),
-					Math.min(loc.y,mapMax.y));
-			if (sendUpdate)
-				mapMaxUpdated = true;
+			newMapDir = dir;
+			newMapVal = val;
 		}
+		
+		if (rc.getType() == RobotType.ARCHON)
+			System.out.println("New map edge: " + mapMin + ", " + mapMax);
 	}
+
 	
 	// these are to be called by scouts/message to add a zombie den if it isn't in there already
 	public static void updateZombieDens(MapLocation loc, boolean sendUpdate)
@@ -115,22 +159,14 @@ public class MapInfo extends RobotPlayer
 	}
 	
 	// function to send updated info as a scout
-	public static boolean tryScoutSendUpdates() throws GameActionException
+	public static boolean doScoutSendUpdates() throws GameActionException
 	{
-		if (Micro.isInDanger())
-			return false;
-		
 		// only send one at a time
-		if (mapMinUpdated)
+		if (newMapDir != null)
 		{
-			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.MAP_MIN, mapMin);
-			mapMinUpdated = false;
-			return true;
-		}
-		if (mapMaxUpdated)
-		{
-			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.MAP_MAX, mapMax);
-			mapMaxUpdated = false;
+			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.MAP_EDGE,
+					new MapLocation(newMapDir.ordinal(), newMapVal));
+			newMapDir = null;
 			return true;
 		}
 		if (newZombieDen != null)
@@ -160,18 +196,41 @@ public class MapInfo extends RobotPlayer
 			for (RobotInfo ri : nearbyNeutrals)
 				updateParts(ri.location, true);
 		
+		// monkeypatch for now
+		here = rc.getLocation();
+		
+		// loop through and see if we need to update anyone
+		Direction d = Direction.NORTH;
+		for (int j=0; j<4; j++)
+		{
+			int newval = 0;
+			// loop until we hit a location on the map
+			for (int i=7; i>=1; i--)
+			{
+				MapLocation loc = here.add(d,i);
+				if (rc.onTheMap(loc))
+					break;
+				// even means y, odd means x
+				newval = ((j&1)==0)	? loc.y : loc.x;
+			}
+			if (newval > 0)
+			{
+				updateMapEdge(d, newval, true);
+				break;
+			}
+			
+			d = d.rotateRight().rotateRight();
+		}
+		
 		while (Clock.getBytecodesLeft() > 8000)
 		{
-			MapLocation loc = new MapLocation(MapUtil.allOffsX[offsetInd], MapUtil.allOffsY[offsetInd]);
+			MapLocation loc = here.add(MapUtil.allOffsX[offsetInd], MapUtil.allOffsY[offsetInd]);
 			offsetInd = (offsetInd+1) % MapUtil.allOffsX.length;
 			
 			// check for parts first
-			if (rc.senseParts(loc) > 50)
+			double nparts = rc.senseParts(loc);
+			if (nparts > 50)
 				updateParts(loc, true);
-			
-			// and if it's off the map
-			if (!rc.onTheMap(loc))
-				updateMapEdges(loc, true);
 		}
 	}
 }
