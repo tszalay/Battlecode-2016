@@ -36,6 +36,12 @@ public class BallMove extends RobotPlayer
 //		if (numAdjAllies >= tooManyAdjAllies) Nav.tryGoTo(repelLoc, dirs);
 //		else Nav.tryGoTo(gotoLoc, dirs);
 		
+		// if we can see our archon, clear rubble
+		if (rc.canSense(archonLoc))
+		{
+			tryClearRubble(here.add(here.directionTo(destLoc)));
+		}
+		
 		Behavior.tryGoToWithoutBeingShot(destLoc);
 		
 	}
@@ -65,5 +71,19 @@ public class BallMove extends RobotPlayer
 		locs[0] = archonLoc;
 		locs[1] = destLoc;
 		return locs;
+	}
+	
+	public static boolean tryClearRubble(MapLocation loc) throws GameActionException
+	{
+		if (!rc.isCoreReady())
+			return false;
+		
+		Direction rubbleDir = null;
+		if (rc.senseRubble(loc) >= GameConstants.RUBBLE_SLOW_THRESH)
+		{
+			rc.clearRubble(here.directionTo(loc));
+		}
+		
+		return false;
 	}
 }
