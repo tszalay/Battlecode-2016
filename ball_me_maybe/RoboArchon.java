@@ -100,21 +100,40 @@ public class RoboArchon extends RobotPlayer
 	
 	public static void doWaypoint() throws GameActionException
 	{
+		// look for waypoint
+		MapLocation loc = MapInfo.getClosestPartOrDen();
+		
 		// check to see if we should remove a waypoint
-		MapLocation loc = MapInfo.getClosestPartOrDen(); 
 		if (here.equals(loc))
 			MapInfo.removeWaypoint(loc);
 		
-		// if not, then if we don't have a waypoint, explore
+		// if we don't have a waypoint, explore
 		if (loc == null)
 			loc = MapInfo.getExplorationWaypoint();
 		
-		// and send a message every certain few rounds
-		if (rc.getRoundNum() % DEST_MESSAGE_FREQ == 0)
-			Message.sendMessageSignal(DEST_MESSAGE_RANGE, MessageType.ARCHON_DEST, loc);
+		// if we are the leader
+		if (rc.getID() <= Message.recentArchonID)
+		{
+			Debug.setStringRR("LEADER");
+		}
 		
+		// if we are a follower
+		else
+		{
+			// look for leader
+			loc = Message.recentArchonLocation;
+			Debug.setStringRR("FOLLOWER: leader's ID is " + Message.recentArchonID);
+		}
+
 		if (loc != null)
+		{
+			// and send a message every certain few rounds
+			if (rc.getRoundNum() % DEST_MESSAGE_FREQ == 0)
+				Message.sendMessageSignal(DEST_MESSAGE_RANGE, MessageType.ARCHON_DEST, loc);
+			
+			// go where we should
 			Behavior.tryGoToWithoutBeingShot(loc, Micro.getSafeMoveDirs());
+		}
 	}
 	
 	public static void doRally() throws GameActionException

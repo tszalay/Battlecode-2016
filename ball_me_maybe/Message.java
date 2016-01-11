@@ -51,7 +51,7 @@ public class Message extends RobotPlayer
 	public static MapLocation recentArchonLocation = null;
 	public static MapLocation recentArchonDest = null;
 	public static int 		  recentArchonRound = 0;
-	public static int		  recentArchonID = 1000;
+	public static int		  recentArchonID = 100000000;
 	
 	// and other things
 	public static MapLocation rallyLocation = null;
