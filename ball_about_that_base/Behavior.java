@@ -13,6 +13,10 @@ public class Behavior extends RobotPlayer
 	public static boolean tryAttackSomeone() throws GameActionException
 	{
 		// attack someone in range if possible, low health first, prioritizing zombies
+		
+		if (rc.getWeaponDelay() >= 1)
+			return false;
+		
 		RobotInfo zombieTarget = Micro.getLowestHealth(Micro.getNearbyZombies());
 		RobotInfo enemyTarget = Micro.getLowestHealth(Micro.getNearbyEnemies());
 		
@@ -96,6 +100,10 @@ public class Behavior extends RobotPlayer
 		// if not, go to spot that is farthest from closest enemy
 		
 		RobotInfo[] hostiles = Micro.getNearbyHostiles();
+		
+		if (hostiles == null || hostiles.length == 0)
+			return false;
+		
 		int minRoundsBeforeTheyCanShoot = 100;
 		double ourDelayDecrement = 1; // valid for bytecode use <= 2000.  if we are going over this, we'll need to use the formula in the future
 		int roundsForUsToShootAndMove = (int) Math.floor( Math.max( (rc.getWeaponDelay() + rc.getType().cooldownDelay), rc.getCoreDelay()) / ourDelayDecrement);
@@ -155,7 +163,8 @@ public class Behavior extends RobotPlayer
     	Direction bestMoveDir = safeMoveDirs.getDirectionTowards(here, here.add(dir));
     	
     	// move if it's valid
-    	Micro.tryMove(bestMoveDir);
+    	if (bestMoveDir != null)
+    		Micro.tryMove(bestMoveDir);
     	
         return false;
     }
