@@ -39,10 +39,18 @@ public class BallMove extends RobotPlayer
 		// if we can see our archon, clear rubble
 		if (rc.canSense(archonLoc))
 		{
+			if (rc.senseParts(here) > 0 || here.equals(archonLoc.directionTo(destLoc)))
+			{
+				// move off parts, or move if we're in the archon's way
+				Behavior.tryAdjacentSafeMoveToward(here.directionTo(archonLoc).opposite());
+			}
 			tryClearRubble(here.add(here.directionTo(destLoc)));
 		}
 		
-		Behavior.tryGoToWithoutBeingShot(destLoc);
+		DirectionSet safeDirs = Micro.getSafeMoveDirs();
+		DirectionSet safeNoPartsDirs = safeDirs.and(Micro.getNoPartsDirs());
+		
+		Behavior.tryGoToWithoutBeingShot(destLoc, safeNoPartsDirs);
 		
 	}
 	
@@ -75,10 +83,9 @@ public class BallMove extends RobotPlayer
 	
 	public static boolean tryClearRubble(MapLocation loc) throws GameActionException
 	{
-		if (!rc.isCoreReady())
+		if (!rc.isCoreReady() || here.directionTo(loc).equals(Direction.OMNI)) // can't clear our own square
 			return false;
 		
-		Direction rubbleDir = null;
 		if (rc.senseRubble(loc) >= GameConstants.RUBBLE_SLOW_THRESH)
 		{
 			rc.clearRubble(here.directionTo(loc));

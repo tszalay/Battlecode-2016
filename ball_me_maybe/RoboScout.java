@@ -76,7 +76,7 @@ public class RoboScout extends RobotPlayer
 		if (myTarget == null || here.distanceSquaredTo(myTarget) < 24 || !MapInfo.isOnMap(myTarget))
 			myTarget = MapInfo.getExplorationWaypoint();
 		
-		Behavior.tryGoToWithoutBeingShot(myTarget);
+		Behavior.tryGoToWithoutBeingShot(myTarget, Micro.getSafeMoveDirs());
 	}
 
 	private static void doScoutSighting()

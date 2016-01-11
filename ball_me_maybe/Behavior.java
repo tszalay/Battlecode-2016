@@ -80,7 +80,7 @@ public class Behavior extends RobotPlayer
 		return Micro.tryMove(escapeDir);
 	}
 	
-	public static boolean tryGoToWithoutBeingShot(MapLocation target) throws GameActionException
+	public static boolean tryGoToWithoutBeingShot(MapLocation target, DirectionSet dirSet) throws GameActionException
 	{
 		// uses Nav to move safely toward a given MapLocation
 		// avoids being shot, but gives the minimum berth to hostiles
@@ -88,7 +88,7 @@ public class Behavior extends RobotPlayer
 		if (tryShootAndAvoidBeingShot())
 			return true;
 		
-		return Nav.tryGoTo(target, Micro.getSafeMoveDirs());
+		return Nav.tryGoTo(target, dirSet);
 	}
 	
 	public static boolean tryGoToFarFromHostiles(MapLocation target) throws GameActionException

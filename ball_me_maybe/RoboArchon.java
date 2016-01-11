@@ -112,7 +112,7 @@ public class RoboArchon extends RobotPlayer
 		if (rc.getRoundNum() % DEST_MESSAGE_FREQ == 0)
 			Message.sendMessageSignal(DEST_MESSAGE_RANGE, MessageType.ARCHON_DEST, dest);
 
-		Behavior.tryGoToWithoutBeingShot(dest);
+		Behavior.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs());
 	}
 	
 	public static void doRally() throws GameActionException
@@ -125,7 +125,7 @@ public class RoboArchon extends RobotPlayer
 		if (Message.rallyLocation == null)
 			return;
 		
-		Behavior.tryGoToWithoutBeingShot(Message.rallyLocation);
+		Behavior.tryGoToWithoutBeingShot(Message.rallyLocation, Micro.getSafeMoveDirs());
 	}
 	
 	private static void doBuild() throws GameActionException
