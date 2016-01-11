@@ -1,4 +1,4 @@
-package ball_about_that_base;
+package ball_me_maybe;
 
 import battlecode.common.*;
 
@@ -234,7 +234,10 @@ public class MicroBase extends RobotPlayer
 		
 		// if there are no safe moves, just do something
 		if (!dirs.any())
-			dirs = getCanMoveDirs();
+		{
+			dirs = getCanMoveDirs().clone();
+			dirs.remove(Direction.NONE);
+		}
 		
 		if (!dirs.any())
 			return Direction.NONE;
@@ -244,7 +247,7 @@ public class MicroBase extends RobotPlayer
 		
 		for (Direction d : dirs.getDirections())
 		{
-			if (distToClosestHostile[d.ordinal()] > distToClosest)
+			if (bestDir == null || distToClosestHostile[d.ordinal()] > distToClosest)
 			{
 				distToClosest = distToClosestHostile[d.ordinal()];
 				bestDir = d;
@@ -324,23 +327,24 @@ public class MicroBase extends RobotPlayer
 			rc.move(d);
 			return true;
 		}
-		else
-		{
-			System.out.println("Movement exception: tried to move but couldn't!");
-			if (d == null)
-			{
-				System.out.println("Reason: null direction");
-				return false;
-			}
-			if (!rc.isCoreReady())
-				System.out.println("Reason: core not ready");
-			if (rc.isLocationOccupied(here.add(d)))
-				System.out.println("Reason: location occupied");
-			if (rc.senseRubble(here.add(d)) > GameConstants.RUBBLE_OBSTRUCTION_THRESH)
-				System.out.println("Reason: too much rubble");
-			
-			return false;
-		}
+//		else
+//		{
+//			System.out.println("Movement exception: tried to move but couldn't!");
+//			if (d == null)
+//			{
+//				System.out.println("Reason: null direction");
+//				return false;
+//			}
+//			if (!rc.isCoreReady())
+//				System.out.println("Reason: core not ready");
+//			if (rc.isLocationOccupied(here.add(d)))
+//				System.out.println("Reason: location occupied");
+//			if (rc.senseRubble(here.add(d)) > GameConstants.RUBBLE_OBSTRUCTION_THRESH)
+//				System.out.println("Reason: too much rubble");
+//			
+//			return false;
+//		}
+		return false;
 	}
 	
 	public static RobotInfo getClosestTurretTarget(RobotInfo[] nearby, MapLocation loc)

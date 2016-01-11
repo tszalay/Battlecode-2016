@@ -1,4 +1,4 @@
-package ball_about_that_base;
+package ball_me_maybe;
 
 import battlecode.common.*;
 
@@ -77,10 +77,7 @@ public class Behavior extends RobotPlayer
 		// if those are also not safe, it does nothing
 		
 		Direction escapeDir = Micro.getBestEscapeDir();
-		if (tryAdjacentSafeMoveToward(escapeDir))
-			return true;
-		
-		return false;
+		return Micro.tryMove(escapeDir);
 	}
 	
 	public static boolean tryGoToWithoutBeingShot(MapLocation target) throws GameActionException
@@ -116,6 +113,46 @@ public class Behavior extends RobotPlayer
 		
 		if (hostiles == null || hostiles.length == 0)
 			return false;
+		
+		double ourDelayDecrement = 1; // valid for bytecode use <= 2000.  if we are going over this, we'll need to use the formula in the future
+		int roundsForUsToShootAndMove = (int) Math.floor( Math.max( (rc.getWeaponDelay() + rc.getType().cooldownDelay), rc.getCoreDelay()) / ourDelayDecrement);
+		
+//		int minRoundsBeforeTheyCanShoot = 100;
+//		for (RobotInfo ri : hostiles)
+//		{
+//			int movesNeededToBringThemIntoRange = Math.max(0, here.distanceSquaredTo(ri.location) - ri.type.attackRadiusSquared);
+//			int roundsBeforeTheyCanShoot = (int) Math.floor( Math.max( (ri.coreDelay + ri.type.movementDelay * movesNeededToBringThemIntoRange), ri.weaponDelay) );
+//			if (roundsBeforeTheyCanShoot < minRoundsBeforeTheyCanShoot)
+//				minRoundsBeforeTheyCanShoot = roundsBeforeTheyCanShoot;
+//		}
+		
+		int minRoundsBeforeTheyCanShoot = Micro.getRoundsUntilDanger();
+		
+		if (minRoundsBeforeTheyCanShoot >= roundsForUsToShootAndMove)
+		{
+			if (!tryAttackSomeone())
+				return tryRetreat();
+			else
+				return true;
+		}
+		else
+		{
+			return tryRetreat();
+		}
+	}
+	
+	public static boolean tryShootWhileRetreatingFromZombies() throws GameActionException
+	{
+		// while retreating
+		// if you can get off a shot before moving without getting caught by the enemy, do so
+		// if not, go to spot that is farthest from closest enemy
+		
+		RobotInfo[] zombies = Micro.getNearbyZombies();
+		
+		if (zombies == null || zombies.length == 0)
+		{
+			return tryAttackSomeone();
+		}
 		
 		double ourDelayDecrement = 1; // valid for bytecode use <= 2000.  if we are going over this, we'll need to use the formula in the future
 		int roundsForUsToShootAndMove = (int) Math.floor( Math.max( (rc.getWeaponDelay() + rc.getType().cooldownDelay), rc.getCoreDelay()) / ourDelayDecrement);
