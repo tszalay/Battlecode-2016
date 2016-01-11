@@ -72,14 +72,20 @@ public class Sighting extends RobotPlayer
 		for (MapLocation ml : enemySightedTurrets.elements())
 		{
 			// is there any chance we're close to turret, and is it maybe still there?
-			if (here.distanceSquaredTo(ml) < RobotType.SCOUT.sensorRadiusSquared 
-					&& (curround-enemySightedTurrets.get(ml)) < TURRET_TIMEOUT_ROUNDS)
+			if (here.distanceSquaredTo(ml) < RobotType.SCOUT.sensorRadiusSquared)
 			{
-				// loop through and remove directions that are still safe
-				for (Direction d : dirs.getDirections())
+				if (curround-enemySightedTurrets.get(ml) < TURRET_TIMEOUT_ROUNDS)
 				{
-					if (here.add(d).distanceSquaredTo(ml) <= RobotType.TURRET.attackRadiusSquared)
-						dirs.remove(d);
+					// loop through and remove directions that are still safe
+					for (Direction d : dirs.getDirections())
+					{
+						if (here.add(d).distanceSquaredTo(ml) <= RobotType.TURRET.attackRadiusSquared)
+							dirs.remove(d);
+					}
+				}
+				else
+				{
+					enemySightedTurrets.remove(ml);
 				}
 			}
 		}

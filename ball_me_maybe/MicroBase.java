@@ -14,7 +14,7 @@ public class MicroBase extends RobotPlayer
 	private DirectionSet canMoveDirs = null;
 	private DirectionSet safeMoveDirs = null;
 	private DirectionSet noPartsDirs = null;
-	private DirectionSet noTurretMoveDirs = null;
+	private DirectionSet turretSafeDirs = null;
 	
 	private int[] distToClosestHostile = null;
 	
@@ -87,9 +87,10 @@ public class MicroBase extends RobotPlayer
 		distToClosestHostile = new int[9];
 		
 		safeMoveDirs = new DirectionSet();
-		noTurretMoveDirs = new DirectionSet();
 		noPartsDirs = new DirectionSet();
 
+		turretSafeDirs = Sighting.getTurretSafeDirs();
+		
 		// only check directions we can actually move
 		for (Direction d : getCanMoveDirs().getDirections())
 		{
@@ -97,7 +98,6 @@ public class MicroBase extends RobotPlayer
 			
 			int closestDistSq = 1000;
 			boolean isThisSquareSafe = true;
-			boolean isThisSquareTurretSafe = true;
 			
 			for (RobotInfo ri : nearby)
 			{
@@ -109,28 +109,15 @@ public class MicroBase extends RobotPlayer
 				{
 					isThisSquareSafe = false;
 					if (ri.type == RobotType.TURRET)
-						isThisSquareTurretSafe = false;
+						turretSafeDirs.remove(d);
 				}
 
 			}
-			
-			/*// additionally check if squares are turret safe by looking at sighted enemy turrets
-			sightedTurretLocs = getSightedTurretLocs();
-			if (sightedTurretLocs != null && sightedTurretLocs.length > 0)
-			{
-				for (MapLocation turretLoc : sightedTurretLocs)
-				{
-					if (testloc.distanceSquaredTo(turretLoc) <= RobotType.TURRET.attackRadiusSquared)
-						isThisSquareTurretSafe = false;
-				}
-			}*/
 			
 			distToClosestHostile[d.ordinal()] = closestDistSq;
 			
 			if (isThisSquareSafe)
 				safeMoveDirs.add(d);
-			if (isThisSquareTurretSafe)
-				noTurretMoveDirs.add(d);
 			
 			// keep track of directions without parts
 			if (rc.senseParts(here.add(d)) == 0)
@@ -229,7 +216,7 @@ public class MicroBase extends RobotPlayer
 	public DirectionSet getNoTurretMoveDirs()
 	{
 		computeSafetyStats();
-		return noTurretMoveDirs;
+		return turretSafeDirs;
 	}
 
 	public DirectionSet getNoPartsDirs()
