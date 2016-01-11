@@ -170,21 +170,30 @@ public class Behavior extends RobotPlayer
 		
 		if (minRoundsBeforeTheyCanShoot >= roundsForUsToShootAndMove)
 		{
-			if (!tryAttackSomeone())
-				return tryRetreat();
+//			if (!tryAttackSomeone())
+//				return tryRetreat();
+//			else
+//				return true;
+			return tryAttackSomeone();
+		}
+		else // can't get a shot off, so run
+		{
+			if (!tryRetreat())
+			{
+				Debug.setStringSJF("I want to retreat but can't, so I'm shooting.");
+				return tryAttackSomeone(); // can't run, just shoot
+			}
 			else
 				return true;
-		}
-		else
-		{
-			return tryRetreat();
 		}
 	}
 	
 	public static boolean tryStayFarFromHostiles() throws GameActionException
 	{
 		// check for hostiles in sensor range, if none, do nothing
-		if (Micro.getNearbyHostiles().length == 0)
+		RobotInfo[] hostiles = Micro.getNearbyHostiles();
+		
+		if (hostiles == null || hostiles.length == 0)
 			return false;
 		
 		// if we cannot move at all, try to shoot
@@ -193,7 +202,7 @@ public class Behavior extends RobotPlayer
 		
 		// try to escape
 		Direction escapeDir = Micro.getBestEscapeDir();
-		if (tryAdjacentSafeMoveToward(escapeDir))
+		if (Micro.tryMove(escapeDir))
 			return true;
 		
 		// if we cannot move in a safe escape direction, try to shoot
