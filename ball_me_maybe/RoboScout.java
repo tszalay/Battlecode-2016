@@ -76,7 +76,7 @@ public class RoboScout extends RobotPlayer
 		if (myTarget == null || here.distanceSquaredTo(myTarget) < 24 || !MapInfo.isOnMap(myTarget))
 			myTarget = MapInfo.getExplorationWaypoint();
 		
-		Behavior.tryGoToWithoutBeingShot(myTarget, Micro.getSafeMoveDirs());
+		Behavior.tryGoToWithoutBeingShot(myTarget, Micro.getCanMoveDirs());
 	}
 
 	private static void doScoutSighting()
@@ -104,15 +104,7 @@ public class RoboScout extends RobotPlayer
 		
 		if (closestTarget != null)
 		{
-			switch (closestTarget.type)
-			{
-				case TURRET:
-					Message.sendMessageSignal(63,MessageType.ENEMY_TURRET,closestTarget.location);
-					break;
-				default:
-					Message.sendMessageSignal(63,MessageType.SIGHT_TARGET,closestTarget.location);
-					break;
-			}
+			Message.sendMessageSignal(63,MessageType.SIGHT_TARGET,closestTarget.location);
 			return true;
 		}
 		

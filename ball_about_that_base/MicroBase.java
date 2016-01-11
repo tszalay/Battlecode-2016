@@ -90,6 +90,8 @@ public class MicroBase extends RobotPlayer
 	
 	public MapLocation[] getSightedTurretLocs()
 	{
+		return null;
+		/*
 		if (sightedTurretLocs != null)
 			return sightedTurretLocs;
 		
@@ -109,7 +111,7 @@ public class MicroBase extends RobotPlayer
 			}
 		}
 		
-		return sightedTurretLocs;
+		return sightedTurretLocs;*/
 	}
 	
 	public RobotInfo getLowestHealth(RobotInfo[] bots)

@@ -11,9 +11,6 @@ public class MicroBase extends RobotPlayer
 	private RobotInfo[] nearbyHostiles = null;
 	private RobotInfo[] nearbyAllies = null;
 	
-	private MapLocation[] sightedHostileLocs = null;
-	private MapLocation[] sightedTurretLocs = null;
-	
 	private DirectionSet canMoveDirs = null;
 	private DirectionSet safeMoveDirs = null;
 	private DirectionSet noPartsDirs = null;
@@ -91,7 +88,8 @@ public class MicroBase extends RobotPlayer
 	
 	public MapLocation[] getSightedTurretLocs()
 	{
-		if (sightedTurretLocs != null)
+		return null;
+		/*if (sightedTurretLocs != null)
 			return sightedTurretLocs;
 		
 		// get this information from Message, from scout sighting
@@ -110,7 +108,7 @@ public class MicroBase extends RobotPlayer
 			}
 		}
 		
-		return sightedTurretLocs;
+		return sightedTurretLocs;*/
 	}
 	
 	public RobotInfo getLowestHealth(RobotInfo[] bots)
