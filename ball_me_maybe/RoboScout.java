@@ -86,13 +86,13 @@ public class RoboScout extends RobotPlayer
 		int numScouts = 0;
 		for (RobotInfo ri : allies)
 		{
-			if (ri.type == RobotType.SCOUT)
+			if (ri.type == RobotType.SCOUT && ri.ID > rc.getID())
 				numScouts += 1;
 		}
 		if (numScouts > 1)
-			myState = ScoutState.SIGHTING;
-		else
 			myState = ScoutState.EXPLORING;
+		else
+			myState = ScoutState.SIGHTING;
 		
 	}
 	
