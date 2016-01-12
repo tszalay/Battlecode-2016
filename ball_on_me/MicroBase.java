@@ -1,4 +1,4 @@
-package ball_me_maybe;
+package ball_on_me;
 
 import battlecode.common.*;
 
