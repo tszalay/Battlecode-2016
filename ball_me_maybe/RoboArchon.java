@@ -361,14 +361,17 @@ public class RoboArchon extends RobotPlayer
 		RobotType nextRobotType = null;
 		
 		int numSoldiersAround = 0;
+		int numScoutsAround = 0;
 		RobotInfo[] localAllies = Micro.getNearbyAllies();
 		for (RobotInfo ri : localAllies)
 		{
 			if (ri.type == RobotType.SOLDIER)
-				numSoldiersAround += 1;
+				numSoldiersAround++;
+			else if (ri.type == RobotType.SCOUT)
+				numScoutsAround++;
 		}
 		
-		if (rand.nextInt(10) == 3)
+		if (numScoutsAround < 2)
 			return RobotType.SCOUT;
 		
 		if (numSoldiersAround < 3)
