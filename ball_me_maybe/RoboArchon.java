@@ -130,7 +130,7 @@ public class RoboArchon extends RobotPlayer
 		{
 			// look for leader
 			loc = Message.recentArchonLocation;
-			Debug.setStringRR("FOLLOWER: leader's ID is " + Message.recentArchonID);
+			Debug.setStringRR("FOLLOWER: leader's ID is " + Message.recentArchonID + " at loc " + loc.toString());
 		}
 
 		if (loc != null)

@@ -225,7 +225,7 @@ public class Behavior extends RobotPlayer
 		
 		// if we cannot move at all, try to shoot
 		if (!rc.isCoreReady())
-			return Micro.tryAttackSomeone();
+			return tryAttackSomeone();
 		
 		// try to escape
 		Direction escapeDir = Micro.getBestEscapeDir();

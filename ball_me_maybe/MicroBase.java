@@ -459,4 +459,39 @@ public class MicroBase extends RobotPlayer
 		
 		return this.tryAttackSomeone();
 	}
+	
+//	public boolean canWin1v1(RobotInfo enemy) throws GameActionException
+//	{
+//		MapLocation onecloser = here.add(here.directionTo(enemy.location));
+//		
+//		boolean iAmAlive = true;
+//		boolean theyAreAlive = false;
+//		
+//		MapLocation myLoc = here;
+//		MapLocation enemyLoc = enemy.location;
+//		
+//		double myCoreDelay = rc.getCoreDelay();
+//		double theirCoreDelay = enemy.coreDelay;
+//		double myWeaponDelay = rc.getWeaponDelay();
+//		double theirWeaponDelay = enemy.weaponDelay;
+//		
+//		while (iAmAlive && theyAreAlive)
+//		{
+//			// me
+//			if (myCoreDelay < 1)
+//				myLoc
+//			
+//			// enemy
+//			
+//			
+//		}
+//		
+//		int numRoundsTillIKillThem = ;
+//		int numRoundsTillTheyKillMe = ;
+//		
+//		if (numRoundsTillIKillThem < numRoundsTillTheyKillMe)
+//			return true;
+//		
+//		return false;
+//	}
 }
