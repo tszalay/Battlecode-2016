@@ -20,13 +20,13 @@ public class BallMove extends RobotPlayer
 				// move off parts, or move if we're in the archon's way
 				Behavior.tryAdjacentSafeMoveToward(here.directionTo(archonLoc).opposite());
 			}
-			tryClearRubble(here.add(here.directionTo(destLoc)));
+			tryClearRubble(here.directionTo(destLoc));
 		}
 		
 		DirectionSet safeDirs = Micro.getSafeMoveDirs();
 		DirectionSet safeNoPartsDirs = safeDirs.and(Micro.getNoPartsDirs());
 		
-		int tooManyAdjAllies = 3;
+		int tooManyAdjAllies = 7;
 		MapLocation repelLoc = here;
 		int numAdjAllies = 0;
 
@@ -84,14 +84,14 @@ public class BallMove extends RobotPlayer
 		return locs;
 	}
 	
-	public static boolean tryClearRubble(MapLocation loc) throws GameActionException
+	public static boolean tryClearRubble(Direction dir) throws GameActionException
 	{
-		if (!rc.isCoreReady() || here.directionTo(loc).equals(Direction.OMNI) || rc.getType() == RobotType.TTM) // can't clear our own square
+		if (!rc.isCoreReady() || dir.equals(Direction.OMNI) || rc.getType() == RobotType.TTM) // can't clear our own square
 			return false;
 		
-		if (rc.senseRubble(loc) >= GameConstants.RUBBLE_SLOW_THRESH)
+		if (rc.senseRubble(here.add(dir)) >= GameConstants.RUBBLE_SLOW_THRESH)
 		{
-			rc.clearRubble(here.directionTo(loc));
+			rc.clearRubble(dir);
 		}
 		
 		return false;

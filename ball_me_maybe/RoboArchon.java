@@ -32,42 +32,39 @@ public class RoboArchon extends RobotPlayer
 	
 	public static void turn() throws GameActionException
 	{
-		if (!Behavior.tryStayFarFromHostiles())
-		{
-			// state machine update
-			updateState();
-			Debug.setStringSJF(myState.toString());
-			
-			MapInfo.removeWaypoint(here);
-			
-			// always try this if we can, before moving
-			tryActivateNeutrals();
-			
-			// do turn according to state
-			switch (myState)
-			{
-			case INIT:
-				doInit();
-				break;
-			case RALLYING:
-				doRally();
-				break;
-			case BUILDING:
-				doBuild();
-				break;
-			case WAYPOINT:
-				doWaypoint();
-				break;
-			}
+		// state machine update
+		updateState();
+		Debug.setStringSJF(myState.toString());
 		
-			// always do this, no reason not to
-			tryRepair();
-			// and this - uses spare bytecodes up to soft limit
-			MapInfo.analyzeSurroundings();
-			
-			Debug.setStringTS("D:" + MapInfo.zombieDenLocations.elements().size()
-					+ ",P:" + MapInfo.goodPartsLocations.elements().size());
+		MapInfo.removeWaypoint(here);
+		
+		// always try this if we can, before moving
+		tryActivateNeutrals();
+		
+		// do turn according to state
+		switch (myState)
+		{
+		case INIT:
+			doInit();
+			break;
+		case RALLYING:
+			doRally();
+			break;
+		case BUILDING:
+			doBuild();
+			break;
+		case WAYPOINT:
+			doWaypoint();
+			break;
 		}
+	
+		// always do this, no reason not to
+		tryRepair();
+		// and this - uses spare bytecodes up to soft limit
+		MapInfo.analyzeSurroundings();
+		
+		Debug.setStringTS("D:" + MapInfo.zombieDenLocations.elements().size()
+				+ ",P:" + MapInfo.goodPartsLocations.elements().size());
 	}
 	
 	private static void updateState() throws GameActionException // this will probably need tweaking

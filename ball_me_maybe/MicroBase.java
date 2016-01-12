@@ -142,8 +142,6 @@ public class MicroBase extends RobotPlayer
 		
 		roundsUntilDanger = 100;
 		
-		// FIX THIS
-		
 		for (RobotInfo ri : getNearbyHostiles())
 		{
 			int dangerTime = 100;
@@ -212,18 +210,18 @@ public class MicroBase extends RobotPlayer
 			if (dangerTime < roundsUntilDanger)
 				roundsUntilDanger = dangerTime;
 		}
+		
+		if (roundsUntilDanger < 0)
+			roundsUntilDanger = 0;
 
 		return roundsUntilDanger;
 	}
 	
-	// get number of rounds until we die assuming we are maximally attacked by enemies we know about
-	public int getRoundsUntilDeath()
+	// how many rounds until we can shoot and move at once
+	public int getRoundsUntilShootAndMove()
 	{
-		int rounds = 0;
-		
-		// DO STUFF
-		
-		return rounds;
+		double ourDelayDecrement = 1;
+		return (int)Math.floor( Math.max( (rc.getWeaponDelay() + rc.getType().cooldownDelay), rc.getCoreDelay()) / ourDelayDecrement);
 	}
 	
 	// compute which direction moves us the farthest from the closest enemy

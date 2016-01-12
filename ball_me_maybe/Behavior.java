@@ -6,10 +6,6 @@ import java.util.*;
 
 public class Behavior extends RobotPlayer
 {
-	public Behavior()
-	{
-	}
-	
 	public static boolean tryAttackSomeone() throws GameActionException
 	{
 		// attack someone in range if possible, low health first, prioritizing zombies
@@ -51,35 +47,24 @@ public class Behavior extends RobotPlayer
 		return false;
 	}
 	
-	public static boolean tryShootAndAvoidBeingShot() throws GameActionException
-	{
-		// this method only performs an action if we are in imminent danger of being shot
-		// otherwise it does nothing and returns false
-		
-		// check if we are on a safe square (not in attack range of any hostile)
-		DirectionSet safeDirs = Micro.getSafeMoveDirs();
-		if (safeDirs.isValid(Direction.NONE))
-		{
-			// we are on a safe square, no need to move
-			return false;
-		}
-		
-		// if we are not safe, try to retreat and get in as many pot shots as possible
-		// if we cannot move, shoot
-		if (tryShootWhileRetreating())
-			return true;
-		
-		return tryAttackSomeone();
-	}
-	
 	public static boolean tryRetreat() throws GameActionException
 	{
 		// tries to move to the square farthest from the closest enemy
 		// if this move is not safe, it tries the squares rotated right and left (IS THIS A GOOD THING OR NECESSARY?)
 		// if those are also not safe, it does nothing
 		
-		Direction escapeDir = Micro.getBestEscapeDir();
-		return Micro.tryMove(escapeDir);
+		DirectionSet ds = Micro.getSafeMoveDirs().clone();
+		ds.remove(Direction.NONE);
+		
+		if (ds.any() || !rc.getType().canAttack())
+		{
+			Direction escapeDir = Micro.getBestEscapeDir();
+			return Micro.tryMove(escapeDir);
+		}
+		else
+		{
+			return false;
+		}
 	}
 	
 	public static boolean tryGoToWithoutBeingShot(MapLocation target, DirectionSet dirSet) throws GameActionException
@@ -92,139 +77,23 @@ public class Behavior extends RobotPlayer
 		// retreat
 		// else
 		// bug to dest
-		/*
+		
 		int roundsUntilDanger = Micro.getRoundsUntilDanger();
-		Debug.setStringTS("Danger rounds: " + roundsUntilDanger);
-		if (roundsUntilDanger-rc.getCoreDelay() <= 4)
-		{
-			//Debug.setStringAK("Decided to retreat because roundsUntilDanger = " + roundsUntilDanger);
-			if (!tryRetreat())
-				return tryAttackSomeone();
-			else
+		int dangerThreshold = 4;
+		int roundsUntilShootAndMove = Micro.getRoundsUntilShootAndMove();
+		Debug.setStringTS("DR: " + roundsUntilDanger + " SR: " + roundsUntilShootAndMove);
+		
+		// if we're in danger, try to retreat before we try to shoot
+		if (roundsUntilDanger <= dangerThreshold)
+			if (tryRetreat() || tryAttackSomeone())
 				return true;
-		}
-		return Nav.tryGoTo(target, dirSet);*/
 		
-		RobotInfo closestHostile = Micro.getClosestUnitTo(Micro.getNearbyHostiles(), here);
-		if (closestHostile != null && closestHostile.location.distanceSquaredTo(here) <= closestHostile.type.attackRadiusSquared)
-		{
-			Debug.setStringAK("Decided to retreat because I am in attack range of " + closestHostile.ID);
-			if (!tryRetreat())
-				return tryAttackSomeone();
-			else
+		// if we are in a small amount of danger, try to shoot first
+		if (roundsUntilDanger >= dangerThreshold + roundsUntilShootAndMove)
+			if (tryAttackSomeone())// || tryRetreat())
 				return true;
-		}
-		else
-		{
-			Debug.setStringAK("Decided to bug nav.");
-			return Nav.tryGoTo(target, dirSet);
-		}
-	}
-	
-	public static boolean tryShootWhileRetreating() throws GameActionException
-	{
-		// while retreating
-		// if you can get off a shot before moving without getting caught by the enemy, do so
-		// if not, go to spot that is farthest from closest enemy
 		
-		RobotInfo[] hostiles = Micro.getNearbyHostiles();
-		
-		if (hostiles == null || hostiles.length == 0)
-			return false;
-		
-		double ourDelayDecrement = 1; // valid for bytecode use <= 2000.  if we are going over this, we'll need to use the formula in the future
-		int roundsForUsToShootAndMove = (int) Math.floor( Math.max( (rc.getWeaponDelay() + rc.getType().cooldownDelay), rc.getCoreDelay()) / ourDelayDecrement);
-		
-//		int minRoundsBeforeTheyCanShoot = 100;
-//		for (RobotInfo ri : hostiles)
-//		{
-//			int movesNeededToBringThemIntoRange = Math.max(0, here.distanceSquaredTo(ri.location) - ri.type.attackRadiusSquared);
-//			int roundsBeforeTheyCanShoot = (int) Math.floor( Math.max( (ri.coreDelay + ri.type.movementDelay * movesNeededToBringThemIntoRange), ri.weaponDelay) );
-//			if (roundsBeforeTheyCanShoot < minRoundsBeforeTheyCanShoot)
-//				minRoundsBeforeTheyCanShoot = roundsBeforeTheyCanShoot;
-//		}
-		
-		int minRoundsBeforeTheyCanShoot = Micro.getRoundsUntilDanger();
-		
-		if (minRoundsBeforeTheyCanShoot >= roundsForUsToShootAndMove)
-		{
-			if (!tryAttackSomeone())
-				return tryRetreat();
-			else
-				return true;
-		}
-		else
-		{
-			return tryRetreat();
-		}
-	}
-	
-	public static boolean tryShootWhileRetreatingFromZombies() throws GameActionException
-	{
-		// while retreating
-		// if you can get off a shot before moving without getting caught by the enemy, do so
-		// if not, go to spot that is farthest from closest enemy
-		
-		RobotInfo[] zombies = Micro.getNearbyZombies();
-		
-		if (zombies == null || zombies.length == 0)
-		{
-			return tryAttackSomeone();
-		}
-		
-		double ourDelayDecrement = 1; // valid for bytecode use <= 2000.  if we are going over this, we'll need to use the formula in the future
-		int roundsForUsToShootAndMove = (int) Math.floor( Math.max( (rc.getWeaponDelay() + rc.getType().cooldownDelay), rc.getCoreDelay()) / ourDelayDecrement);
-		
-//		int minRoundsBeforeTheyCanShoot = 100;
-//		for (RobotInfo ri : hostiles)
-//		{
-//			int movesNeededToBringThemIntoRange = Math.max(0, here.distanceSquaredTo(ri.location) - ri.type.attackRadiusSquared);
-//			int roundsBeforeTheyCanShoot = (int) Math.floor( Math.max( (ri.coreDelay + ri.type.movementDelay * movesNeededToBringThemIntoRange), ri.weaponDelay) );
-//			if (roundsBeforeTheyCanShoot < minRoundsBeforeTheyCanShoot)
-//				minRoundsBeforeTheyCanShoot = roundsBeforeTheyCanShoot;
-//		}
-		
-		int minRoundsBeforeTheyCanShoot = Micro.getRoundsUntilDanger();
-		
-		if (minRoundsBeforeTheyCanShoot >= roundsForUsToShootAndMove)
-		{
-//			if (!tryAttackSomeone())
-//				return tryRetreat();
-//			else
-//				return true;
-			return tryAttackSomeone();
-		}
-		else // can't get a shot off, so run
-		{
-			if (!tryRetreat())
-			{
-				Debug.setStringSJF("I want to retreat but can't, so I'm shooting.");
-				return tryAttackSomeone(); // can't run, just shoot
-			}
-			else
-				return true;
-		}
-	}
-	
-	public static boolean tryStayFarFromHostiles() throws GameActionException
-	{
-		// check for hostiles in sensor range, if none, do nothing
-		RobotInfo[] hostiles = Micro.getNearbyHostiles();
-		
-		if (hostiles == null || hostiles.length == 0)
-			return false;
-		
-		// if we cannot move at all, try to shoot
-		if (!rc.isCoreReady())
-			return tryAttackSomeone();
-		
-		// try to escape
-		Direction escapeDir = Micro.getBestEscapeDir();
-		if (Micro.tryMove(escapeDir))
-			return true;
-		
-		// if we cannot move in a safe escape direction, try to shoot
-		return tryAttackSomeone();
+		return Nav.tryGoTo(target, dirSet);
 	}
 	
 	public static boolean tryAdjacentSafeMoveToward(Direction dir) throws GameActionException
