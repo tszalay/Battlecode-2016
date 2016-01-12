@@ -12,54 +12,35 @@ public class BallMove extends RobotPlayer
 	
 	public static void ballMove(MapLocation archonLoc, MapLocation destLoc, RobotInfo[] allies) throws GameActionException
 	{
-		// if we can see our archon, clear rubble
-		if (rc.canSense(archonLoc))
-		{
-			if (rc.senseParts(here) > 0 || here.equals(archonLoc.add(archonLoc.directionTo(destLoc))) || here.distanceSquaredTo(archonLoc) < 6)
-			{
-				// move off parts, or move if we're in the archon's way
-				Behavior.tryAdjacentSafeMoveToward(here.directionTo(archonLoc).opposite());
-			}
-			tryClearRubble(here.directionTo(destLoc));
-		}
-		
-		DirectionSet safeDirs = Micro.getSafeMoveDirs();
-		DirectionSet safeNoPartsDirs = safeDirs.and(Micro.getNoPartsDirs());
-		
-		int tooManyAdjAllies = 5;
-		MapLocation repelLoc = here;
-		int numAdjAllies = 0;
-
-		Direction archonDir = archonLoc.directionTo(destLoc);
-		MapLocation gotoLoc = archonLoc;
-		
-		// Offset gotoLoc towards dest to make soldiers shortcut a little
-		//gotoLoc = gotoLoc.add(archonDir, 0);
-		
-		for (RobotInfo ri : allies)
-		{
-			if (ri.location.isAdjacentTo(here))
-			{
-				numAdjAllies++;
-				repelLoc = repelLoc.add(ri.location.directionTo(here));
-			}
-		}
-		
-		// retreat to archon
+		// try to retreat towards the ball or shoot if we're in danger
 		if (Micro.getRoundsUntilDanger() < 10)
 		{
-			if (Behavior.tryAdjacentSafeMoveToward(here.directionTo(archonLoc)))
-				return;
+			if (archonLoc != null)
+				Behavior.tryRetreatTowards(archonLoc, Micro.getSafeMoveDirs());
 			else
-				Behavior.tryAttackSomeone();
+				Behavior.tryGoToWithoutBeingShot(here, Micro.getSafeMoveDirs());
+			
 			return;
 		}
 		
-		if (numAdjAllies >= tooManyAdjAllies)
-			gotoLoc = repelLoc;
+		if (here.distanceSquaredTo(archonLoc) > 40)
+		{
+			Nav.tryGoTo(archonLoc,Micro.getSafeMoveDirs());
+			return;
+		}
+		if (here.distanceSquaredTo(archonLoc) < 7)
+		{
+			Behavior.tryAdjacentSafeMoveToward(here.directionTo(archonLoc).opposite());
+			return;
+		}
 		
-		Behavior.tryGoToWithoutBeingShot(gotoLoc, safeNoPartsDirs);
-		
+		MapLocation ml = Micro.getUnitCOM(rc.senseNearbyRobots(24, ourTeam));
+		Direction ar = here.directionTo(archonLoc).rotateRight().rotateRight();
+		Direction al = here.directionTo(archonLoc).rotateLeft().rotateLeft();
+		if (here.add(al).distanceSquaredTo(ml) > here.add(ar).distanceSquaredTo(ml))
+			Behavior.tryAdjacentSafeMoveToward(al);
+		else
+			Behavior.tryAdjacentSafeMoveToward(ar);
 	}
 	
 	public static MapLocation[] updateBallDests(RobotInfo[] allies) throws GameActionException

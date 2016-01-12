@@ -96,6 +96,25 @@ public class Behavior extends RobotPlayer
 		return Nav.tryGoTo(target, dirSet);
 	}
 	
+	public static boolean tryRetreatTowards(MapLocation target, DirectionSet dirSet) throws GameActionException
+	{
+		int roundsUntilDanger = Micro.getRoundsUntilDanger();
+		int dangerThreshold = 2;
+		int roundsUntilShootAndMove = Micro.getRoundsUntilShootAndMove();
+		
+		// if we're in danger, try to retreat before we try to shoot
+		if (roundsUntilDanger <= dangerThreshold)
+			if (tryAdjacentSafeMoveToward(here.directionTo(target)) || tryAttackSomeone())
+				return true;
+		
+		// if we are in a small amount of danger, try to shoot first
+		if (roundsUntilDanger >= dangerThreshold + roundsUntilShootAndMove)
+			if (tryAttackSomeone())// || tryRetreat())
+				return true;
+		
+		return Nav.tryGoTo(target, dirSet);
+	}
+	
 	public static boolean tryAdjacentSafeMoveToward(Direction dir) throws GameActionException
     {
     	if (!rc.isCoreReady() || dir == null)
