@@ -347,7 +347,17 @@ public class RoboArchon extends RobotPlayer
 			nextRobotType = RobotType.SCOUT;
 		}
 */		
-		RobotType nextRobotType = (rand.nextInt(5) == 0) ? RobotType.SCOUT : RobotType.SOLDIER;
+		RobotType nextRobotType = null;
+		
+		if (rc.getTeamParts() >= RobotType.TURRET.partCost)
+			return RobotType.TURRET;
+		
+		int numRobotsAlive = rc.getRobotCount();
+		
+		if (numRobotsAlive < 20)
+		{
+			nextRobotType = (rand.nextInt(4) == 0) ? RobotType.SCOUT : RobotType.SOLDIER;
+		}
 		
 		return nextRobotType;
 	}
