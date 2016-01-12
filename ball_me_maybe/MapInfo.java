@@ -236,19 +236,12 @@ public class MapInfo extends RobotPlayer
 			d = d.rotateRight().rotateRight();
 		}
 		
-		MapLocation[] locs = MapLocation.getAllMapLocationsWithinRadiusSq(here,rc.getType().sensorRadiusSquared);
+		MapLocation[] partsLocs = rc.sensePartLocations(rc.getType().sensorRadiusSquared);
 		
-		for (MapLocation loc : locs)
+		for (MapLocation loc : partsLocs)
 		{
-			if (Clock.getBytecodesLeft() < 8000)
-				break;
-
-			// check for parts first
-			double nparts = rc.senseParts(loc);
-			if (nparts > 30)
-				updateParts(loc, isScout);
-
-			visibleParts += nparts;
+			updateParts(loc, isScout);
+			visibleParts += rc.senseParts(loc);
 		}
 		//System.out.println("Scanned " + nchecked + "/" + MapUtil.allOffsX.length + " locations");
 	}
