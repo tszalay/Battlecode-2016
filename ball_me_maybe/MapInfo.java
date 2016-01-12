@@ -39,6 +39,15 @@ public class MapInfo extends RobotPlayer
 		return Micro.getClosestLocationTo(zombieDenLocations.elements(), here);
 	}
 	
+	
+	public static MapLocation getClosestDenThenPart()
+	{
+		MapLocation ml = Micro.getClosestLocationTo(zombieDenLocations.elements(), here);
+		if (ml == null)
+			ml = Micro.getClosestLocationTo(goodPartsLocations.elements(), here);
+		return ml;
+	}
+	
 	public static MapLocation getClosestPartOrDen()
 	{
 		MapLocation partloc = getClosestPart();

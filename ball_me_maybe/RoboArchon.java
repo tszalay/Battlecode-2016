@@ -108,7 +108,7 @@ public class RoboArchon extends RobotPlayer
 	public static void doWaypoint() throws GameActionException
 	{
 		// look for waypoint
-		MapLocation dest = MapInfo.getClosestPartOrDen();
+		MapLocation dest = MapInfo.getClosestDenThenPart();
 		
 		// check if it should be deleted
 		if (dest != null && rc.canSenseLocation(dest) && rc.senseParts(dest) == 0 && rc.senseRobotAtLocation(dest) == null)
