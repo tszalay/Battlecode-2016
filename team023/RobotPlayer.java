@@ -2,7 +2,7 @@ package team023;
 
 import battlecode.common.*;
 
-import java.util.Random;
+import java.util.*;
 
 public class RobotPlayer
 {
@@ -13,7 +13,9 @@ public class RobotPlayer
 	public static MapLocation here;
 	
 	public static RobotInfo myArchon = null;
-	public static int myArchonSenseRound = 0; 
+	public static int myArchonSenseRound = 0;
+	
+	public static MicroBase Micro = null;
 	
 	@SuppressWarnings("unused")
 	// BC Engine -> RobotPlayer.run -> RoboXXX.run
@@ -25,12 +27,12 @@ public class RobotPlayer
 		RobotPlayer.ourTeam = rc.getTeam();
 		RobotPlayer.theirTeam = ourTeam.opponent();
 		RobotPlayer.here = rc.getLocation();
-
+		
 		Debug.setStringTS("Tamas");
 		Debug.setStringAK("A-aron");
 		Debug.setStringSJF("Stephen J. Fry");
 		Debug.setStringRR("Ryan");
-		
+				
 		// look for an archon close by, if we aren't an Archon
 		if (rc.getType() != RobotType.ARCHON)
 		{
@@ -100,6 +102,9 @@ public class RobotPlayer
 			while (true)
 			{
 				RobotPlayer.here = rc.getLocation();
+				// clear all outstanding micro stuff
+				Micro = new MicroBase();
+				// process incoming messages
 				Message.readSignalQueue();
 				
 				// try to re-sense archon
