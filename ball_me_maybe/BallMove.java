@@ -83,7 +83,7 @@ public class BallMove extends RobotPlayer
 	
 	public static boolean tryClearRubble(MapLocation loc) throws GameActionException
 	{
-		if (!rc.isCoreReady() || here.directionTo(loc).equals(Direction.OMNI)) // can't clear our own square
+		if (!rc.isCoreReady() || here.directionTo(loc).equals(Direction.OMNI) || rc.getType() == RobotType.TTM) // can't clear our own square
 			return false;
 		
 		if (rc.senseRubble(loc) >= GameConstants.RUBBLE_SLOW_THRESH)
