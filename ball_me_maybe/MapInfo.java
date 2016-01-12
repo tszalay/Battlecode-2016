@@ -189,6 +189,9 @@ public class MapInfo extends RobotPlayer
 	// function to send updated info as a scout
 	public static boolean doScoutSendUpdates() throws GameActionException
 	{
+		if (Micro.isInDanger() || rc.getCoreDelay() > 5)
+			return false;
+		
 		// only send one at a time
 		if (newMapDir != null)
 		{

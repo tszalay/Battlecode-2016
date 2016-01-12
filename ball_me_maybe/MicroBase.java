@@ -318,8 +318,7 @@ public class MicroBase extends RobotPlayer
 	
 	public boolean isInDanger()
 	{
-		//return getNearbyHostiles().length > 0;
-		return (getRoundsUntilDanger() < 5);
+		return (getRoundsUntilDanger() < 10);
 	}
 	
 	// tryMove expects to be given a valid direction
