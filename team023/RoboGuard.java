@@ -10,18 +10,17 @@ public class RoboGuard extends RobotPlayer
 	
 	public static void turn() throws GameActionException
 	{
-		if (rc.isCoreReady())
+		if (!Behavior.tryShootWhileRetreatingFromZombies())
 		{
-			DirectionSet dirs = Micro.getCanMoveDirs();
+			RobotInfo[] allies = Micro.getNearbyAllies();
 			
-			if (Micro.isInDanger())
+			MapLocation[] locs = BallMove.updateBallDests(allies); // updates archon and archon destination using messaging
+			MapLocation archonLoc = locs[0];
+			MapLocation destLoc = locs[1];
+			
+			if (rc.isCoreReady())	
 			{
-				Direction d = Micro.getBestEscapeDir();
-				Micro.tryMove(d);
-			}
-			else
-			{
-				Micro.tryMove(dirs.getRandomValid());
+				BallMove.ballMove(archonLoc, destLoc, allies);
 			}
 		}
 	}

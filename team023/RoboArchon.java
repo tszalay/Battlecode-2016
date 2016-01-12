@@ -133,7 +133,7 @@ public class RoboArchon extends RobotPlayer
 			dest = Message.recentArchonLocation;
 		}
 
-		if (dest != null)
+		if (dest != null && !Micro.isInDanger())
 		{
 			// and send a message every certain few rounds
 			if (rc.getRoundNum() % DEST_ALL_MAP_MESSAGE_FREQ == 0)

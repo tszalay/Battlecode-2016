@@ -154,7 +154,10 @@ public class MicroBase extends RobotPlayer
 			case ZOMBIEDEN:
 			case ARCHON:
 			case SCOUT:
+				break;
+				
 			case TTM:
+				dangerTime = (int) Math.floor(ri.coreDelay) + GameConstants.TURRET_TRANSFORM_DELAY;
 				break;
 				
 			// ranged units
@@ -163,10 +166,22 @@ public class MicroBase extends RobotPlayer
 			case VIPER:
 				// time to shoot us is rounds until
 				// coreDelay + cooldownDelay
-				if (here.distanceSquaredTo(ri.location) <= ri.type.attackRadiusSquared)
-					dangerTime = (int)Math.floor(ri.weaponDelay);
-				else
-					dangerTime = (int)Math.floor(ri.coreDelay + ri.type.cooldownDelay);
+				MapLocation closer = ri.location;
+				double dangerAccum = 0;
+				while (closer.distanceSquaredTo(here) > ri.type.attackRadiusSquared)
+				{
+					Direction d = closer.directionTo(here);
+					closer = closer.add(d);
+					dangerAccum += ri.type.movementDelay*(d.isDiagonal() ? 1.4 : 1.0);
+				}
+				
+				// if they have to move, include cooldown and current core
+				if (dangerAccum > 0)
+					dangerAccum += ri.type.cooldownDelay + ri.coreDelay - ri.type.movementDelay;
+				else // otherwise just weapon delay
+					dangerAccum += ri.weaponDelay;
+				
+				dangerTime = (int)dangerAccum;
 				break;
 				
 			// unranged units
@@ -182,8 +197,10 @@ public class MicroBase extends RobotPlayer
 
 				// number of longest straight steps + 1.4 * number of diagonal steps
 				// scaling of movement delay to get here
-				double effDistanceTo = Math.min(dx, dy)*0.4 + Math.max(dx, dy);
-				dangerTime = (int)Math.floor(ri.coreDelay + ri.type.movementDelay*effDistanceTo + ri.type.cooldownDelay);
+				double effDistanceTo = Math.min(dx, dy)*0.4 + Math.max(dx, dy); // verified
+				
+				dangerTime = (int)Math.floor(ri.coreDelay + ri.type.movementDelay*(effDistanceTo-1) + ri.type.cooldownDelay);
+				
 				break;
 				
 			case TURRET:
@@ -301,7 +318,7 @@ public class MicroBase extends RobotPlayer
 	
 	public boolean isInDanger()
 	{
-		return getNearbyHostiles().length > 0;
+		return (getRoundsUntilDanger() < 10);
 	}
 	
 	// tryMove expects to be given a valid direction

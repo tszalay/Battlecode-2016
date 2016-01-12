@@ -9,13 +9,19 @@ public class Sighting extends RobotPlayer
 	public static FastLocSet enemySightedTargets = new FastLocSet();
 	public static FastLocSet enemySightedTurrets = new FastLocSet();
 	
+	public static int lastSightingBroadcastRound = 0;
+	
 	public static final int SIGHT_MESSAGE_RADIUS = 63;
 	public static final int TURRET_MESSAGE_RADIUS = 255;
 	public static final int TURRET_TIMEOUT_ROUNDS = 200;
+	public static final int BROADCAST_DELAY = 3;
 	
 	// to be called by scouts and archons
 	public static void doSendSightingMessage() throws GameActionException
 	{
+		if (rc.getRoundNum() < lastSightingBroadcastRound + BROADCAST_DELAY)
+			return;
+		
 		RobotInfo bestTarget = null;
 		
 		// prioritize the target with the biggest attack radius
@@ -27,6 +33,7 @@ public class Sighting extends RobotPlayer
 		
 		if (bestTarget != null)
 		{
+			lastSightingBroadcastRound = rc.getRoundNum();
 			if (bestTarget.type == RobotType.TURRET)
 				Message.sendMessageSignal(TURRET_MESSAGE_RADIUS,MessageType.SIGHT_TARGET,bestTarget.location);
 			else
