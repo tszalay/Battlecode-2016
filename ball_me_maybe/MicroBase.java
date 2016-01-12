@@ -17,6 +17,7 @@ public class MicroBase extends RobotPlayer
 	private DirectionSet turretSafeDirs = null;
 	
 	private int[] distToClosestHostile = null;
+	private static final int DIST_MAX = 1000;
 	
 	private int roundsUntilDanger = -1;
 	
@@ -96,11 +97,14 @@ public class MicroBase extends RobotPlayer
 		{
 			MapLocation testloc = here.add(d);
 			
-			int closestDistSq = 1000;
+			int closestDistSq = DIST_MAX;
 			boolean isThisSquareSafe = true;
 			
 			for (RobotInfo ri : nearby)
 			{
+				if (ri.attackPower == 0)
+					continue;
+				
 				int distSq = testloc.distanceSquaredTo(ri.location);
 				if (distSq < closestDistSq)
 					closestDistSq = distSq;
@@ -137,46 +141,54 @@ public class MicroBase extends RobotPlayer
 		
 		for (RobotInfo ri : getNearbyHostiles())
 		{
+			int dangerTime = 100;
+			
 			switch (ri.type)
 			{
+			// noncombatants
 			case ZOMBIEDEN:
-				break;
 			case ARCHON:
-				break;
 			case SCOUT:
+			case TTM:
 				break;
-			default:
-				int dangerTime = (int)Math.floor(ri.coreDelay + ri.type.cooldownDelay);
-				if (dangerTime < roundsUntilDanger)
-					roundsUntilDanger = dangerTime;
+				
+			// ranged units
+			case SOLDIER:
+			case RANGEDZOMBIE:
+			case VIPER:
+				// time to shoot us is rounds until
+				// coreDelay + cooldownDelay
+				if (here.distanceSquaredTo(ri.location) <= ri.type.attackRadiusSquared)
+					dangerTime = (int)Math.floor(ri.weaponDelay);
+				else
+					dangerTime = (int)Math.floor(ri.coreDelay + ri.type.cooldownDelay);
+				break;
+				
+			// unranged units
+			case BIGZOMBIE:
+			case FASTZOMBIE:
+			case GUARD:
+			case STANDARDZOMBIE:
+				// move one square closer to enemy
+				// the square enemy needs to get to to attack us
+				MapLocation onecloser = here.add(here.directionTo(ri.location));
+				int dx = Math.abs(onecloser.x-ri.location.x);
+				int dy = Math.abs(onecloser.y-ri.location.y);
+
+				// number of longest straight steps + 1.4 * number of diagonal steps
+				// scaling of movement delay to get here
+				double effDistanceTo = Math.min(dx, dy)*0.4 + Math.max(dx, dy);
+				dangerTime = (int)Math.floor(ri.coreDelay + ri.type.movementDelay*effDistanceTo + ri.type.cooldownDelay);
+				break;
+				
+			case TURRET:
+				if (rc.getType() != RobotType.SCOUT)
+					dangerTime = (int)Math.floor(ri.weaponDelay);
 				break;
 			}
 			
-			
-			//			if (true)//isRangedUnit[ri.type.ordinal()])
-//			{
-//				// time to shoot us is rounds until
-//				// coreDelay + cooldownDelay
-//				int dangerTime = (int)Math.floor(ri.coreDelay + ri.type.cooldownDelay);
-//				if (dangerTime < roundsUntilDanger)
-//					roundsUntilDanger = dangerTime;
-//			}
-//			else
-//			{
-//				// move one square closer to enemy
-//				// the square enemy needs to get to to attack us
-//				MapLocation onecloser = here.add(here.directionTo(ri.location));
-//				int dx = Math.abs(onecloser.x-ri.location.x);
-//				int dy = Math.abs(onecloser.y-ri.location.y);
-//
-//				// number of longest straight steps + 1.4 * number of diagonal steps
-//				// scaling of movement delay to get here
-//				double effDistanceTo = Math.min(dx, dy)*0.4 + Math.max(dx, dy);
-//				
-//				int dangerTime = (int)Math.floor(ri.coreDelay + ri.type.movementDelay*effDistanceTo + ri.type.cooldownDelay);
-//				if (dangerTime < roundsUntilDanger)
-//					roundsUntilDanger = dangerTime;
-//			}			
+			if (dangerTime < roundsUntilDanger)
+				roundsUntilDanger = dangerTime;
 		}
 
 		return roundsUntilDanger;
@@ -209,6 +221,9 @@ public class MicroBase extends RobotPlayer
 				bestDir = d;
 			}
 		}
+		
+		if (distToClosest == DIST_MAX)
+			return null;
 		
 		return bestDir;
 	}

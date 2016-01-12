@@ -17,7 +17,7 @@ public class RoboArchon extends RobotPlayer
 	static int robotSchedule[] = {10, 10, 10, 6}; // 10-turret 6 - scout
 	static int scheduleCounter = rand.nextInt(100);
 	
-	static final int MAX_ROUNDS_TO_RALLY = 200;
+	static final int MAX_ROUNDS_TO_RALLY = 400;
 	static final int DEST_MESSAGE_FREQ = 10;
 	static final int DEST_MESSAGE_RANGE = 63;
 	
@@ -34,6 +34,8 @@ public class RoboArchon extends RobotPlayer
 			// state machine update
 			updateState();
 			Debug.setStringSJF(myState.toString());
+			
+			MapInfo.removeWaypoint(here);
 			
 			// always try this if we can, before moving
 			tryActivateNeutrals();
@@ -105,10 +107,6 @@ public class RoboArchon extends RobotPlayer
 		// look for waypoint
 		MapLocation loc = MapInfo.getClosestPartOrDen();
 		
-		// check to see if we should remove a waypoint
-		if (here.equals(loc))
-			MapInfo.removeWaypoint(loc);
-		
 		// if we don't have a waypoint, explore
 		if (loc == null)
 			loc = MapInfo.getExplorationWaypoint();
@@ -148,7 +146,11 @@ public class RoboArchon extends RobotPlayer
 		if (Message.rallyLocation == null)
 			return;
 		
-		Behavior.tryGoToWithoutBeingShot(Message.rallyLocation, Micro.getSafeMoveDirs());
+		MapLocation closestPart = MapInfo.getClosestPart();
+		if (closestPart != null && closestPart.distanceSquaredTo(here) < rc.getType().sensorRadiusSquared)
+			Behavior.tryGoToWithoutBeingShot(closestPart, Micro.getSafeMoveDirs());
+		else
+			Behavior.tryGoToWithoutBeingShot(Message.rallyLocation, Micro.getSafeMoveDirs());
 	}
 	
 	private static void doBuild() throws GameActionException

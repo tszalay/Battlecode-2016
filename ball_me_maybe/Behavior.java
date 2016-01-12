@@ -38,6 +38,9 @@ public class Behavior extends RobotPlayer
 		
 		MapLocation targetLoc = Sighting.getClosestSightedTarget();
 		
+		if (targetLoc == null)
+			targetLoc = MapInfo.getClosestDen();
+		
 		if (targetLoc != null && rc.canAttackLocation(targetLoc))
 		{
 			rc.attackLocation(targetLoc);
@@ -83,10 +86,24 @@ public class Behavior extends RobotPlayer
 		// uses Nav to move safely toward a given MapLocation
 		// avoids being shot, but gives the minimum berth to hostiles
 		
-		if (tryShootAndAvoidBeingShot())
-			return true;
+		// count rounds until danger
+		// if < value
+		// retreat
+		// else
+		// bug to dest
 		
-		return Nav.tryGoTo(target, dirSet);
+		int roundsUntilDanger = Micro.getRoundsUntilDanger();
+		if (roundsUntilDanger < 2)
+		{
+			if (!tryRetreat())
+				return tryAttackSomeone();
+			else
+				return true;
+		}
+		else
+		{
+			return Nav.tryGoTo(target, dirSet);
+		}
 	}
 	
 	public static boolean tryGoToFarFromHostiles(MapLocation target) throws GameActionException

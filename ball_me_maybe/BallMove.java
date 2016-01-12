@@ -39,7 +39,7 @@ public class BallMove extends RobotPlayer
 		// if we can see our archon, clear rubble
 		if (rc.canSense(archonLoc))
 		{
-			if (rc.senseParts(here) > 0 || here.equals(archonLoc.directionTo(destLoc)))
+			if (rc.senseParts(here) > 0 || here.equals(archonLoc.directionTo(destLoc)) || here.distanceSquaredTo(archonLoc) < 4)
 			{
 				// move off parts, or move if we're in the archon's way
 				Behavior.tryAdjacentSafeMoveToward(here.directionTo(archonLoc).opposite());
