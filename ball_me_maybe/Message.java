@@ -45,8 +45,8 @@ public class Message extends RobotPlayer
 	// storage for received/accumulated message info
 	public static ArrayList<SignalLocation> archonLocs = new ArrayList<SignalLocation>();
 	
-	// and for any transmitted enemy messages, only keep recents (300 rounds)
-//	public static ArrayList<Signal> enemySignals = new ArrayList<Signal>();
+	// and for any transmitted enemy messages, only keep the latest received
+	public static MapLocation recentEnemySignal = null;
 	
 	public static MapLocation recentArchonLocation = null;
 	public static MapLocation recentArchonDest = null;
@@ -65,7 +65,7 @@ public class Message extends RobotPlayer
 			// skip enemy signals for now
 			if (sig.getTeam() != ourTeam)
 			{
-				//enemySignals.add(sig);
+				recentEnemySignal = sig.getLocation();
 				continue;
 			}
 			
