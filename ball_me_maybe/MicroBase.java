@@ -187,7 +187,8 @@ public class MicroBase extends RobotPlayer
 				break;
 				
 			case TURRET:
-				dangerTime = (int)Math.floor(ri.weaponDelay);
+				if (rc.getType() != RobotType.SCOUT)
+					dangerTime = (int)Math.floor(ri.weaponDelay);
 				break;
 			}
 			
@@ -207,6 +208,7 @@ public class MicroBase extends RobotPlayer
 		// if there are no safe moves, just do something
 		if (!dirs.any())
 		{
+			// first, check if there are any turret safe moves
 			dirs = getCanMoveDirs().clone();
 			dirs.remove(Direction.NONE);
 		}
@@ -219,7 +221,7 @@ public class MicroBase extends RobotPlayer
 		
 		for (Direction d : dirs.getDirections())
 		{
-			if (bestDir == null || distToClosestHostile[d.ordinal()] > distToClosest)
+			if (distToClosestHostile[d.ordinal()] > distToClosest)
 			{
 				distToClosest = distToClosestHostile[d.ordinal()];
 				bestDir = d;
@@ -232,7 +234,7 @@ public class MicroBase extends RobotPlayer
 		return bestDir;
 	}
 
-	public DirectionSet getNoTurretMoveDirs()
+	public DirectionSet getTurretSafeDirs()
 	{
 		computeSafetyStats();
 		return turretSafeDirs;
