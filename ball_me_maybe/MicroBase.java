@@ -187,8 +187,7 @@ public class MicroBase extends RobotPlayer
 				break;
 				
 			case TURRET:
-				if (rc.getType() != RobotType.SCOUT)
-					dangerTime = (int)Math.floor(ri.weaponDelay);
+				dangerTime = (int)Math.floor(ri.weaponDelay);
 				break;
 			}
 			

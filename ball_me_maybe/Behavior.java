@@ -92,9 +92,20 @@ public class Behavior extends RobotPlayer
 		// else
 		// bug to dest
 		
-		int roundsUntilDanger = Micro.getRoundsUntilDanger();
-		if (roundsUntilDanger < 2)
+//		int roundsUntilDanger = Micro.getRoundsUntilDanger();
+//		if (roundsUntilDanger == 0)
+//		{
+//			Debug.setStringAK("Decided to retreat because roundsUntilDanger = " + roundsUntilDanger);
+//			if (!tryRetreat())
+//				return tryAttackSomeone();
+//			else
+//				return true;
+//		}
+		
+		RobotInfo closestHostile = Micro.getClosestUnitTo(Micro.getNearbyHostiles(), here);
+		if (closestHostile != null && closestHostile.location.distanceSquaredTo(here) <= closestHostile.type.attackRadiusSquared)
 		{
+			Debug.setStringAK("Decided to retreat because I am in attack range of " + closestHostile.ID);
 			if (!tryRetreat())
 				return tryAttackSomeone();
 			else
@@ -102,6 +113,7 @@ public class Behavior extends RobotPlayer
 		}
 		else
 		{
+			Debug.setStringAK("Decided to bug nav.");
 			return Nav.tryGoTo(target, dirSet);
 		}
 	}

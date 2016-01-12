@@ -107,6 +107,13 @@ public class RoboArchon extends RobotPlayer
 		// look for waypoint
 		MapLocation loc = MapInfo.getClosestPartOrDen();
 		
+		// check if it should be deleted
+		if (rc.canSenseLocation(loc) && rc.senseParts(loc) == 0 && rc.senseRobotAtLocation(loc) == null)
+		{
+			MapInfo.removeWaypoint(loc);
+			loc = MapInfo.getClosestPartOrDen();
+		}
+		
 		// if we don't have a waypoint, explore
 		if (loc == null)
 			loc = MapInfo.getExplorationWaypoint();
@@ -115,6 +122,7 @@ public class RoboArchon extends RobotPlayer
 		if (rc.getID() <= Message.recentArchonID)
 		{
 			Debug.setStringRR("LEADER");
+			rc.setIndicatorDot(loc, 255, 255, 255);
 		}
 		
 		// if we are a follower

@@ -68,7 +68,6 @@ public class RoboTurret extends RobotPlayer
 		
 		if (shouldUnpack())
 		{
-			System.out.println("I unpacked!");
 			rc.unpack();
 			lastUnpackRound = rc.getRoundNum();
 			return;

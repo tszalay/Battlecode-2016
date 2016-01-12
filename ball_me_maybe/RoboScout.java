@@ -90,7 +90,10 @@ public class RoboScout extends RobotPlayer
 		if (myTarget == null || here.distanceSquaredTo(myTarget) < 24 || !MapInfo.isOnMap(myTarget))
 			myTarget = MapInfo.getExplorationWaypoint();
 		
-		Behavior.tryGoToWithoutBeingShot(myTarget, Micro.getSafeMoveDirs());
+		DirectionSet goodDirs = Micro.getSafeMoveDirs();
+		goodDirs = goodDirs.and(Micro.getNoTurretMoveDirs());
+		
+		Behavior.tryGoToWithoutBeingShot(myTarget, goodDirs);
 	}
 
 	private static void doScoutSighting() throws GameActionException
