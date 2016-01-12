@@ -15,7 +15,7 @@ public class BallMove extends RobotPlayer
 		// if we can see our archon, clear rubble
 		if (rc.canSense(archonLoc))
 		{
-			if (rc.senseParts(here) > 0 || here.equals(archonLoc.directionTo(destLoc)) || here.distanceSquaredTo(archonLoc) < 6)
+			if (rc.senseParts(here) > 0 || here.equals(archonLoc.add(archonLoc.directionTo(destLoc))) || here.distanceSquaredTo(archonLoc) < 6)
 			{
 				// move off parts, or move if we're in the archon's way
 				Behavior.tryAdjacentSafeMoveToward(here.directionTo(archonLoc).opposite());
@@ -26,7 +26,7 @@ public class BallMove extends RobotPlayer
 		DirectionSet safeDirs = Micro.getSafeMoveDirs();
 		DirectionSet safeNoPartsDirs = safeDirs.and(Micro.getNoPartsDirs());
 		
-		int tooManyAdjAllies = 7;
+		int tooManyAdjAllies = 5;
 		MapLocation repelLoc = here;
 		int numAdjAllies = 0;
 
@@ -43,6 +43,16 @@ public class BallMove extends RobotPlayer
 				numAdjAllies++;
 				repelLoc = repelLoc.add(ri.location.directionTo(here));
 			}
+		}
+		
+		// retreat to archon
+		if (Micro.getRoundsUntilDanger() < 10)
+		{
+			if (Behavior.tryAdjacentSafeMoveToward(here.directionTo(archonLoc)))
+				return;
+			else
+				Behavior.tryAttackSomeone();
+			return;
 		}
 		
 		if (numAdjAllies >= tooManyAdjAllies)

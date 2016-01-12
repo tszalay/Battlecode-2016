@@ -376,12 +376,12 @@ public class RoboArchon extends RobotPlayer
 		if (rand.nextInt(10) == 3)
 			return RobotType.SCOUT;
 		
-		if (numSoldiersAround < 3)
+		//if (numSoldiersAround < 3)
 			return RobotType.SOLDIER;
 		
-		if (rc.getTeamParts() >= RobotType.TURRET.partCost)
-			return RobotType.TURRET;
-		
+		//if (rc.getTeamParts() >= RobotType.TURRET.partCost)
+		//	return RobotType.TURRET;
+		/*
 		int numRobotsAlive = rc.getRobotCount();
 		
 		if (numRobotsAlive < 20)
@@ -389,7 +389,7 @@ public class RoboArchon extends RobotPlayer
 			nextRobotType = (rand.nextInt(2) == 0) ? RobotType.SCOUT : RobotType.SOLDIER;
 		}
 		
-		return nextRobotType;
+		return nextRobotType;*/
 	}
 	
 	private static boolean canBuildNow() throws GameActionException

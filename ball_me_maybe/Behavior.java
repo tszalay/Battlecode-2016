@@ -79,7 +79,7 @@ public class Behavior extends RobotPlayer
 		// bug to dest
 		
 		int roundsUntilDanger = Micro.getRoundsUntilDanger();
-		int dangerThreshold = 4;
+		int dangerThreshold = 2;
 		int roundsUntilShootAndMove = Micro.getRoundsUntilShootAndMove();
 		Debug.setStringTS("DR: " + roundsUntilDanger + " SR: " + roundsUntilShootAndMove);
 		
