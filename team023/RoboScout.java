@@ -105,7 +105,7 @@ public class RoboScout extends RobotPlayer
 			myTarget = MapInfo.getExplorationWaypoint();
 		
 		DirectionSet goodDirs = Micro.getSafeMoveDirs();
-		goodDirs = goodDirs.and(Micro.getNoTurretMoveDirs());
+		goodDirs = goodDirs.and(Micro.getTurretSafeDirs());
 		
 		Behavior.tryGoToWithoutBeingShot(myTarget, goodDirs);
 	}
@@ -133,6 +133,9 @@ public class RoboScout extends RobotPlayer
 		
 		if (rc.isCoreReady())	
 		{
+			if (Micro.getRoundsUntilDanger() < 5 && Behavior.tryRetreat())
+				return;
+			
 			BallMove.ballMove(archonLoc, destLoc, allies);
 		}
 		

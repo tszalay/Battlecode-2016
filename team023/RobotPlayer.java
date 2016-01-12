@@ -106,6 +106,8 @@ public class RobotPlayer
 				Micro = new MicroBase();
 				// process incoming messages
 				Message.readSignalQueue();
+				// update stuff with sensing
+				MapInfo.updateLocalWaypoints();
 				
 				// try to re-sense archon
 				if (myArchon != null)

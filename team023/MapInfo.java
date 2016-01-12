@@ -39,6 +39,15 @@ public class MapInfo extends RobotPlayer
 		return Micro.getClosestLocationTo(zombieDenLocations.elements(), here);
 	}
 	
+	
+	public static MapLocation getClosestDenThenPart()
+	{
+		MapLocation ml = Micro.getClosestLocationTo(zombieDenLocations.elements(), here);
+		if (ml == null)
+			ml = Micro.getClosestLocationTo(goodPartsLocations.elements(), here);
+		return ml;
+	}
+	
 	public static MapLocation getClosestPartOrDen()
 	{
 		MapLocation partloc = getClosestPart();
@@ -160,6 +169,21 @@ public class MapInfo extends RobotPlayer
 		// remove the part, and send that it got removed
 		goodPartsLocations.remove(loc);
 		zombieDenLocations.remove(loc);
+	}
+	
+	public static void updateLocalWaypoints() throws GameActionException
+	{
+		MapLocation loc = getClosestPart();
+		if (loc != null && rc.senseParts(loc) <= 0)
+			goodPartsLocations.remove(loc);
+		
+		loc = getClosestDen();
+		if (loc != null && rc.canSense(loc))
+		{
+			RobotInfo ri = rc.senseRobotAtLocation(loc);
+			if (ri == null || ri.type != RobotType.ZOMBIEDEN)
+				zombieDenLocations.remove(loc);
+		}
 	}
 	
 	// function to send updated info as a scout

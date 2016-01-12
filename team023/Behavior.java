@@ -38,8 +38,9 @@ public class Behavior extends RobotPlayer
 		
 		MapLocation targetLoc = Sighting.getClosestSightedTarget();
 		
-		if (targetLoc == null)
-			targetLoc = MapInfo.getClosestDen();
+		// disabled so that turrets only attack dens within sight range
+		//if (targetLoc == null)
+		//	targetLoc = MapInfo.getClosestDen();
 		
 		if (targetLoc != null && rc.canAttackLocation(targetLoc))
 		{
@@ -91,16 +92,18 @@ public class Behavior extends RobotPlayer
 		// retreat
 		// else
 		// bug to dest
-		
-//		int roundsUntilDanger = Micro.getRoundsUntilDanger();
-//		if (roundsUntilDanger == 0)
-//		{
-//			Debug.setStringAK("Decided to retreat because roundsUntilDanger = " + roundsUntilDanger);
-//			if (!tryRetreat())
-//				return tryAttackSomeone();
-//			else
-//				return true;
-//		}
+		/*
+		int roundsUntilDanger = Micro.getRoundsUntilDanger();
+		Debug.setStringTS("Danger rounds: " + roundsUntilDanger);
+		if (roundsUntilDanger-rc.getCoreDelay() <= 4)
+		{
+			//Debug.setStringAK("Decided to retreat because roundsUntilDanger = " + roundsUntilDanger);
+			if (!tryRetreat())
+				return tryAttackSomeone();
+			else
+				return true;
+		}
+		return Nav.tryGoTo(target, dirSet);*/
 		
 		RobotInfo closestHostile = Micro.getClosestUnitTo(Micro.getNearbyHostiles(), here);
 		if (closestHostile != null && closestHostile.location.distanceSquaredTo(here) <= closestHostile.type.attackRadiusSquared)
@@ -116,18 +119,6 @@ public class Behavior extends RobotPlayer
 			Debug.setStringAK("Decided to bug nav.");
 			return Nav.tryGoTo(target, dirSet);
 		}
-	}
-	
-	public static boolean tryGoToFarFromHostiles(MapLocation target) throws GameActionException
-	{
-		// moves not only safely toward a given MapLocation, but also prioritizes keeping hostiles out of sensor range
-		// can move so that a hostile enters sensor range, but once in range, this will move away
-		// extremely shy
-		
-		if (tryStayFarFromHostiles())
-			return true;
-		
-		return Nav.tryGoTo(target, Micro.getSafeMoveDirs());
 	}
 	
 	public static boolean tryShootWhileRetreating() throws GameActionException

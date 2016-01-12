@@ -6,25 +6,15 @@ import battlecode.common.*;
 
 public class RoboTurret extends RobotPlayer
 {
-	static MapLocation unpackDest = null;
-	//static final int[] unpackSearchTableX = {-1,1,1,-1,-2,0,2,0,-2,-2,2,2,1,-1,-3,-3,-1,1};
-	//static final int[] unpackSearchTableY = {1, 1, -1, -1, 0, 2, 0 ,-2,-2,2,2,-2,-3,-3,-1,1,3,3};
-	
-	static int lastFiredRound = 0;
-	static int lastUnpackRound = 0;
-	static int lastMovedRound = 0;
-	static int lastPackRound = 0;
-	static final int TURRET_PACK_DELAY = GameConstants.TURRET_TRANSFORM_DELAY;
+	// last round that a turret performed an action
+	// (unpacking or firing)
+	static int lastTurretRound = 0;
 
-	// AK: unpack search in this pattern
-	// [][]18[]18[][]
-	// []10[]06[]11[]
-	// 16[]01[]02[]19
-	// []05[]XX[]07[]
-	// 15[]04[]03[]20
-	// []09[]08[]12[]
-	// [][]14[]13[][]
+	static int lastPackRound = 0;
+	static int lastMovedRound = 0;
 	
+	static final int PACK_DELAY = 20;
+
 	public static void init() throws GameActionException
 	{
 	}
@@ -49,28 +39,33 @@ public class RoboTurret extends RobotPlayer
 //		if (roundSinceLastPack < TURRET_PACK_DELAY)
 //			return;
 		
-		if (!Behavior.tryAttackSomeone() && rc.isCoreReady())
+		if (Behavior.tryAttackSomeone())
 		{
-			rc.pack();
-			lastPackRound = rc.getRoundNum();
+			lastTurretRound = rc.getRoundNum();
 			return;
 		}
-			
+		
+		// if we fired recently, don't pack
+		if (rc.getRoundNum() - lastTurretRound < PACK_DELAY)
+			return;
+		
+		rc.pack();
+		lastPackRound = rc.getRoundNum();
 	}
 
 	public static void turnTTM() throws GameActionException
 	{
 		//mandatory wait in ttm time
-		int roundSinceLastUnpack = rc.getRoundNum() - lastUnpackRound;
-		if (roundSinceLastUnpack < TURRET_PACK_DELAY)
-			return;
+		//int roundSinceLastUnpack = rc.getRoundNum() - lastUnpackRound;
+		//if (roundSinceLastUnpack < GameConstants.TURRET_TRANSFORM_DELAY)
+		//	return;
 		
 		//unpack if we see any enemies unpack and turn into a turret
 		
-		if (shouldUnpack())
+		if (shouldUnpack() && rc.isCoreReady())
 		{
 			rc.unpack();
-			lastUnpackRound = rc.getRoundNum();
+			lastTurretRound = rc.getRoundNum();
 			return;
 		}
 		
