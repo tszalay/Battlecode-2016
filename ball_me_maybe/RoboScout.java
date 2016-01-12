@@ -65,7 +65,21 @@ public class RoboScout extends RobotPlayer
 	
 	private static void updateState() throws GameActionException
 	{
-		// do nothing!
+		// if i am close to a turret and no one else is, post up
+		RobotInfo[] allies = Micro.getNearbyAllies();
+		int numTurrets = 0;
+		int numScouts = 0;
+		for (RobotInfo ri : allies)
+		{
+			if (ri.type == RobotType.TURRET)
+				numTurrets += 1;
+			else if (ri.type == RobotType.SCOUT)
+				numScouts += 1;
+		}
+		if (numTurrets > 0 && numScouts == 0)
+			myState = ScoutState.SIGHTING;
+		else
+			myState = ScoutState.EXPLORING;
 	}
 	
 	
@@ -79,15 +93,30 @@ public class RoboScout extends RobotPlayer
 		Behavior.tryGoToWithoutBeingShot(myTarget, Micro.getSafeMoveDirs());
 	}
 
-	private static void doScoutSighting()
+	private static void doScoutSighting() throws GameActionException
 	{
-		// stay close-ish to closest archon
+		// stay close to closest turret
 		// move away from nearby scouts
+		Debug.setStringTS("Sighting for nobody ");
+		RobotInfo[] allies = Micro.getNearbyAllies();
+		for (RobotInfo ri : allies)
+		{
+			if (ri.type == RobotType.TURRET)
+			{
+				Behavior.tryGoToWithoutBeingShot(ri.location, Micro.getSafeMoveDirs());
+				Debug.setStringTS("Sighting for " + ri.ID);
+			}
+		}
 	}
 
-	private static void doScoutShadowing()
+	private static void doScoutShadowing() throws GameActionException
 	{
 		// stay close to the target we are shadowing
+		MapLocation archonLoc = Message.recentArchonDest;
+		if (archonLoc != null)
+		{
+			Behavior.tryGoToWithoutBeingShot(archonLoc, Micro.getSafeMoveDirs());
+		}
 	}
 	
 /*
