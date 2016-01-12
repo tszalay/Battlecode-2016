@@ -69,6 +69,11 @@ public class MicroBase extends RobotPlayer
 		{
 			if (target == null || ri.health < target.health)
 				target = ri;
+			if (ri.type == RobotType.ARCHON)
+			{
+				target = ri;
+				continue; // archon targets take priority over ALL
+			}
 		}
 		
 		return target;
