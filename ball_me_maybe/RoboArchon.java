@@ -82,7 +82,7 @@ public class RoboArchon extends RobotPlayer
 			// (and send startup built messages)
 			if (rc.isCoreReady())
 			{
-				myState = ArchonState.WAYPOINT;
+				//myState = ArchonState.WAYPOINT;
 				Message.sendBuiltMessage();
 			}
 			break;
@@ -144,8 +144,19 @@ public class RoboArchon extends RobotPlayer
 			{
 					Message.sendMessageSignal(MapInfo.fullMapDistanceSq(), MessageType.ARCHON_DEST, dest);
 			}
-			// go where we should
-			Behavior.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs());
+			// go to archon
+			RobotInfo[] allies = Micro.getNearbyAllies();
+			
+			MapLocation[] locs = BallMove.updateBallDests(allies); // updates archon and archon destination using messaging
+			MapLocation archonLoc = locs[0];
+			MapLocation destLoc = locs[1];
+			
+			if (rc.isCoreReady())	
+			{
+				Debug.setStringRR("Ballmove to archon at: " + archonLoc);
+				System.out.println("Ballmove to archon at: " + archonLoc);
+				BallMove.ballMove(archonLoc, archonLoc, allies);
+			}
 		}
 	}
 	

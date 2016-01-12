@@ -26,7 +26,7 @@ public class BallMove extends RobotPlayer
 		DirectionSet safeDirs = Micro.getSafeMoveDirs();
 		DirectionSet safeNoPartsDirs = safeDirs.and(Micro.getNoPartsDirs());
 		
-		int tooManyAdjAllies = 3;
+		int tooManyAdjAllies = 8;
 		MapLocation repelLoc = here;
 		int numAdjAllies = 0;
 
