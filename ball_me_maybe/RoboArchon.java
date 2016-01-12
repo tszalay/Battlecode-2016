@@ -357,16 +357,25 @@ public class RoboArchon extends RobotPlayer
 */		
 		RobotType nextRobotType = null;
 		
-		boolean delayTurret = rand.nextInt(1) == 0;
+		int numSoldiersAround = 0;
+		RobotInfo[] localAllies = Micro.getNearbyAllies();
+		for (RobotInfo ri : localAllies)
+		{
+			if (ri.type == RobotType.SOLDIER)
+				numSoldiersAround += 1;
+		}
 		
-		if (rc.getTeamParts() >= RobotType.TURRET.partCost && delayTurret)
+		if (numSoldiersAround < 5)
+			return RobotType.SOLDIER;
+		
+		if (rc.getTeamParts() >= RobotType.TURRET.partCost)
 			return RobotType.TURRET;
 		
 		int numRobotsAlive = rc.getRobotCount();
 		
-		if (numRobotsAlive < 20 || delayTurret)
+		if (numRobotsAlive < 20)
 		{
-			nextRobotType = (rand.nextInt(4) == 0) ? RobotType.SCOUT : RobotType.SOLDIER;
+			nextRobotType = (rand.nextInt(2) == 0) ? RobotType.SCOUT : RobotType.SOLDIER;
 		}
 		
 		return nextRobotType;

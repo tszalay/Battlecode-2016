@@ -12,30 +12,6 @@ public class BallMove extends RobotPlayer
 	
 	public static void ballMove(MapLocation archonLoc, MapLocation destLoc, RobotInfo[] allies) throws GameActionException
 	{
-//		int tooManyAdjAllies = 3;
-//		MapLocation repelLoc = here;
-//		int numAdjAllies = 0;
-//
-//		DirectionSet dirs = Micro.getCanMoveDirs();
-//		Direction archonDir = archonLoc.directionTo(destLoc);
-//		MapLocation gotoLoc = archonLoc;
-//		
-//		// Offset gotoLoc towards dest to make soldiers shortcut a little
-//		int goToOffset = 5;
-//		for (int i=0;i<goToOffset;i++) gotoLoc = gotoLoc.add(archonDir);
-//		
-//		for (RobotInfo ri : allies)
-//		{
-//			if (ri.location.isAdjacentTo(here))
-//			{
-//				numAdjAllies++;
-//				repelLoc = repelLoc.add(ri.location.directionTo(here));
-//			}
-//		}
-//		
-//		if (numAdjAllies >= tooManyAdjAllies) Nav.tryGoTo(repelLoc, dirs);
-//		else Nav.tryGoTo(gotoLoc, dirs);
-		
 		// if we can see our archon, clear rubble
 		if (rc.canSense(archonLoc))
 		{
@@ -50,7 +26,31 @@ public class BallMove extends RobotPlayer
 		DirectionSet safeDirs = Micro.getSafeMoveDirs();
 		DirectionSet safeNoPartsDirs = safeDirs.and(Micro.getNoPartsDirs());
 		
-		Behavior.tryGoToWithoutBeingShot(destLoc, safeNoPartsDirs);
+		int tooManyAdjAllies = 2;
+		MapLocation repelLoc = here;
+		int numAdjAllies = 0;
+
+		DirectionSet dirs = Micro.getCanMoveDirs();
+		Direction archonDir = archonLoc.directionTo(destLoc);
+		MapLocation gotoLoc = archonLoc;
+		
+		// Offset gotoLoc towards dest to make soldiers shortcut a little
+		int goToOffset = 0;
+		for (int i=0;i<goToOffset;i++) gotoLoc = gotoLoc.add(archonDir);
+		
+		for (RobotInfo ri : allies)
+		{
+			if (ri.location.isAdjacentTo(here))
+			{
+				numAdjAllies++;
+				repelLoc = repelLoc.add(ri.location.directionTo(here));
+			}
+		}
+		
+		if (numAdjAllies >= tooManyAdjAllies)
+			gotoLoc = repelLoc;
+		
+		Behavior.tryGoToWithoutBeingShot(gotoLoc, safeNoPartsDirs);
 		
 	}
 	

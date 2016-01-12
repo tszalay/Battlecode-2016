@@ -65,21 +65,35 @@ public class RoboScout extends RobotPlayer
 	
 	private static void updateState() throws GameActionException
 	{
-		// if i am close to a turret and no one else is, post up
+//		// if i am close to a turret and no one else is, post up
+//		RobotInfo[] allies = Micro.getNearbyAllies();
+//		int numTurrets = 0;
+//		int numScouts = 0;
+//		for (RobotInfo ri : allies)
+//		{
+//			if (ri.type == RobotType.TURRET)
+//				numTurrets += 1;
+//			else if (ri.type == RobotType.SCOUT)
+//				numScouts += 1;
+//		}
+//		if (numTurrets > 0 && numScouts > 1)
+//			myState = ScoutState.SIGHTING;
+//		else
+//			myState = ScoutState.EXPLORING;
+		
+		// if i see 2 scouts, i am free to explore
 		RobotInfo[] allies = Micro.getNearbyAllies();
-		int numTurrets = 0;
 		int numScouts = 0;
 		for (RobotInfo ri : allies)
 		{
-			if (ri.type == RobotType.TURRET)
-				numTurrets += 1;
-			else if (ri.type == RobotType.SCOUT)
+			if (ri.type == RobotType.SCOUT)
 				numScouts += 1;
 		}
-		if (numTurrets > 0 && numScouts == 0)
+		if (numScouts > 1)
 			myState = ScoutState.SIGHTING;
 		else
 			myState = ScoutState.EXPLORING;
+		
 	}
 	
 	
@@ -100,16 +114,28 @@ public class RoboScout extends RobotPlayer
 	{
 		// stay close to closest turret
 		// move away from nearby scouts
-		Debug.setStringTS("Sighting for nobody ");
+//		Debug.setStringTS("Sighting for nobody ");
+//		RobotInfo[] allies = Micro.getNearbyAllies();
+//		for (RobotInfo ri : allies)
+//		{
+//			if (ri.type == RobotType.TURRET)
+//			{
+//				Behavior.tryGoToWithoutBeingShot(ri.location, Micro.getSafeMoveDirs());
+//				Debug.setStringTS("Sighting for " + ri.ID);
+//			}
+//		}
+		
 		RobotInfo[] allies = Micro.getNearbyAllies();
-		for (RobotInfo ri : allies)
+		
+		MapLocation[] locs = BallMove.updateBallDests(allies); // updates archon and archon destination using messaging
+		MapLocation archonLoc = locs[0];
+		MapLocation destLoc = locs[1];
+		
+		if (rc.isCoreReady())	
 		{
-			if (ri.type == RobotType.TURRET)
-			{
-				Behavior.tryGoToWithoutBeingShot(ri.location, Micro.getSafeMoveDirs());
-				Debug.setStringTS("Sighting for " + ri.ID);
-			}
+			BallMove.ballMove(archonLoc, destLoc, allies);
 		}
+		
 	}
 
 	private static void doScoutShadowing() throws GameActionException

@@ -55,6 +55,7 @@ public class RoboTurret extends RobotPlayer
 			lastPackRound = rc.getRoundNum();
 			return;
 		}
+			
 	}
 
 	public static void turnTTM() throws GameActionException
