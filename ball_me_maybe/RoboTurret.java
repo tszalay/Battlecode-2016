@@ -14,7 +14,7 @@ public class RoboTurret extends RobotPlayer
 	static int lastUnpackRound = 0;
 	static int lastMovedRound = 0;
 	static int lastPackRound = 0;
-	static final int TURRET_PACK_DELAY = 15;
+	static final int TURRET_PACK_DELAY = GameConstants.TURRET_TRANSFORM_DELAY;
 
 	// AK: unpack search in this pattern
 	// [][]18[]18[][]
@@ -45,16 +45,16 @@ public class RoboTurret extends RobotPlayer
 	
 	public static void turnTurret() throws GameActionException
 	{
-		int roundSinceLastPack = rc.getRoundNum() - lastPackRound;
-		if (roundSinceLastPack < TURRET_PACK_DELAY)
-			return;
-
-		if (!Behavior.tryAttackSomeone())
+//		int roundSinceLastPack = rc.getRoundNum() - lastPackRound;
+//		if (roundSinceLastPack < TURRET_PACK_DELAY)
+//			return;
+		
+		if (!Behavior.tryAttackSomeone() && rc.isCoreReady())
 		{
 			rc.pack();
 			lastPackRound = rc.getRoundNum();
 			return;
-		}	
+		}
 	}
 
 	public static void turnTTM() throws GameActionException
@@ -65,26 +65,47 @@ public class RoboTurret extends RobotPlayer
 			return;
 		
 		//unpack if we see any enemies unpack and turn into a turret
-		MapLocation closestSighted = Sighting.getClosestSightedTarget();
-		RobotInfo[] hostilesSeen   = Micro.getNearbyHostiles();
-		if (closestSighted != null 
-				&& here.distanceSquaredTo(closestSighted) <= rc.getType().attackRadiusSquared
-				&& hostilesSeen.length !=0)
+		
+		if (shouldUnpack())
 		{
+			System.out.println("I unpacked!");
 			rc.unpack();
 			lastUnpackRound = rc.getRoundNum();
 			return;
 		}
-
+		
 		//try to move wherever everyone else is going
 		RobotInfo[] allies = Micro.getNearbyAllies();
 		MapLocation[] locs = BallMove.updateBallDests(allies); // updates archon and archon destination using messaging
 		MapLocation archonLoc = locs[0];
 		MapLocation destLoc = locs[1];
-		if (rc.isCoreReady())	
-		{
-			BallMove.ballMove(archonLoc, destLoc, allies);
-		}
+		BallMove.ballMove(archonLoc, destLoc, allies);
+	}
+	
+	public static boolean shouldUnpack() throws GameActionException
+	{
+		// don't unpack with hostiles too close
+//		int numRoundsUntilDanger = Micro.getRoundsUntilDanger();
+//		
+//		if (numRoundsUntilDanger < TURRET_PACK_DELAY)
+//			return false;
+		
+		RobotInfo[] hostiles = Micro.getNearbyHostiles();
+		RobotInfo closestHostile = Micro.getClosestUnitTo(hostiles, here);
+		
+//		if (closestHostile != null && closestHostile.location.distanceSquaredTo(here) <= closestHostile.type.attackRadiusSquared)
+//			return false;
+//		else
+//			return true;
+		
+		if (closestHostile != null)
+			return true;
+		else
+			return false;
+		
+		//MapLocation closestSighted = Sighting.getClosestSightedTarget();
+		
+		//return (closestSighted != null && here.distanceSquaredTo(closestSighted) <= rc.getType().attackRadiusSquared);
 	}
 }
 

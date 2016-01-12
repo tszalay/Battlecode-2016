@@ -349,12 +349,14 @@ public class RoboArchon extends RobotPlayer
 */		
 		RobotType nextRobotType = null;
 		
-		if (rc.getTeamParts() >= RobotType.TURRET.partCost)
+		boolean delayTurret = rand.nextInt(1) == 0;
+		
+		if (rc.getTeamParts() >= RobotType.TURRET.partCost && delayTurret)
 			return RobotType.TURRET;
 		
 		int numRobotsAlive = rc.getRobotCount();
 		
-		if (numRobotsAlive < 20)
+		if (numRobotsAlive < 20 || delayTurret)
 		{
 			nextRobotType = (rand.nextInt(4) == 0) ? RobotType.SCOUT : RobotType.SOLDIER;
 		}
