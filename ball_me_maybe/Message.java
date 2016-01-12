@@ -116,7 +116,7 @@ public class Message extends RobotPlayer
 	private static void updateRecentArchon(Signal s, int[] vals)
 	{
 		if (recentArchonLocation != null && s.getID() > recentArchonID
-					&& rc.getRoundNum() - recentArchonRound < 20)
+					&& rc.getRoundNum() - recentArchonRound < 2*RoboArchon.DEST_MESSAGE_FREQ)
 			return;
 		
 		recentArchonLocation = s.getLocation();

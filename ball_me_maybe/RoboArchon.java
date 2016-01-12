@@ -105,42 +105,42 @@ public class RoboArchon extends RobotPlayer
 	public static void doWaypoint() throws GameActionException
 	{
 		// look for waypoint
-		MapLocation loc = MapInfo.getClosestPartOrDen();
+		MapLocation dest = MapInfo.getClosestPartOrDen();
 		
 		// check if it should be deleted
-		if (rc.canSenseLocation(loc) && rc.senseParts(loc) == 0 && rc.senseRobotAtLocation(loc) == null)
+		if (dest != null && rc.canSenseLocation(dest) && rc.senseParts(dest) == 0 && rc.senseRobotAtLocation(dest) == null)
 		{
-			MapInfo.removeWaypoint(loc);
-			loc = MapInfo.getClosestPartOrDen();
+			MapInfo.removeWaypoint(dest);
+			dest = MapInfo.getClosestPartOrDen();
 		}
 		
 		// if we don't have a waypoint, explore
-		if (loc == null)
-			loc = MapInfo.getExplorationWaypoint();
+		if (dest == null)
+			dest = MapInfo.getExplorationWaypoint();
 		
 		// if we are the leader
-		if (rc.getID() <= Message.recentArchonID)
+		if (rc.getID() <= Message.recentArchonID || 
+				(rc.getRoundNum()-Message.recentArchonRound) > 2*DEST_MESSAGE_FREQ)
 		{
 			Debug.setStringRR("LEADER");
-			rc.setIndicatorDot(loc, 255, 255, 255);
+			rc.setIndicatorDot(dest, 255, 255, 255);
 		}
-		
-		// if we are a follower
 		else
 		{
+			// if we are a follower
 			// look for leader
-			loc = Message.recentArchonLocation;
-			Debug.setStringRR("FOLLOWER: leader's ID is " + Message.recentArchonID + " at loc " + loc.toString());
+			dest = Message.recentArchonLocation;
+			Debug.setStringRR("FOLLOWER: leader's ID is " + Message.recentArchonID + " at loc " + dest.toString());
 		}
 
-		if (loc != null)
+		if (dest != null)
 		{
 			// and send a message every certain few rounds
 			if (rc.getRoundNum() % DEST_MESSAGE_FREQ == 0)
-				Message.sendMessageSignal(DEST_MESSAGE_RANGE, MessageType.ARCHON_DEST, loc);
+				Message.sendMessageSignal(DEST_MESSAGE_RANGE, MessageType.ARCHON_DEST, dest);
 			
 			// go where we should
-			Behavior.tryGoToWithoutBeingShot(loc, Micro.getSafeMoveDirs());
+			Behavior.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs());
 		}
 	}
 	
@@ -164,6 +164,9 @@ public class RoboArchon extends RobotPlayer
 	private static void doBuild() throws GameActionException
 	{
 		RobotType nextRobotType = getNextBuildRobotType();
+		
+		if (rc.getRoundNum() % DEST_MESSAGE_FREQ == 0)
+			Message.sendMessageSignal(DEST_MESSAGE_RANGE, MessageType.ARCHON_DEST, here);
 		
 		// return false quickly if we cannot build for an obvious reason
 		if (nextRobotType == null)
@@ -365,7 +368,10 @@ public class RoboArchon extends RobotPlayer
 				numSoldiersAround += 1;
 		}
 		
-		if (numSoldiersAround < 5)
+		if (rand.nextInt(10) == 3)
+			return RobotType.SCOUT;
+		
+		if (numSoldiersAround < 3)
 			return RobotType.SOLDIER;
 		
 		if (rc.getTeamParts() >= RobotType.TURRET.partCost)

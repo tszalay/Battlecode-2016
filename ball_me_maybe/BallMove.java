@@ -15,7 +15,7 @@ public class BallMove extends RobotPlayer
 		// if we can see our archon, clear rubble
 		if (rc.canSense(archonLoc))
 		{
-			if (rc.senseParts(here) > 0 || here.equals(archonLoc.directionTo(destLoc)) || here.distanceSquaredTo(archonLoc) < 4)
+			if (rc.senseParts(here) > 0 || here.equals(archonLoc.directionTo(destLoc)) || here.distanceSquaredTo(archonLoc) < 6)
 			{
 				// move off parts, or move if we're in the archon's way
 				Behavior.tryAdjacentSafeMoveToward(here.directionTo(archonLoc).opposite());
@@ -30,13 +30,11 @@ public class BallMove extends RobotPlayer
 		MapLocation repelLoc = here;
 		int numAdjAllies = 0;
 
-		DirectionSet dirs = Micro.getCanMoveDirs();
 		Direction archonDir = archonLoc.directionTo(destLoc);
 		MapLocation gotoLoc = archonLoc;
 		
 		// Offset gotoLoc towards dest to make soldiers shortcut a little
-		int goToOffset = 0;
-		for (int i=0;i<goToOffset;i++) gotoLoc = gotoLoc.add(archonDir);
+		//gotoLoc = gotoLoc.add(archonDir, 0);
 		
 		for (RobotInfo ri : allies)
 		{
@@ -63,18 +61,23 @@ public class BallMove extends RobotPlayer
 		// update archon and dest locations
 		MapLocation archonLoc = Message.recentArchonLocation;
 		MapLocation destLoc = Message.recentArchonDest;
-		if (archonLoc == null) archonLoc = here;
-		if (destLoc == null) destLoc = here;
+		
+		if (archonLoc == null)
+			archonLoc = here;
+		if (destLoc == null)
+			destLoc = here;
 
 		// if you see an archon update your location
 		for (RobotInfo ri : allies)
 		{
-			if (ri.type == RobotType.ARCHON) archonLoc = ri.location;
+			if (ri.type == RobotType.ARCHON)
+				archonLoc = ri.location;
 			archonInSight = true;
 		}
 
 		// If you can see your saved archonLoc but can't find the archon, assume archon is at Dest
-		if (rc.canSenseLocation(archonLoc) && !archonInSight) archonLoc = destLoc;
+		if (rc.canSenseLocation(archonLoc) && !archonInSight)
+			archonLoc = destLoc;
 		
 		locs[0] = archonLoc;
 		locs[1] = destLoc;
