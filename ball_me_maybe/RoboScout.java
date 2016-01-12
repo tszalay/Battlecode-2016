@@ -133,6 +133,9 @@ public class RoboScout extends RobotPlayer
 		
 		if (rc.isCoreReady())	
 		{
+			if (Micro.getRoundsUntilDanger() < 5 && Behavior.tryRetreat())
+				return;
+			
 			BallMove.ballMove(archonLoc, destLoc, allies);
 		}
 		

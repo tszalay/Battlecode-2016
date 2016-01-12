@@ -162,6 +162,21 @@ public class MapInfo extends RobotPlayer
 		zombieDenLocations.remove(loc);
 	}
 	
+	public static void updateLocalWaypoints() throws GameActionException
+	{
+		MapLocation loc = getClosestPart();
+		if (loc != null && rc.senseParts(loc) <= 0)
+			goodPartsLocations.remove(loc);
+		
+		loc = getClosestDen();
+		if (loc != null && rc.canSense(loc))
+		{
+			RobotInfo ri = rc.senseRobotAtLocation(loc);
+			if (ri == null || ri.type != RobotType.ZOMBIEDEN)
+				zombieDenLocations.remove(loc);
+		}
+	}
+	
 	// function to send updated info as a scout
 	public static boolean doScoutSendUpdates() throws GameActionException
 	{
