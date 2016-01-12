@@ -38,8 +38,9 @@ public class Behavior extends RobotPlayer
 		
 		MapLocation targetLoc = Sighting.getClosestSightedTarget();
 		
-		if (targetLoc == null)
-			targetLoc = MapInfo.getClosestDen();
+		// disabled so that turrets only attack dens within sight range
+		//if (targetLoc == null)
+		//	targetLoc = MapInfo.getClosestDen();
 		
 		if (targetLoc != null && rc.canAttackLocation(targetLoc))
 		{
