@@ -20,6 +20,9 @@ public class RoboArchon extends RobotPlayer
 	static final int MAX_ROUNDS_TO_RALLY = 400;
 	static final int DEST_MESSAGE_FREQ = 10;
 	static final int DEST_MESSAGE_RANGE = 63;
+	static final int DEST_ALL_MAP_MESSAGE_FREQ = 20;//best if not divisible by DEST_MESSAGE_FREQ
+	static final int EXTRA_PARTS_FOLLOWER_WAITS = 5;
+
 	
 	static ArchonState myState = ArchonState.INIT;
 
@@ -119,10 +122,8 @@ public class RoboArchon extends RobotPlayer
 			dest = MapInfo.getExplorationWaypoint();
 		
 		// if we are the leader
-		if (rc.getID() <= Message.recentArchonID || 
-				(rc.getRoundNum()-Message.recentArchonRound) > 2*DEST_MESSAGE_FREQ)
+		if (amLeader())
 		{
-			Debug.setStringRR("LEADER");
 			rc.setIndicatorDot(dest, 255, 255, 255);
 		}
 		else
@@ -130,15 +131,19 @@ public class RoboArchon extends RobotPlayer
 			// if we are a follower
 			// look for leader
 			dest = Message.recentArchonLocation;
-			Debug.setStringRR("FOLLOWER: leader's ID is " + Message.recentArchonID + " at loc " + dest.toString());
 		}
 
 		if (dest != null)
 		{
 			// and send a message every certain few rounds
-			if (rc.getRoundNum() % DEST_MESSAGE_FREQ == 0)
+			if (rc.getRoundNum() % DEST_ALL_MAP_MESSAGE_FREQ == 0)
+			{
 				Message.sendMessageSignal(DEST_MESSAGE_RANGE, MessageType.ARCHON_DEST, dest);
-			
+				//System.out.println("Sent all map signal");
+			}else if(rc.getRoundNum() % DEST_MESSAGE_FREQ == 0)
+			{
+					Message.sendMessageSignal(MapInfo.fullMapDistanceSq(), MessageType.ARCHON_DEST, dest);
+			}
 			// go where we should
 			Behavior.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs());
 		}
@@ -173,9 +178,12 @@ public class RoboArchon extends RobotPlayer
 			return;
 		if (!rc.isCoreReady())
 			return;
-		if (!rc.hasBuildRequirements(nextRobotType))
+		if (rc.getTeamParts() < nextRobotType.partCost)
 			return;
-		
+		//I'm not the leader and we don't have the excess parts, giving leader time to build
+		if (!amLeader() && (rc.getTeamParts() < nextRobotType.partCost + EXTRA_PARTS_FOLLOWER_WAITS))
+			return;
+				
 		// find okay direction set
 		DirectionSet canBuild = getCanBuildDirectionSet(nextRobotType);
 		DirectionSet parity = getParityAllowedDirectionSet(nextRobotType);
@@ -361,17 +369,14 @@ public class RoboArchon extends RobotPlayer
 		RobotType nextRobotType = null;
 		
 		int numSoldiersAround = 0;
-		int numScoutsAround = 0;
 		RobotInfo[] localAllies = Micro.getNearbyAllies();
 		for (RobotInfo ri : localAllies)
 		{
 			if (ri.type == RobotType.SOLDIER)
-				numSoldiersAround++;
-			else if (ri.type == RobotType.SCOUT)
-				numScoutsAround++;
+				numSoldiersAround += 1;
 		}
 		
-		if (numScoutsAround < 2)
+		if (rand.nextInt(10) == 3)
 			return RobotType.SCOUT;
 		
 		if (numSoldiersAround < 3)
@@ -420,5 +425,20 @@ public class RoboArchon extends RobotPlayer
 			return false;
 		
 		return here.distanceSquaredTo(Message.rallyLocation) < 20;
+	}
+
+	private static boolean amLeader()
+	{
+		if (rc.getID() <= Message.recentArchonID || 
+				(rc.getRoundNum()-Message.recentArchonRound) > 2*DEST_MESSAGE_FREQ)
+		{
+			Debug.setStringRR("I am the leader!!!!!");
+			return true;
+		}
+		else
+		{
+			Debug.setStringRR("FOLLOWER: leader's ID is " + Message.recentArchonID);
+			return false;
+		}
 	}
 }
