@@ -199,6 +199,16 @@ public class MicroBase extends RobotPlayer
 		return roundsUntilDanger;
 	}
 	
+	// get number of rounds until we die assuming we are maximally attacked by enemies we know about
+	public int getRoundsUntilDeath()
+	{
+		int rounds = 0;
+		
+		// DO STUFF
+		
+		return rounds;
+	}
+	
 	// compute which direction moves us the farthest from the closest enemy
 	// (trying to use safe squares first)
 	public Direction getBestEscapeDir()
@@ -422,44 +432,6 @@ public class MicroBase extends RobotPlayer
 		}
 		
 		return closest;
-	}
-	
-	public boolean tryAttackSomeone() throws GameActionException
-	{
-		// attack someone in range if possible, low health first, prioritizing zombies
-		
-		RobotInfo zombieTarget = this.getLowestHealth(this.getNearbyZombies());
-		RobotInfo enemyTarget = this.getLowestHealth(this.getNearbyEnemies());
-		
-		if (zombieTarget != null && rc.canAttackLocation(zombieTarget.location))
-		{
-			rc.attackLocation(zombieTarget.location);
-			return true;
-		}
-		
-		if (enemyTarget != null && rc.canAttackLocation(enemyTarget.location))
-		{
-			rc.attackLocation(enemyTarget.location);
-			return true;
-		}
-		
-		return false;
-	}
-	
-	public boolean tryAvoidBeingShot() throws GameActionException
-	{
-		if (this.getNearbyHostiles().length == 0)
-			return false;
-		
-		if (!rc.isCoreReady())
-			return this.tryAttackSomeone();
-		
-		Direction escapeDir = this.getBestEscapeDir();
-		
-		// escape
-		tryMove(escapeDir);
-		
-		return this.tryAttackSomeone();
 	}
 	
 //	public boolean canWin1v1(RobotInfo enemy) throws GameActionException
