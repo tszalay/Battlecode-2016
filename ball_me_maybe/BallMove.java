@@ -10,8 +10,24 @@ public class BallMove extends RobotPlayer
 	{
 	}
 	
-	public static void ballMove(MapLocation archonLoc, MapLocation destLoc, RobotInfo[] allies) throws GameActionException
+	public static void ballMove(int minDistSq, int maxDistSq) throws GameActionException
 	{
+		if (!rc.isCoreReady())
+			return;
+		
+		MapLocation archonLoc = Message.recentArchonLocation;
+		
+		if (archonLoc == null)
+			archonLoc = here;
+
+		// if you see an archon update your location
+		for (RobotInfo ri : Micro.getNearbyAllies())
+		{
+			if (ri.type == RobotType.ARCHON && ri.location.distanceSquaredTo(here) < archonLoc.distanceSquaredTo(here))
+				archonLoc = ri.location;
+		}
+
+		
 		// try to retreat towards the ball or shoot if we're in danger
 		if (Micro.getRoundsUntilDanger() < 10)
 		{
@@ -20,17 +36,33 @@ public class BallMove extends RobotPlayer
 			else
 				Behavior.tryGoToWithoutBeingShot(here, Micro.getSafeMoveDirs());
 			
+			Debug.setStringTS("Last ball: retreat");
+			
 			return;
 		}
 		
-		if (here.distanceSquaredTo(archonLoc) > 40)
+		// if we're not in danger, try to shoot something anyway
+		// (e.g. zombie dens)
+		if (Micro.getNearbyHostiles().length > 0)
 		{
-			Nav.tryGoTo(archonLoc,Micro.getSafeMoveDirs());
+			Behavior.tryAdjacentSafeMoveToward(here.directionTo(Micro.getNearbyHostiles()[0].location));
+			Behavior.tryAttackSomeone();
+			Debug.setStringTS("Last ball: tryAttack");
 			return;
 		}
-		if (here.distanceSquaredTo(archonLoc) < 7)
+		
+		// if we're far, move closer
+		if (here.distanceSquaredTo(archonLoc) > maxDistSq)
+		{
+			Nav.tryGoTo(archonLoc,Micro.getSafeMoveDirs());
+			Debug.setStringTS("Last ball: closer");
+			return;
+		}
+		// if we're too close, move farther
+		if (here.distanceSquaredTo(archonLoc) < minDistSq)
 		{
 			Behavior.tryAdjacentSafeMoveToward(here.directionTo(archonLoc).opposite());
+			Debug.setStringTS("Last ball: farther");
 			return;
 		}
 		
@@ -41,38 +73,7 @@ public class BallMove extends RobotPlayer
 			Behavior.tryAdjacentSafeMoveToward(al);
 		else
 			Behavior.tryAdjacentSafeMoveToward(ar);
-	}
-	
-	public static MapLocation[] updateBallDests(RobotInfo[] allies) throws GameActionException
-	{
-		MapLocation[] locs = new MapLocation[]{null, null};
-
-		boolean archonInSight = false;
-
-		// update archon and dest locations
-		MapLocation archonLoc = Message.recentArchonLocation;
-		MapLocation destLoc = Message.recentArchonDest;
-		
-		if (archonLoc == null)
-			archonLoc = here;
-		if (destLoc == null)
-			destLoc = here;
-
-		// if you see an archon update your location
-		for (RobotInfo ri : allies)
-		{
-			if (ri.type == RobotType.ARCHON)
-				archonLoc = ri.location;
-			archonInSight = true;
-		}
-
-		// If you can see your saved archonLoc but can't find the archon, assume archon is at Dest
-		if (rc.canSenseLocation(archonLoc) && !archonInSight)
-			archonLoc = destLoc;
-		
-		locs[0] = archonLoc;
-		locs[1] = destLoc;
-		return locs;
+		Debug.setStringTS("Last ball: move perp.");
 	}
 	
 	public static boolean tryClearRubble(Direction dir) throws GameActionException

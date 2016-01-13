@@ -16,7 +16,8 @@ public class RoboScout extends RobotPlayer
 	public static final int SIGNAL_ROUND = 30; 
 	
 	public static ScoutState myState = ScoutState.EXPLORING;
-	public static MapLocation myTarget;
+	public static MapLocation myExploringTarget;
+	public static int myShadowID;
 	
 	public static void init() throws GameActionException
 	{
@@ -26,6 +27,22 @@ public class RoboScout extends RobotPlayer
 			if (myArchon != null)
 			{
 				Message.sendMessageSignal(Message.FULL_MAP_DIST_SQ, MessageType.SPAWN, myArchon.location);
+			}
+		}
+		else
+		{
+			if (myArchon != null)
+			{
+				myState = ScoutState.SHADOWING;
+				myShadowID = myArchon.ID;
+				for (RobotInfo ri : rc.senseNearbyRobots(myArchon.location,4,ourTeam))
+				{
+					if (ri.type == RobotType.SCOUT)
+					{
+						myState = ScoutState.SIGHTING;
+						break;
+					}
+				}
 			}
 		}
 	}
@@ -59,95 +76,77 @@ public class RoboScout extends RobotPlayer
 		// and use spare bytecodes to look for stuff
 		MapInfo.analyzeSurroundings();
 		// and send the updates
-		if (!Micro.isInDanger())
-			MapInfo.doScoutSendUpdates();
+		MapInfo.doScoutSendUpdates();
+		
+		Debug.setStringTS("Scout: " + myState);
 	}
 	
 	private static void updateState() throws GameActionException
 	{
-//		// if i am close to a turret and no one else is, post up
-//		RobotInfo[] allies = Micro.getNearbyAllies();
-//		int numTurrets = 0;
-//		int numScouts = 0;
-//		for (RobotInfo ri : allies)
-//		{
-//			if (ri.type == RobotType.TURRET)
-//				numTurrets += 1;
-//			else if (ri.type == RobotType.SCOUT)
-//				numScouts += 1;
-//		}
-//		if (numTurrets > 0 && numScouts > 1)
-//			myState = ScoutState.SIGHTING;
-//		else
-//			myState = ScoutState.EXPLORING;
-		
-		// if i see 2 scouts, i am free to explore
-		RobotInfo[] allies = Micro.getNearbyAllies();
-		int numScouts = 0;
-		for (RobotInfo ri : allies)
+		switch (myState)
 		{
-			if (ri.type == RobotType.SCOUT && ri.ID > rc.getID())
-				numScouts += 1;
-		}
-		if (numScouts > 1)
-			myState = ScoutState.EXPLORING;
-		else
-			myState = ScoutState.SIGHTING;
-		
+		case EXPLORING:
+			// we just keep exploring, oh yeah
+			break;
+		case SIGHTING:
+			// if i see 2 scouts, i am free to explore
+			RobotInfo[] allies = Micro.getNearbyAllies();
+			int numScouts = 0;
+			for (RobotInfo ri : allies)
+			{
+				if (ri.type == RobotType.SCOUT && ri.ID > rc.getID())
+					numScouts += 1;
+			}
+			if (numScouts > 3)
+				myState = ScoutState.EXPLORING;
+			else
+				myState = ScoutState.SIGHTING;
+			
+			// or if i haven't seen an archon in a while
+			if (rc.getRoundNum()-Message.recentArchonRound > 20)
+				myState = ScoutState.EXPLORING;
+
+			break;
+		case SHADOWING:
+			if (!rc.canSenseRobot(myShadowID))
+				myState = ScoutState.SIGHTING;
+			break;
+		}		
 	}
 	
 	
 	private static void doScoutExploring() throws GameActionException
 	{
-		Debug.setStringTS("Exploring to " + myTarget);
+		Debug.setStringTS("Exploring to " + myExploringTarget);
 		// get a random waypoint and move towards it
-		if (myTarget == null || here.distanceSquaredTo(myTarget) < 24 || !MapInfo.isOnMap(myTarget))
-			myTarget = MapInfo.getExplorationWaypoint();
+		if (myExploringTarget == null || here.distanceSquaredTo(myExploringTarget) < 24 || !MapInfo.isOnMap(myExploringTarget))
+			myExploringTarget = MapInfo.getExplorationWaypoint();
 		
 		DirectionSet goodDirs = Micro.getSafeMoveDirs();
 		goodDirs = goodDirs.and(Micro.getTurretSafeDirs());
 		
-		Behavior.tryGoToWithoutBeingShot(myTarget, goodDirs);
+		Behavior.tryGoToWithoutBeingShot(myExploringTarget, goodDirs);
 	}
 
 	private static void doScoutSighting() throws GameActionException
 	{
-		// stay close to closest turret
-		// move away from nearby scouts
-//		Debug.setStringTS("Sighting for nobody ");
-//		RobotInfo[] allies = Micro.getNearbyAllies();
-//		for (RobotInfo ri : allies)
-//		{
-//			if (ri.type == RobotType.TURRET)
-//			{
-//				Behavior.tryGoToWithoutBeingShot(ri.location, Micro.getSafeMoveDirs());
-//				Debug.setStringTS("Sighting for " + ri.ID);
-//			}
-//		}
-		
-		RobotInfo[] allies = Micro.getNearbyAllies();
-		
-		MapLocation[] locs = BallMove.updateBallDests(allies); // updates archon and archon destination using messaging
-		MapLocation archonLoc = locs[0];
-		MapLocation destLoc = locs[1];
-		
-		if (rc.isCoreReady())	
-		{
-			if (Micro.getRoundsUntilDanger() < 5 && Behavior.tryRetreat())
-				return;
-			
-			BallMove.ballMove(archonLoc, destLoc, allies);
-		}
-		
+		BallMove.ballMove(24, 63);
 	}
 
 	private static void doScoutShadowing() throws GameActionException
 	{
-		// stay close to the target we are shadowing
-		MapLocation archonLoc = Message.recentArchonDest;
-		if (archonLoc != null)
+		if (!rc.canSenseRobot(myShadowID))
+			return;
+		
+		RobotInfo shadowInfo = rc.senseRobot(myShadowID);
+		
+		if (Micro.isInDanger())
 		{
-			Behavior.tryGoToWithoutBeingShot(archonLoc, Micro.getSafeMoveDirs());
+			Behavior.tryRetreatTowards(shadowInfo.location.add(Micro.getBestRetreatDir()), Micro.getSafeMoveDirs());
+			return;
 		}
+
+		if (here.distanceSquaredTo(shadowInfo.location) > 2)
+			Behavior.tryAdjacentSafeMoveToward(shadowInfo.location);
 	}
 }

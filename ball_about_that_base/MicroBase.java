@@ -395,8 +395,6 @@ public class MicroBase extends RobotPlayer
 		xtot /= nearby.length;
 		ytot /= nearby.length;
 		
-		Debug.setStringTS("AA" + new MapLocation(xtot,ytot));
-		
 		return new MapLocation(xtot,ytot);
 	}
 	

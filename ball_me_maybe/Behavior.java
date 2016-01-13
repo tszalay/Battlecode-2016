@@ -10,7 +10,7 @@ public class Behavior extends RobotPlayer
 	{
 		// attack someone in range if possible, low health first, prioritizing zombies
 		
-		if (rc.getWeaponDelay() >= 1)
+		if (!rc.isWeaponReady())
 			return false;
 		
 		RobotInfo zombieTarget = Micro.getLowestHealth(Micro.getNearbyZombies());
@@ -29,6 +29,7 @@ public class Behavior extends RobotPlayer
 		}
 		
 		// attack a sighted target if possible
+		// only relevant if we're a turret
 		if (rc.getType() != RobotType.TURRET)
 			return false;
 		
@@ -49,10 +50,6 @@ public class Behavior extends RobotPlayer
 	
 	public static boolean tryRetreat() throws GameActionException
 	{
-		// tries to move to the square farthest from the closest enemy
-		// if this move is not safe, it tries the squares rotated right and left (IS THIS A GOOD THING OR NECESSARY?)
-		// if those are also not safe, it does nothing
-		
 		DirectionSet ds = Micro.getSafeMoveDirs().clone();
 		ds.remove(Direction.NONE);
 		
@@ -113,6 +110,11 @@ public class Behavior extends RobotPlayer
 				return true;
 		
 		return Nav.tryGoTo(target, dirSet);
+	}
+	
+	public static boolean tryAdjacentSafeMoveToward(MapLocation loc) throws GameActionException
+	{
+		return tryAdjacentSafeMoveToward(here.directionTo(loc));
 	}
 	
 	public static boolean tryAdjacentSafeMoveToward(Direction dir) throws GameActionException
