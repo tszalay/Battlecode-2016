@@ -15,6 +15,6 @@ public class RoboSoldier extends RobotPlayer
 		if (rc.senseParts(here)==0)
 			MapInfo.removeWaypoint(here);
 		
-		BallMove.ballMove(7, 53);
+		BallMove.ballMove(5, 24);
 	}
 }

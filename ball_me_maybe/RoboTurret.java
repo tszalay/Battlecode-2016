@@ -70,7 +70,7 @@ public class RoboTurret extends RobotPlayer
 		}
 		
 		//try to move wherever everyone else is going
-		BallMove.ballMove(7,40);
+		BallMove.ballMove(7,35);
 	}
 	
 	public static boolean shouldUnpack() throws GameActionException

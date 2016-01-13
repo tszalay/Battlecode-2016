@@ -125,12 +125,15 @@ public class RoboScout extends RobotPlayer
 		DirectionSet goodDirs = Micro.getSafeMoveDirs();
 		goodDirs = goodDirs.and(Micro.getTurretSafeDirs());
 		
-		Behavior.tryGoToWithoutBeingShot(myExploringTarget, goodDirs);
+		if (Micro.getRoundsUntilDanger() < 5)
+			Behavior.tryRetreatTowards(Message.recentEnemySignal, goodDirs);
+		else
+			Behavior.tryGoToWithoutBeingShot(myExploringTarget, goodDirs);
 	}
 
 	private static void doScoutSighting() throws GameActionException
 	{
-		BallMove.ballMove(24, 63);
+		BallMove.ballMove(24, 53);
 	}
 
 	private static void doScoutShadowing() throws GameActionException

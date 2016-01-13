@@ -48,20 +48,15 @@ public class Behavior extends RobotPlayer
 		return false;
 	}
 	
-	public static boolean tryRetreat() throws GameActionException
+	// this function always runs away, no matta whats
+	public static boolean tryRetreatOrShootIfStuck() throws GameActionException
 	{
-		DirectionSet ds = Micro.getSafeMoveDirs().clone();
-		ds.remove(Direction.NONE);
-		
-		if (ds.any() || !rc.getType().canAttack())
-		{
-			Direction escapeDir = Micro.getBestEscapeDir();
-			return Micro.tryMove(escapeDir);
-		}
+		Direction escapeDir = Micro.getBestEscapeDir();
+		// if we can't escape (we're stuck), try to shoot
+		if (escapeDir == null)
+			return tryAttackSomeone();
 		else
-		{
-			return false;
-		}
+			return Micro.tryMove(escapeDir);
 	}
 	
 	public static boolean tryGoToWithoutBeingShot(MapLocation target, DirectionSet dirSet) throws GameActionException
@@ -82,7 +77,7 @@ public class Behavior extends RobotPlayer
 		
 		// if we're in danger, try to retreat before we try to shoot
 		if (roundsUntilDanger <= dangerThreshold)
-			if (tryRetreat() || tryAttackSomeone())
+			if (tryRetreatOrShootIfStuck() || tryAttackSomeone())
 				return true;
 		
 		// if we are in a small amount of danger, try to shoot first
