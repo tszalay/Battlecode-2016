@@ -8,75 +8,57 @@ public class RoboScout extends RobotPlayer
 {
 	private enum ScoutState
 	{
-		SIGHTING,
 		EXPLORING,
-		SHADOWING
+		BALLING
 	}
 
 	public static final int SIGNAL_ROUND = 30; 
 	
 	public static ScoutState myState = ScoutState.EXPLORING;
 	public static MapLocation myExploringTarget;
-	public static int myShadowID;
 	
 	public static void init() throws GameActionException
 	{
 		// first-spawn scout, send the message right away
 		if (rc.getRoundNum() < SIGNAL_ROUND)
 		{
-			if (myArchon != null)
-			{
-				Message.sendMessageSignal(Message.FULL_MAP_DIST_SQ, MessageType.SPAWN, myArchon.location);
-			}
+			if (myBuilderLocation != null)
+				Message.sendMessageSignal(Message.FULL_MAP_DIST_SQ, MessageType.SPAWN, myBuilderLocation);
 		}
 		else
 		{
-			if (myArchon != null)
+			// start off balling around closest archon
+			if (myBuilderLocation != null)
 			{
-				myState = ScoutState.SHADOWING;
-				myShadowID = myArchon.ID;
-				for (RobotInfo ri : rc.senseNearbyRobots(myArchon.location,4,ourTeam))
-				{
-					if (ri.type == RobotType.SCOUT)
-					{
-						myState = ScoutState.SIGHTING;
-						break;
-					}
-				}
+				myState = ScoutState.BALLING;
+				BallMove.startBalling(myBuilderID);
 			}
 		}
 	}
-	
 	
 	public static void turn() throws GameActionException
 	{
 		// state machine update
 		updateState();
 			
-		if (rc.isCoreReady())
+		// do turn according to state
+		switch (myState)
 		{
-			// do turn according to state
-			switch (myState)
-			{
-			case EXPLORING:
-				doScoutExploring();
-				break;
-			case SHADOWING:
-				doScoutShadowing();
-				break;
-			case SIGHTING:
-				doScoutSighting();
-				break;
-			}
+		case EXPLORING:
+			doScoutExploring();
+			break;
+		case BALLING:
+			doScoutBalling();
+			break;
 		}
 		
         // always send out info about sighted targets
-		Sighting.doSendSightingMessage();
+		//Sighting.doSendSightingMessage();
 		
 		// and use spare bytecodes to look for stuff
-		MapInfo.analyzeSurroundings();
+		//MapInfo.analyzeSurroundings();
 		// and send the updates
-		MapInfo.doScoutSendUpdates();
+		//MapInfo.doScoutSendUpdates();
 		
 		Debug.setStringTS("Scout: " + myState);
 	}
@@ -88,28 +70,18 @@ public class RoboScout extends RobotPlayer
 		case EXPLORING:
 			// we just keep exploring, oh yeah
 			break;
-		case SIGHTING:
-			// if i see 2 scouts, i am free to explore
+		case BALLING:
+			// if i see too many scouts, i am free to explore
 			RobotInfo[] allies = Micro.getNearbyAllies();
 			int numScouts = 0;
 			for (RobotInfo ri : allies)
 			{
-				if (ri.type == RobotType.SCOUT && ri.ID > rc.getID())
+				if (ri.type == RobotType.SCOUT)
 					numScouts += 1;
 			}
-			if (numScouts > 3)
-				myState = ScoutState.EXPLORING;
-			else
-				myState = ScoutState.SIGHTING;
+			//if (numScouts > 5)
+			//	myState = ScoutState.EXPLORING;
 			
-			// or if i haven't seen an archon in a while
-			if (rc.getRoundNum()-Message.recentArchonRound > 20)
-				myState = ScoutState.EXPLORING;
-
-			break;
-		case SHADOWING:
-			if (!rc.canSenseRobot(myShadowID))
-				myState = ScoutState.SIGHTING;
 			break;
 		}		
 	}
@@ -131,25 +103,26 @@ public class RoboScout extends RobotPlayer
 			Behavior.tryGoToWithoutBeingShot(myExploringTarget, goodDirs);
 	}
 
-	private static void doScoutSighting() throws GameActionException
+	private static void doScoutBalling() throws GameActionException
 	{
-		BallMove.ballMove(24, 53);
-	}
-
-	private static void doScoutShadowing() throws GameActionException
-	{
-		if (!rc.canSenseRobot(myShadowID))
-			return;
-		
-		RobotInfo shadowInfo = rc.senseRobot(myShadowID);
-		
-		if (Micro.isInDanger())
+		// try to update the position of our ball target
+		if (!BallMove.tryUpdateTarget())
 		{
-			Behavior.tryRetreatTowards(shadowInfo.location.add(Micro.getBestRetreatDir()), Micro.getSafeMoveDirs());
-			return;
+		//	myState = ScoutState.EXPLORING;
+		//	return;
 		}
-
-		if (here.distanceSquaredTo(shadowInfo.location) > 2)
-			Behavior.tryAdjacentSafeMoveToward(shadowInfo.location);
+		
+		// if there is a scout with a lower ID than me within two sq dist of ball target
+		int lowestScoutID = rc.getID();
+		RobotInfo[] nearby = rc.senseNearbyRobots(BallMove.lastBallLocation,2,ourTeam);
+		for (RobotInfo ri : nearby)
+			if (ri.type == RobotType.SCOUT && ri.ID < lowestScoutID)
+				lowestScoutID = ri.ID;
+		
+		//if (lowestScoutID == rc.getID())
+		//	BallMove.ballMove(0, 2);
+		//else
+		BallMove.ballMove(3,15);
 	}
+
 }

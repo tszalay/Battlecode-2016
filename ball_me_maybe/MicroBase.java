@@ -325,6 +325,8 @@ public class MicroBase extends RobotPlayer
 		if (d != null && rc.canMove(d) && rc.isCoreReady())
 		{
 			rc.move(d);
+			// update this for the rest of the code. pretty important!
+			RobotPlayer.here = rc.getLocation();
 			return true;
 		}
 //		else

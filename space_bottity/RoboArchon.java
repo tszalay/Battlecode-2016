@@ -21,7 +21,8 @@ public class RoboArchon extends RobotPlayer
 	static final int EXTRA_PARTS_FOLLOWER_WAITS = 5;
 
 	static ArchonState myState = ArchonState.INIT;
-	static RobotType myNextBuildRobotType = RobotType.SOLDIER;
+	static RobotType myNextBuildRobotType = RobotType.SCOUT;
+	static int lastBuiltRound = 0;
 
 	public static void init() throws GameActionException
 	{
@@ -81,6 +82,7 @@ public class RoboArchon extends RobotPlayer
 				Message.sendBuiltMessage();
 				// also set the next robot type y knot
 				myNextBuildRobotType = getNextBuildRobotType(); 
+				lastBuiltRound = rc.getRoundNum();
 			}
 			break;
 			
@@ -90,7 +92,7 @@ public class RoboArchon extends RobotPlayer
 			break;
 		
 		case WAYPOINT:
-			if (canBuildNow())
+			if (canBuildNow() && rc.getRoundNum() > lastBuiltRound + 20)
 				myState = ArchonState.BUILDING;
 			break;			
 		}
@@ -353,63 +355,7 @@ public class RoboArchon extends RobotPlayer
 	private static RobotType getNextBuildRobotType() throws GameActionException
 	{
 		// what's next to build: the old thing is not working?
-		// RobotType nextRobotType = RobotType.values()[robotSchedule[scheduleCounter%robotSchedule.length]];
-		
-		// make a turret if we don't have enough around in our ball
-/*		RobotInfo[] allies = rc.senseNearbyRobots(2, ourTeam);
-		int numTurretsAround = 0;
-		for (RobotInfo ri : allies)
-		{
-			if (ri.type == RobotType.TURRET || ri.type == RobotType.TTM)
-				numTurretsAround += 1;
-		}
-		
-		RobotType nextRobotType = RobotType.TURRET;
-		if (numTurretsAround >= 3)
-		{
-			nextRobotType = RobotType.SCOUT;
-		}
-*/		
-		RobotType nextRobotType = null;
-		
-		int r = rand.nextInt(100);
-		
-		if (r < 60)
-			nextRobotType = RobotType.SOLDIER;
-		else if (r < 85)
-			nextRobotType = RobotType.SCOUT;
-		else
-			nextRobotType = RobotType.TURRET;
-		
-		return nextRobotType;
-		
-		/*
-		int numSoldiersAround = 0;
-		RobotInfo[] localAllies = Micro.getNearbyAllies();
-		for (RobotInfo ri : localAllies)
-		{
-			if (ri.type == RobotType.SOLDIER)
-				numSoldiersAround += 1;
-		}
-		
-		if (rand.nextInt(10) == 3)
-			return RobotType.SCOUT;
-		
-		if (numSoldiersAround < 3)
-			return RobotType.SOLDIER;
-			*/
-		
-		//if (rc.getTeamParts() >= RobotType.TURRET.partCost)
-		//	return RobotType.TURRET;
-		/*
-		int numRobotsAlive = rc.getRobotCount();
-		
-		if (numRobotsAlive < 20)
-		{
-			nextRobotType = (rand.nextInt(2) == 0) ? RobotType.SCOUT : RobotType.SOLDIER;
-		}
-		
-		return nextRobotType;*/
+		return RobotType.SCOUT; 		
 	}
 	
 	private static boolean canBuildNow() throws GameActionException

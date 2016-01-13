@@ -83,8 +83,13 @@ public class DirectionSet
 		return null;
 	}
 	
-	// this function is a bit broken. should return null
-	// if no direction that moves us closer to destination
+	public Direction getDirectionTowards(Direction dir)
+	{
+		MapLocation loc = new MapLocation(0,0);
+		return getDirectionTowards(loc, loc.add(dir));
+	}
+	
+	// returns null if no direction that moves us closer to destination
 	public Direction getDirectionTowards(MapLocation from, MapLocation to)
 	{
 		// if they're just straight up null
@@ -117,16 +122,6 @@ public class DirectionSet
 			return best.rotateLeft();
 		
 		return null;
-		
-/*		
-		for (int i=0; i<dirOffsets.length; i++)
-		{
-			int d = (i0 + dirOffsets[i]) & 7;
-			if ( (dirs & (1<<d)) > 0 )
-				return Direction.values()[d];
-
-		}
-*/		
 	}
 	
 	public ArrayList<Direction> getDirections()

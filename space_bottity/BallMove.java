@@ -12,6 +12,16 @@ public class BallMove extends RobotPlayer
 	
 	public static final int BALL_LOST_TIMEOUT = 20;
 	
+	public static void startBalling(int targetID) throws GameActionException
+	{
+		if (!rc.canSenseRobot(targetID))
+			return;
+		
+		ballTargetID = targetID;
+		lastBallLocation = rc.senseRobot(targetID).location;
+		lastBallRound = rc.getRoundNum();
+	}
+	
 	// this is called either by tryUpdateTarget() or by Message
 	public static void updateBallLocation(MapLocation newLoc)
 	{
@@ -52,35 +62,20 @@ public class BallMove extends RobotPlayer
 		if (!rc.isCoreReady())
 			return;
 		
-		MapLocation archonLoc = Message.recentArchonLocation;
-		
-		if (archonLoc == null)
-			archonLoc = here;
-
-		// if you see an archon update your location
-		for (RobotInfo ri : Micro.getNearbyAllies())
-		{
-			if (ri.type == RobotType.ARCHON && ri.location.distanceSquaredTo(here) < archonLoc.distanceSquaredTo(here))
-				archonLoc = ri.location;
-		}
-
-		
 		// try to retreat towards the ball or shoot if we're in danger
 		if (Micro.getRoundsUntilDanger() < 10)
 		{
-			if (archonLoc != null)
-				Behavior.tryRetreatTowards(archonLoc, Micro.getSafeMoveDirs());
+			if (lastBallLocation != null)
+				Behavior.tryRetreatTowards(lastBallLocation, Micro.getSafeMoveDirs());
 			else
 				Behavior.tryGoToWithoutBeingShot(here, Micro.getSafeMoveDirs());
-			
-			Debug.setStringTS("Last ball: retreat");
 			
 			return;
 		}
 		
 		// if we're not in danger, try to shoot something anyway
 		// (e.g. zombie dens)
-		if (Micro.getNearbyHostiles().length > 0)
+		if (Micro.getNearbyHostiles().length > 0 &&  rc.getType().canAttack())
 		{
 			Behavior.tryAdjacentSafeMoveToward(here.directionTo(Micro.getNearbyHostiles()[0].location));
 			Behavior.tryAttackSomeone();
@@ -88,28 +83,50 @@ public class BallMove extends RobotPlayer
 			return;
 		}
 		
-		// if we're far, move closer
-		if (here.distanceSquaredTo(archonLoc) > maxDistSq)
+		// if we're far, move closer using bugging nav probably
+		if (here.distanceSquaredTo(lastBallLocation) > maxDistSq)
 		{
-			Nav.tryGoTo(archonLoc,Micro.getSafeMoveDirs());
-			Debug.setStringTS("Last ball: closer");
+			Nav.tryGoTo(lastBallLocation,Micro.getSafeMoveDirs());
 			return;
 		}
-		// if we're too close, move farther
-		if (here.distanceSquaredTo(archonLoc) < minDistSq)
+		if (here.distanceSquaredTo(lastBallLocation) < minDistSq)
 		{
-			Behavior.tryAdjacentSafeMoveToward(here.directionTo(archonLoc).opposite());
-			Debug.setStringTS("Last ball: farther");
+			Behavior.tryAdjacentSafeMoveToward(here.directionTo(lastBallLocation).opposite());
 			return;
 		}
 		
+		DirectionSet ballDirs = Micro.getSafeMoveDirs().clone();
+		
+		for (Direction d : ballDirs.getDirections())
+		{
+			int dSq = here.add(d).distanceSquaredTo(lastBallLocation);
+			if (dSq < minDistSq || dSq > maxDistSq)
+				ballDirs.remove(d);
+		}
+		
+		// try mimicking the ball
+		if (lastBallMoveDir != null)
+		{
+			// if it worked, set it to null to indicate we took care of it
+			Direction d = ballDirs.getDirectionTowards(lastBallMoveDir);
+			if (d != null)
+			{
+				Micro.tryMove(d);
+				lastBallMoveDir = null;
+				return;
+			}
+		}
+
 		MapLocation ml = Micro.getUnitCOM(rc.senseNearbyRobots(24, ourTeam));
-		Direction ar = here.directionTo(archonLoc).rotateRight().rotateRight();
-		Direction al = here.directionTo(archonLoc).rotateLeft().rotateLeft();
+		Direction ar = here.directionTo(lastBallLocation).rotateRight().rotateRight();
+		Direction al = here.directionTo(lastBallLocation).rotateLeft().rotateLeft();
+		Direction moveDir = null;
 		if (here.add(al).distanceSquaredTo(ml) > here.add(ar).distanceSquaredTo(ml))
-			Behavior.tryAdjacentSafeMoveToward(al);
+			moveDir = ballDirs.getDirectionTowards(al);
 		else
-			Behavior.tryAdjacentSafeMoveToward(ar);
-		Debug.setStringTS("Last ball: move perp.");
+			moveDir = ballDirs.getDirectionTowards(ar);
+		
+		if (moveDir != null)
+			Micro.tryMove(moveDir);
 	}
 }

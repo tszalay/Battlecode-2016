@@ -94,6 +94,9 @@ public class Behavior extends RobotPlayer
 		int dangerThreshold = 2;
 		int roundsUntilShootAndMove = Micro.getRoundsUntilShootAndMove();
 		
+		if (target == null)
+			return tryRetreatOrShootIfStuck();
+		
 		// if we're in danger, try to retreat before we try to shoot
 		if (roundsUntilDanger <= dangerThreshold)
 			if (tryAdjacentSafeMoveToward(here.directionTo(target)) || tryAttackSomeone())
@@ -123,18 +126,21 @@ public class Behavior extends RobotPlayer
     		return false;
     	
     	// get safe direction closest to dir
-    	Direction bestMoveDir = safeMoveDirs.getDirectionTowards(here, here.add(dir));
+    	Direction bestMoveDir = safeMoveDirs.getDirectionTowards(dir);
     	
     	// move if it's valid
     	if (bestMoveDir != null)
-    		Micro.tryMove(bestMoveDir);
+    		return Micro.tryMove(bestMoveDir);
     	
         return false;
     }
 	
 	public static boolean tryClearRubble(Direction dir) throws GameActionException
 	{
-		if (!rc.isCoreReady() || dir.equals(Direction.OMNI) || rc.getType() == RobotType.TTM) // can't clear our own square
+		if (!rc.getType().canClearRubble())
+			return false;
+		
+		if (!rc.isCoreReady() || dir.equals(Direction.OMNI)) // can't clear our own square
 			return false;
 		
 		if (rc.senseRubble(here.add(dir)) >= GameConstants.RUBBLE_SLOW_THRESH)

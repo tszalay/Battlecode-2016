@@ -12,8 +12,8 @@ public class RobotPlayer
 	public static Team theirTeam;
 	public static MapLocation here;
 	
-	public static RobotInfo myArchon = null;
-	public static int myArchonSenseRound = 0;
+	public static MapLocation 	myBuilderLocation = null;
+	public static int			myBuilderID = -1; // dad?
 	
 	public static MicroBase Micro = null;
 	
@@ -36,23 +36,19 @@ public class RobotPlayer
 		// look for an archon close by, if we aren't an Archon
 		if (rc.getType() != RobotType.ARCHON)
 		{
-			RobotInfo[] nearbyFriends;
-			// look at a larger distance if we started early in the game
-			if (rc.getRoundNum() < 2)
-				nearbyFriends = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, ourTeam);
-			else
-				nearbyFriends = rc.senseNearbyRobots(2, ourTeam);
-			
-			// find closest Archon
+			RobotInfo[] nearbyFriends = rc.senseNearbyRobots(8, ourTeam);
 			for (RobotInfo ri : nearbyFriends)
 			{
-				if (ri.type == RobotType.ARCHON)
+				if (ri.type != RobotType.ARCHON)
+					continue;
+				
+				if (myBuilderLocation == null || 
+						here.distanceSquaredTo(ri.location) < here.distanceSquaredTo(myBuilderLocation))
 				{
-					if (myArchon == null || here.distanceSquaredTo(myArchon.location) > here.distanceSquaredTo(ri.location))
-						myArchon = ri;
+					myBuilderLocation = ri.location;
+					myBuilderID = ri.ID;
 				}
 			}
-			if (myArchon != null) myArchonSenseRound = rc.getRoundNum();
 		}
 		
 		try
@@ -108,22 +104,6 @@ public class RobotPlayer
 				Message.readSignalQueue();
 				// update stuff with sensing
 				MapInfo.updateLocalWaypoints();
-				
-				// try to re-sense archon
-				if (myArchon != null)
-				{
-					if (rc.canSenseRobot(myArchon.ID))
-					{
-						myArchon = rc.senseRobot(myArchon.ID);
-						myArchonSenseRound = rc.getRoundNum();
-					}
-					else
-					{
-						// we've really done it now
-						if (rc.getRoundNum() - myArchonSenseRound > 50)
-							myArchon = null;
-					}
-				}
 				
 				switch (robotc.getType())
 				{
