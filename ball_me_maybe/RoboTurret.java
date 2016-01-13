@@ -70,11 +70,7 @@ public class RoboTurret extends RobotPlayer
 		}
 		
 		//try to move wherever everyone else is going
-		RobotInfo[] allies = Micro.getNearbyAllies();
-		MapLocation[] locs = BallMove.updateBallDests(allies); // updates archon and archon destination using messaging
-		MapLocation archonLoc = locs[0];
-		MapLocation destLoc = locs[1];
-		BallMove.ballMove(archonLoc, destLoc, allies);
+		BallMove.ballMove(7,35);
 	}
 	
 	public static boolean shouldUnpack() throws GameActionException

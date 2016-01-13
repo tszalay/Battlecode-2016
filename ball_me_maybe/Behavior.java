@@ -10,7 +10,7 @@ public class Behavior extends RobotPlayer
 	{
 		// attack someone in range if possible, low health first, prioritizing zombies
 		
-		if (rc.getWeaponDelay() >= 1)
+		if (!rc.isWeaponReady())
 			return false;
 		
 		RobotInfo zombieTarget = Micro.getLowestHealth(Micro.getNearbyZombies());
@@ -29,6 +29,7 @@ public class Behavior extends RobotPlayer
 		}
 		
 		// attack a sighted target if possible
+		// only relevant if we're a turret
 		if (rc.getType() != RobotType.TURRET)
 			return false;
 		
@@ -47,24 +48,15 @@ public class Behavior extends RobotPlayer
 		return false;
 	}
 	
-	public static boolean tryRetreat() throws GameActionException
+	// this function always runs away, no matta whats
+	public static boolean tryRetreatOrShootIfStuck() throws GameActionException
 	{
-		// tries to move to the square farthest from the closest enemy
-		// if this move is not safe, it tries the squares rotated right and left (IS THIS A GOOD THING OR NECESSARY?)
-		// if those are also not safe, it does nothing
-		
-		DirectionSet ds = Micro.getSafeMoveDirs().clone();
-		ds.remove(Direction.NONE);
-		
-		if (ds.any() || !rc.getType().canAttack())
-		{
-			Direction escapeDir = Micro.getBestEscapeDir();
-			return Micro.tryMove(escapeDir);
-		}
+		Direction escapeDir = Micro.getBestEscapeDir();
+		// if we can't escape (we're stuck), try to shoot
+		if (escapeDir == null)
+			return tryAttackSomeone();
 		else
-		{
-			return false;
-		}
+			return Micro.tryMove(escapeDir);
 	}
 	
 	public static boolean tryGoToWithoutBeingShot(MapLocation target, DirectionSet dirSet) throws GameActionException
@@ -85,7 +77,7 @@ public class Behavior extends RobotPlayer
 		
 		// if we're in danger, try to retreat before we try to shoot
 		if (roundsUntilDanger <= dangerThreshold)
-			if (tryRetreat() || tryAttackSomeone())
+			if (tryRetreatOrShootIfStuck() || tryAttackSomeone())
 				return true;
 		
 		// if we are in a small amount of danger, try to shoot first
@@ -94,6 +86,30 @@ public class Behavior extends RobotPlayer
 				return true;
 		
 		return Nav.tryGoTo(target, dirSet);
+	}
+	
+	public static boolean tryRetreatTowards(MapLocation target, DirectionSet dirSet) throws GameActionException
+	{
+		int roundsUntilDanger = Micro.getRoundsUntilDanger();
+		int dangerThreshold = 2;
+		int roundsUntilShootAndMove = Micro.getRoundsUntilShootAndMove();
+		
+		// if we're in danger, try to retreat before we try to shoot
+		if (roundsUntilDanger <= dangerThreshold)
+			if (tryAdjacentSafeMoveToward(here.directionTo(target)) || tryAttackSomeone())
+				return true;
+		
+		// if we are in a small amount of danger, try to shoot first
+		if (roundsUntilDanger >= dangerThreshold + roundsUntilShootAndMove)
+			if (tryAttackSomeone())// || tryRetreat())
+				return true;
+		
+		return Nav.tryGoTo(target, dirSet);
+	}
+	
+	public static boolean tryAdjacentSafeMoveToward(MapLocation loc) throws GameActionException
+	{
+		return tryAdjacentSafeMoveToward(here.directionTo(loc));
 	}
 	
 	public static boolean tryAdjacentSafeMoveToward(Direction dir) throws GameActionException

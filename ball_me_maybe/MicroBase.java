@@ -16,14 +16,13 @@ public class MicroBase extends RobotPlayer
 	private DirectionSet noPartsDirs = null;
 	private DirectionSet turretSafeDirs = null;
 	
-	private int[] distToClosestHostile = null;
 	private static final int DIST_MAX = 1000;
+	private int[] distToClosestHostile = null;
+	
+	private Direction bestRetreatDirection = null;
 	
 	private int roundsUntilDanger = -1;
 	
-	public MicroBase()
-	{
-	}
 	
 	public RobotInfo[] getNearbyEnemies()
 	{
@@ -60,25 +59,7 @@ public class MicroBase extends RobotPlayer
 		nearbyHostiles = rc.senseHostileRobots(here, rc.getType().sensorRadiusSquared);
 		return nearbyHostiles;
 	}
-	
-	public RobotInfo getLowestHealth(RobotInfo[] bots)
-	{
-		RobotInfo target = null;
 		
-		for (RobotInfo ri : bots)
-		{
-			if (target == null || ri.health < target.health)
-				target = ri;
-			if (ri.type == RobotType.ARCHON)
-			{
-				target = ri;
-				continue; // archon targets take priority over ALL
-			}
-		}
-		
-		return target;
-	}
-	
 	// this gets called by other functions to compile various stats and info
 	// before they return the computed values
 	private void computeSafetyStats()
@@ -208,7 +189,10 @@ public class MicroBase extends RobotPlayer
 			}
 			
 			if (dangerTime < roundsUntilDanger)
+			{
 				roundsUntilDanger = dangerTime;
+				bestRetreatDirection = ri.location.directionTo(here);
+			}
 		}
 		
 		if (roundsUntilDanger < 0)
@@ -257,6 +241,14 @@ public class MicroBase extends RobotPlayer
 			return null;
 		
 		return bestDir;
+	}
+	
+	public Direction getBestRetreatDir()
+	{
+		// force recomputing of this
+		getRoundsUntilDanger();
+		
+		return bestRetreatDirection;
 	}
 
 	public DirectionSet getTurretSafeDirs()
@@ -405,8 +397,6 @@ public class MicroBase extends RobotPlayer
 		xtot /= nearby.length;
 		ytot /= nearby.length;
 		
-		Debug.setStringTS("AA" + new MapLocation(xtot,ytot));
-		
 		return new MapLocation(xtot,ytot);
 	}
 	
@@ -448,6 +438,25 @@ public class MicroBase extends RobotPlayer
 		
 		return closest;
 	}
+	
+	public RobotInfo getLowestHealth(RobotInfo[] bots)
+	{
+		RobotInfo target = null;
+		
+		for (RobotInfo ri : bots)
+		{
+			if (target == null || ri.health < target.health)
+				target = ri;
+			if (ri.type == RobotType.ARCHON)
+			{
+				target = ri;
+				break; // archon targets take priority over ALL
+			}
+		}
+		
+		return target;
+	}
+
 	
 //	public boolean canWin1v1(RobotInfo enemy) throws GameActionException
 //	{

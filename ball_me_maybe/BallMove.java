@@ -10,88 +10,70 @@ public class BallMove extends RobotPlayer
 	{
 	}
 	
-	public static void ballMove(MapLocation archonLoc, MapLocation destLoc, RobotInfo[] allies) throws GameActionException
+	public static void ballMove(int minDistSq, int maxDistSq) throws GameActionException
 	{
-		// if we can see our archon, clear rubble
-		if (rc.canSense(archonLoc))
-		{
-			if (rc.senseParts(here) > 0 || here.equals(archonLoc.add(archonLoc.directionTo(destLoc))) || here.distanceSquaredTo(archonLoc) < 6)
-			{
-				// move off parts, or move if we're in the archon's way
-				Behavior.tryAdjacentSafeMoveToward(here.directionTo(archonLoc).opposite());
-			}
-			tryClearRubble(here.directionTo(destLoc));
-		}
-		
-		DirectionSet safeDirs = Micro.getSafeMoveDirs();
-		DirectionSet safeNoPartsDirs = safeDirs.and(Micro.getNoPartsDirs());
-		
-		int tooManyAdjAllies = 5;
-		MapLocation repelLoc = here;
-		int numAdjAllies = 0;
-
-		Direction archonDir = archonLoc.directionTo(destLoc);
-		MapLocation gotoLoc = archonLoc;
-		
-		// Offset gotoLoc towards dest to make soldiers shortcut a little
-		//gotoLoc = gotoLoc.add(archonDir, 0);
-		
-		for (RobotInfo ri : allies)
-		{
-			if (ri.location.isAdjacentTo(here))
-			{
-				numAdjAllies++;
-				repelLoc = repelLoc.add(ri.location.directionTo(here));
-			}
-		}
-		
-		// retreat to archon
-		if (Micro.getRoundsUntilDanger() < 10)
-		{
-			if (Behavior.tryAdjacentSafeMoveToward(here.directionTo(archonLoc)))
-				return;
-			else
-				Behavior.tryAttackSomeone();
+		if (!rc.isCoreReady())
 			return;
-		}
 		
-		if (numAdjAllies >= tooManyAdjAllies)
-			gotoLoc = repelLoc;
-		
-		Behavior.tryGoToWithoutBeingShot(gotoLoc, safeNoPartsDirs);
-		
-	}
-	
-	public static MapLocation[] updateBallDests(RobotInfo[] allies) throws GameActionException
-	{
-		MapLocation[] locs = new MapLocation[]{null, null};
-
-		boolean archonInSight = false;
-
-		// update archon and dest locations
 		MapLocation archonLoc = Message.recentArchonLocation;
-		MapLocation destLoc = Message.recentArchonDest;
 		
 		if (archonLoc == null)
 			archonLoc = here;
-		if (destLoc == null)
-			destLoc = here;
 
 		// if you see an archon update your location
-		for (RobotInfo ri : allies)
+		for (RobotInfo ri : Micro.getNearbyAllies())
 		{
-			if (ri.type == RobotType.ARCHON)
+			if (ri.type == RobotType.ARCHON && ri.location.distanceSquaredTo(here) < archonLoc.distanceSquaredTo(here))
 				archonLoc = ri.location;
-			archonInSight = true;
 		}
 
-		// If you can see your saved archonLoc but can't find the archon, assume archon is at Dest
-		if (rc.canSenseLocation(archonLoc) && !archonInSight)
-			archonLoc = destLoc;
 		
-		locs[0] = archonLoc;
-		locs[1] = destLoc;
-		return locs;
+		// try to retreat towards the ball or shoot if we're in danger
+		if (Micro.getRoundsUntilDanger() < 10)
+		{
+			if (archonLoc != null)
+				Behavior.tryRetreatTowards(archonLoc, Micro.getSafeMoveDirs());
+			else
+				Behavior.tryGoToWithoutBeingShot(here, Micro.getSafeMoveDirs());
+			
+			Debug.setStringTS("Last ball: retreat");
+			
+			return;
+		}
+		
+		// if we're not in danger, try to shoot something anyway
+		// (e.g. zombie dens)
+		if (Micro.getNearbyHostiles().length > 0)
+		{
+			Behavior.tryAdjacentSafeMoveToward(here.directionTo(Micro.getNearbyHostiles()[0].location));
+			Behavior.tryAttackSomeone();
+			Debug.setStringTS("Last ball: tryAttack");
+			return;
+		}
+		
+		// if we're far, move closer
+		if (here.distanceSquaredTo(archonLoc) > maxDistSq)
+		{
+			Nav.tryGoTo(archonLoc,Micro.getSafeMoveDirs());
+			Debug.setStringTS("Last ball: closer");
+			return;
+		}
+		// if we're too close, move farther
+		if (here.distanceSquaredTo(archonLoc) < minDistSq)
+		{
+			Behavior.tryAdjacentSafeMoveToward(here.directionTo(archonLoc).opposite());
+			Debug.setStringTS("Last ball: farther");
+			return;
+		}
+		
+		MapLocation ml = Micro.getUnitCOM(rc.senseNearbyRobots(24, ourTeam));
+		Direction ar = here.directionTo(archonLoc).rotateRight().rotateRight();
+		Direction al = here.directionTo(archonLoc).rotateLeft().rotateLeft();
+		if (here.add(al).distanceSquaredTo(ml) > here.add(ar).distanceSquaredTo(ml))
+			Behavior.tryAdjacentSafeMoveToward(al);
+		else
+			Behavior.tryAdjacentSafeMoveToward(ar);
+		Debug.setStringTS("Last ball: move perp.");
 	}
 	
 	public static boolean tryClearRubble(Direction dir) throws GameActionException
