@@ -1,4 +1,4 @@
-package ball_about_that_base;
+package space_bottity;
 
 import battlecode.common.*;
 import java.util.*;
@@ -15,7 +15,8 @@ enum MessageType
 	GOOD_PARTS,
 	RALLY_LOCATION,
 	MAP_EDGE,
-	ARCHON_DEST
+	ARCHON_DEST,
+	REMOVE_WAYPOINT
 }
 
 class SignalLocation extends RobotPlayer
@@ -45,12 +46,13 @@ public class Message extends RobotPlayer
 	// storage for received/accumulated message info
 	public static ArrayList<SignalLocation> archonLocs = new ArrayList<SignalLocation>();
 	
-	// and for any transmitted enemy messages, only keep recents (300 rounds)
-//	public static ArrayList<Signal> enemySignals = new ArrayList<Signal>();
+	// and for any transmitted enemy messages, only keep the latest received
+	public static MapLocation recentEnemySignal = null;
 	
 	public static MapLocation recentArchonLocation = null;
 	public static MapLocation recentArchonDest = null;
 	public static int 		  recentArchonRound = 0;
+	public static int		  recentArchonID = 100000000;
 	
 	// and other things
 	public static MapLocation rallyLocation = null;
@@ -64,7 +66,7 @@ public class Message extends RobotPlayer
 			// skip enemy signals for now
 			if (sig.getTeam() != ourTeam)
 			{
-				//enemySignals.add(sig);
+				recentEnemySignal = sig.getLocation();
 				continue;
 			}
 			
@@ -74,6 +76,9 @@ public class Message extends RobotPlayer
 				type = MessageType.NONE;
 			else
 				type = MessageType.values()[readByte(vals[0],3)];
+			
+			if (sig.getID() == BallMove.ballTargetID)
+				BallMove.updateBallLocation(sig.getLocation());
 
 			switch (type)
 			{
@@ -114,13 +119,14 @@ public class Message extends RobotPlayer
 	
 	private static void updateRecentArchon(Signal s, int[] vals)
 	{
-		if (recentArchonLocation != null && here.distanceSquaredTo(s.getLocation()) > here.distanceSquaredTo(recentArchonLocation)
-					&& rc.getRoundNum() - recentArchonRound < 20)
+		if (recentArchonLocation != null && s.getID() > recentArchonID
+					&& rc.getRoundNum() - recentArchonRound < 2*RoboArchon.DEST_MESSAGE_FREQ)
 			return;
 		
 		recentArchonLocation = s.getLocation();
 		recentArchonDest = readLocation(vals);
 		recentArchonRound = rc.getRoundNum();
+		recentArchonID = s.getID();
 	}
 	
 	private static int readByte(int val, int ind)
@@ -137,13 +143,13 @@ public class Message extends RobotPlayer
 	public static void sendBuiltMessage() throws GameActionException
 	{
 		// send all four map edge signals
-		Message.sendMessageSignal(MapInfo.fullMapDistanceSq(), MessageType.MAP_EDGE,
+		Message.sendMessageSignal(2, MessageType.MAP_EDGE,
 				new MapLocation(Direction.NORTH.ordinal(), MapInfo.mapMin.y));
-		Message.sendMessageSignal(MapInfo.fullMapDistanceSq(), MessageType.MAP_EDGE,
+		Message.sendMessageSignal(2, MessageType.MAP_EDGE,
 				new MapLocation(Direction.EAST.ordinal(), MapInfo.mapMax.x));
-		Message.sendMessageSignal(MapInfo.fullMapDistanceSq(), MessageType.MAP_EDGE,
+		Message.sendMessageSignal(2, MessageType.MAP_EDGE,
 				new MapLocation(Direction.SOUTH.ordinal(), MapInfo.mapMax.y));
-		Message.sendMessageSignal(MapInfo.fullMapDistanceSq(), MessageType.MAP_EDGE,
+		Message.sendMessageSignal(2, MessageType.MAP_EDGE,
 				new MapLocation(Direction.WEST.ordinal(), MapInfo.mapMin.x));
 	}
 	

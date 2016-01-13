@@ -1,4 +1,4 @@
-package ball_about_that_base;
+package space_bottity;
 
 import java.util.ArrayList;
 
@@ -160,8 +160,35 @@ public class Nav extends RobotPlayer
 
     private static boolean canEndBug()
     {
-        if (bugMovesSinceSeenObstacle >= 4) return true;
+        if (bugMovesSinceSeenObstacle >= 4)
+        	return true;
+        
         return (bugRotationCount <= 0 || bugRotationCount >= 8) && here.distanceSquaredTo(myDest) <= bugStartDistSq;
+    }
+    
+    private static boolean isBlockedByObstacle()
+    {
+    	// set dir to the leftmost allowable dir 
+    	Direction dir = here.directionTo(myDest);
+    	dir = dir.rotateLeft().rotateLeft();
+    	
+    	// first check for turrets
+    	RobotInfo[] adjRobots = rc.senseNearbyRobots(2, ourTeam);
+    	for (RobotInfo ri : adjRobots)
+    	{
+    		if (ri.type == RobotType.TURRET && numRightRotations(dir,here.directionTo(ri.location)) < 5)
+    			return true;
+    	}
+    	
+    	// then check for rubble
+    	for (int i=0; i<5; i++)
+    	{
+    		dir = dir.rotateRight();
+    		if (rc.senseRubble(here.add(dir)) > GameConstants.RUBBLE_OBSTRUCTION_THRESH)
+    			return true;
+    	}
+    	
+    	return false;
     }
 
     private static boolean bugMove() throws GameActionException
@@ -182,11 +209,17 @@ public class Nav extends RobotPlayer
             	// succeeded
             	return true;
             }
-            else
+            else if (isBlockedByObstacle())
             {
-            	// do bugging (below)
+            	// failed, do bugging only if running into an actual wall
+            	// (or a turret!)
                 bugState = BugState.BUG;
                 startBug();            	
+            }
+            else
+            {
+            	// don't move at all
+            	return false;
             }
         }
 
@@ -200,7 +233,7 @@ public class Nav extends RobotPlayer
         return false;
     }
 
-    public static boolean tryAdjacentSafeMove(Direction dir, DirectionSet safeDirs) throws GameActionException
+    /*public static boolean tryAdjacentSafeMove(Direction dir, DirectionSet safeDirs) throws GameActionException
     {
     	if (!rc.isCoreReady() || dir == null || !safeDirs.any())
     		return false;
@@ -237,6 +270,7 @@ public class Nav extends RobotPlayer
     	
         return false;
     }
+    */
     
     public static boolean tryGoTo(MapLocation dest, DirectionSet dirs) throws GameActionException
     {

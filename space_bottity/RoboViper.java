@@ -1,4 +1,4 @@
-package ball_about_that_base;
+package space_bottity;
 
 import battlecode.common.*;
 

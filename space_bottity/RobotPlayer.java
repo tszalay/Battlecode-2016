@@ -1,4 +1,4 @@
-package ball_about_that_base;
+package space_bottity;
 
 import battlecode.common.*;
 
@@ -32,7 +32,7 @@ public class RobotPlayer
 		Debug.setStringAK("A-aron");
 		Debug.setStringSJF("Stephen J. Fry");
 		Debug.setStringRR("Ryan");
-		
+				
 		// look for an archon close by, if we aren't an Archon
 		if (rc.getType() != RobotType.ARCHON)
 		{
@@ -106,6 +106,8 @@ public class RobotPlayer
 				Micro = new MicroBase();
 				// process incoming messages
 				Message.readSignalQueue();
+				// update stuff with sensing
+				MapInfo.updateLocalWaypoints();
 				
 				// try to re-sense archon
 				if (myArchon != null)

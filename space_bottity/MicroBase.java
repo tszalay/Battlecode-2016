@@ -1,4 +1,4 @@
-package ball_about_that_base;
+package space_bottity;
 
 import battlecode.common.*;
 
@@ -11,20 +11,18 @@ public class MicroBase extends RobotPlayer
 	private RobotInfo[] nearbyHostiles = null;
 	private RobotInfo[] nearbyAllies = null;
 	
-	private MapLocation[] sightedHostileLocs = null;
-	private MapLocation[] sightedTurretLocs = null;
-	
 	private DirectionSet canMoveDirs = null;
 	private DirectionSet safeMoveDirs = null;
-	private DirectionSet noTurretMoveDirs = null;
+	private DirectionSet noPartsDirs = null;
+	private DirectionSet turretSafeDirs = null;
 	
+	private static final int DIST_MAX = 1000;
 	private int[] distToClosestHostile = null;
+	
+	private Direction bestRetreatDirection = null;
 	
 	private int roundsUntilDanger = -1;
 	
-	public MicroBase()
-	{
-	}
 	
 	public RobotInfo[] getNearbyEnemies()
 	{
@@ -61,72 +59,7 @@ public class MicroBase extends RobotPlayer
 		nearbyHostiles = rc.senseHostileRobots(here, rc.getType().sensorRadiusSquared);
 		return nearbyHostiles;
 	}
-	
-	public MapLocation[] getSightedHostileLocs()
-	{
-		return null;
 		
-		/*if (sightedHostileLocs != null)
-			return sightedHostileLocs;
-		
-		// get this information from Message, from scout sighting
-		ArrayList<SignalLocation> sightedHostileSigLocs = Message.sightLocs;
-		
-		if (sightedHostileSigLocs == null || sightedHostileSigLocs.size() == 0)
-		{
-			sightedHostileLocs = null;
-		}
-		else
-		{
-			sightedHostileLocs = new MapLocation[sightedHostileSigLocs.size()];
-			for (int i = 0; i < sightedHostileSigLocs.size(); i ++)
-			{
-				sightedHostileLocs[i] = sightedHostileSigLocs.get(i).loc;
-			}
-		}
-		
-		return sightedHostileLocs;*/
-	}
-	
-	public MapLocation[] getSightedTurretLocs()
-	{
-		return null;
-		/*
-		if (sightedTurretLocs != null)
-			return sightedTurretLocs;
-		
-		// get this information from Message, from scout sighting
-		ArrayList<SignalLocation> sightedTurretSigLocs = Message.enemyTurretLocs;
-		
-		if (sightedTurretSigLocs == null || sightedTurretSigLocs.size() == 0)
-		{
-			sightedTurretLocs = new MapLocation[0];
-		}
-		else
-		{
-			sightedTurretLocs = new MapLocation[sightedTurretSigLocs.size()];
-			for (int i = 0; i < sightedTurretSigLocs.size(); i ++)
-			{
-				sightedTurretLocs[i] = sightedTurretSigLocs.get(i).loc;
-			}
-		}
-		
-		return sightedTurretLocs;*/
-	}
-	
-	public RobotInfo getLowestHealth(RobotInfo[] bots)
-	{
-		RobotInfo target = null;
-		
-		for (RobotInfo ri : bots)
-		{
-			if (target == null || ri.health < target.health)
-				target = ri;
-		}
-		
-		return target;
-	}
-	
 	// this gets called by other functions to compile various stats and info
 	// before they return the computed values
 	private void computeSafetyStats()
@@ -141,19 +74,23 @@ public class MicroBase extends RobotPlayer
 		distToClosestHostile = new int[9];
 		
 		safeMoveDirs = new DirectionSet();
-		noTurretMoveDirs = new DirectionSet();
+		noPartsDirs = new DirectionSet();
 
+		turretSafeDirs = Sighting.getTurretSafeDirs();
+		
 		// only check directions we can actually move
 		for (Direction d : getCanMoveDirs().getDirections())
 		{
 			MapLocation testloc = here.add(d);
 			
-			int closestDistSq = 1000;
+			int closestDistSq = DIST_MAX;
 			boolean isThisSquareSafe = true;
-			boolean isThisSquareTurretSafe = true;
 			
 			for (RobotInfo ri : nearby)
 			{
+				if (ri.attackPower == 0)
+					continue;
+				
 				int distSq = testloc.distanceSquaredTo(ri.location);
 				if (distSq < closestDistSq)
 					closestDistSq = distSq;
@@ -162,28 +99,19 @@ public class MicroBase extends RobotPlayer
 				{
 					isThisSquareSafe = false;
 					if (ri.type == RobotType.TURRET)
-						isThisSquareTurretSafe = false;
+						turretSafeDirs.remove(d);
 				}
 
 			}
-			
-			/*// additionally check if squares are turret safe by looking at sighted enemy turrets
-			sightedTurretLocs = getSightedTurretLocs();
-			if (sightedTurretLocs != null && sightedTurretLocs.length > 0)
-			{
-				for (MapLocation turretLoc : sightedTurretLocs)
-				{
-					if (testloc.distanceSquaredTo(turretLoc) <= RobotType.TURRET.attackRadiusSquared)
-						isThisSquareTurretSafe = false;
-				}
-			}*/
 			
 			distToClosestHostile[d.ordinal()] = closestDistSq;
 			
 			if (isThisSquareSafe)
 				safeMoveDirs.add(d);
-			if (isThisSquareTurretSafe)
-				noTurretMoveDirs.add(d);
+			
+			// keep track of directions without parts
+			if (rc.senseParts(here.add(d)) == 0)
+				noPartsDirs.add(d);
 		}
 	}
 	
@@ -195,20 +123,51 @@ public class MicroBase extends RobotPlayer
 		
 		roundsUntilDanger = 100;
 		
-		// FIX THIS
-		
 		for (RobotInfo ri : getNearbyHostiles())
 		{
-			if (true)//isRangedUnit[ri.type.ordinal()])
+			int dangerTime = 100;
+			
+			switch (ri.type)
 			{
+			// noncombatants
+			case ZOMBIEDEN:
+			case ARCHON:
+			case SCOUT:
+				break;
+				
+			case TTM:
+				dangerTime = (int) Math.floor(ri.coreDelay) + GameConstants.TURRET_TRANSFORM_DELAY;
+				break;
+				
+			// ranged units
+			case SOLDIER:
+			case RANGEDZOMBIE:
+			case VIPER:
 				// time to shoot us is rounds until
 				// coreDelay + cooldownDelay
-				int dangerTime = (int)Math.floor(ri.coreDelay + ri.type.cooldownDelay);
-				if (dangerTime < roundsUntilDanger)
-					roundsUntilDanger = dangerTime;
-			}
-			else
-			{
+				MapLocation closer = ri.location;
+				double dangerAccum = 0;
+				while (closer.distanceSquaredTo(here) > ri.type.attackRadiusSquared)
+				{
+					Direction d = closer.directionTo(here);
+					closer = closer.add(d);
+					dangerAccum += ri.type.movementDelay*(d.isDiagonal() ? 1.4 : 1.0);
+				}
+				
+				// if they have to move, include cooldown and current core
+				if (dangerAccum > 0)
+					dangerAccum += ri.type.cooldownDelay + ri.coreDelay - ri.type.movementDelay;
+				else // otherwise just weapon delay
+					dangerAccum += ri.weaponDelay;
+				
+				dangerTime = (int)dangerAccum;
+				break;
+				
+			// unranged units
+			case BIGZOMBIE:
+			case FASTZOMBIE:
+			case GUARD:
+			case STANDARDZOMBIE:
 				// move one square closer to enemy
 				// the square enemy needs to get to to attack us
 				MapLocation onecloser = here.add(here.directionTo(ri.location));
@@ -217,15 +176,36 @@ public class MicroBase extends RobotPlayer
 
 				// number of longest straight steps + 1.4 * number of diagonal steps
 				// scaling of movement delay to get here
-				double effDistanceTo = Math.min(dx, dy)*0.4 + Math.max(dx, dy);
+				double effDistanceTo = Math.min(dx, dy)*0.4 + Math.max(dx, dy); // verified
 				
-				int dangerTime = (int)Math.floor(ri.coreDelay + ri.type.movementDelay*effDistanceTo + ri.type.cooldownDelay);
-				if (dangerTime < roundsUntilDanger)
-					roundsUntilDanger = dangerTime;
-			}			
+				dangerTime = (int)Math.floor(ri.coreDelay + ri.type.movementDelay*(effDistanceTo-1) + ri.type.cooldownDelay);
+				
+				break;
+				
+			case TURRET:
+				if (rc.getType() != RobotType.SCOUT)
+					dangerTime = (int)Math.floor(ri.weaponDelay);
+				break;
+			}
+			
+			if (dangerTime < roundsUntilDanger)
+			{
+				roundsUntilDanger = dangerTime;
+				bestRetreatDirection = ri.location.directionTo(here);
+			}
 		}
+		
+		if (roundsUntilDanger < 0)
+			roundsUntilDanger = 0;
 
 		return roundsUntilDanger;
+	}
+	
+	// how many rounds until we can shoot and move at once
+	public int getRoundsUntilShootAndMove()
+	{
+		double ourDelayDecrement = 1;
+		return (int)Math.floor( Math.max( (rc.getWeaponDelay() + rc.getType().cooldownDelay), rc.getCoreDelay()) / ourDelayDecrement);
 	}
 	
 	// compute which direction moves us the farthest from the closest enemy
@@ -236,7 +216,11 @@ public class MicroBase extends RobotPlayer
 		
 		// if there are no safe moves, just do something
 		if (!dirs.any())
-			dirs = getCanMoveDirs();
+		{
+			// first, check if there are any turret safe moves
+			dirs = getCanMoveDirs().clone();
+			dirs.remove(Direction.NONE);
+		}
 		
 		if (!dirs.any())
 			return Direction.NONE;
@@ -253,15 +237,32 @@ public class MicroBase extends RobotPlayer
 			}
 		}
 		
+		if (distToClosest == DIST_MAX)
+			return null;
+		
 		return bestDir;
 	}
-
-	public DirectionSet getNoTurretMoveDirs()
+	
+	public Direction getBestRetreatDir()
 	{
-		computeSafetyStats();
-		return noTurretMoveDirs;
+		// force recomputing of this
+		getRoundsUntilDanger();
+		
+		return bestRetreatDirection;
 	}
 
+	public DirectionSet getTurretSafeDirs()
+	{
+		computeSafetyStats();
+		return turretSafeDirs;
+	}
+
+	public DirectionSet getNoPartsDirs()
+	{
+		computeSafetyStats();
+		return noPartsDirs;
+	}
+	
 	public DirectionSet getSafeMoveDirs()
 	{
 		computeSafetyStats();
@@ -307,7 +308,7 @@ public class MicroBase extends RobotPlayer
 	
 	public boolean isInDanger()
 	{
-		return getNearbyHostiles().length > 0;
+		return (getRoundsUntilDanger() < 10);
 	}
 	
 	// tryMove expects to be given a valid direction
@@ -326,23 +327,24 @@ public class MicroBase extends RobotPlayer
 			rc.move(d);
 			return true;
 		}
-		else
-		{
-			System.out.println("Movement exception: tried to move but couldn't!");
-			if (d == null)
-			{
-				System.out.println("Reason: null direction");
-				return false;
-			}
-			if (!rc.isCoreReady())
-				System.out.println("Reason: core not ready");
-			if (rc.isLocationOccupied(here.add(d)))
-				System.out.println("Reason: location occupied");
-			if (rc.senseRubble(here.add(d)) > GameConstants.RUBBLE_OBSTRUCTION_THRESH)
-				System.out.println("Reason: too much rubble");
-			
-			return false;
-		}
+//		else
+//		{
+//			System.out.println("Movement exception: tried to move but couldn't!");
+//			if (d == null)
+//			{
+//				System.out.println("Reason: null direction");
+//				return false;
+//			}
+//			if (!rc.isCoreReady())
+//				System.out.println("Reason: core not ready");
+//			if (rc.isLocationOccupied(here.add(d)))
+//				System.out.println("Reason: location occupied");
+//			if (rc.senseRubble(here.add(d)) > GameConstants.RUBBLE_OBSTRUCTION_THRESH)
+//				System.out.println("Reason: too much rubble");
+//			
+//			return false;
+//		}
+		return false;
 	}
 	
 	public static RobotInfo getClosestTurretTarget(RobotInfo[] nearby, MapLocation loc)
@@ -437,41 +439,57 @@ public class MicroBase extends RobotPlayer
 		return closest;
 	}
 	
-	public boolean tryAttackSomeone() throws GameActionException
+	public RobotInfo getLowestHealth(RobotInfo[] bots)
 	{
-		// attack someone in range if possible, low health first, prioritizing zombies
+		RobotInfo target = null;
 		
-		RobotInfo zombieTarget = this.getLowestHealth(this.getNearbyZombies());
-		RobotInfo enemyTarget = this.getLowestHealth(this.getNearbyEnemies());
-		
-		if (zombieTarget != null && rc.canAttackLocation(zombieTarget.location))
+		for (RobotInfo ri : bots)
 		{
-			rc.attackLocation(zombieTarget.location);
-			return true;
+			if (target == null || ri.health < target.health)
+				target = ri;
+			if (ri.type == RobotType.ARCHON)
+			{
+				target = ri;
+				break; // archon targets take priority over ALL
+			}
 		}
 		
-		if (enemyTarget != null && rc.canAttackLocation(enemyTarget.location))
-		{
-			rc.attackLocation(enemyTarget.location);
-			return true;
-		}
-		
-		return false;
+		return target;
 	}
+
 	
-	public boolean tryAvoidBeingShot() throws GameActionException
-	{
-		if (this.getNearbyHostiles().length == 0)
-			return false;
-		
-		if (!rc.isCoreReady())
-			return this.tryAttackSomeone();
-		
-		Direction escapeDir = this.getBestEscapeDir();
-		
-		// escape
-		tryMove(escapeDir);
-		
-		return this.tryAttackSomeone();
-	}
+//	public boolean canWin1v1(RobotInfo enemy) throws GameActionException
+//	{
+//		MapLocation onecloser = here.add(here.directionTo(enemy.location));
+//		
+//		boolean iAmAlive = true;
+//		boolean theyAreAlive = false;
+//		
+//		MapLocation myLoc = here;
+//		MapLocation enemyLoc = enemy.location;
+//		
+//		double myCoreDelay = rc.getCoreDelay();
+//		double theirCoreDelay = enemy.coreDelay;
+//		double myWeaponDelay = rc.getWeaponDelay();
+//		double theirWeaponDelay = enemy.weaponDelay;
+//		
+//		while (iAmAlive && theyAreAlive)
+//		{
+//			// me
+//			if (myCoreDelay < 1)
+//				myLoc
+//			
+//			// enemy
+//			
+//			
+//		}
+//		
+//		int numRoundsTillIKillThem = ;
+//		int numRoundsTillTheyKillMe = ;
+//		
+//		if (numRoundsTillIKillThem < numRoundsTillTheyKillMe)
+//			return true;
+//		
+//		return false;
+//	}
 }

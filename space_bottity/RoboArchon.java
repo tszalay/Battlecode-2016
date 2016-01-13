@@ -1,4 +1,4 @@
-package ball_about_that_base;
+package space_bottity;
 
 import java.util.ArrayList;
 
@@ -14,14 +14,14 @@ public class RoboArchon extends RobotPlayer
 		WAYPOINT
 	}
 
-	static int robotSchedule[] = {10, 10, 10, 6}; // 10-turret 6 - scout
-	static int scheduleCounter = rand.nextInt(100);
-	
-	static final int MAX_ROUNDS_TO_RALLY = 200;
+	static final int MAX_ROUNDS_TO_RALLY = 400;
 	static final int DEST_MESSAGE_FREQ = 10;
 	static final int DEST_MESSAGE_RANGE = 63;
-	
+	//static final int DEST_ALL_MAP_MESSAGE_FREQ = 40;//best if not divisible by DEST_MESSAGE_FREQ
+	static final int EXTRA_PARTS_FOLLOWER_WAITS = 5;
+
 	static ArchonState myState = ArchonState.INIT;
+	static RobotType myNextBuildRobotType = RobotType.SOLDIER;
 
 	public static void init() throws GameActionException
 	{
@@ -32,6 +32,8 @@ public class RoboArchon extends RobotPlayer
 		// state machine update
 		updateState();
 		Debug.setStringSJF(myState.toString());
+		
+		MapInfo.removeWaypoint(here);
 		
 		// always try this if we can, before moving
 		tryActivateNeutrals();
@@ -55,6 +57,9 @@ public class RoboArchon extends RobotPlayer
 	
 		// always do this, no reason not to
 		tryRepair();
+
+		// and this - look for & update nearby cool stuff
+		MapInfo.analyzeSurroundings();
 		
 		Debug.setStringTS("D:" + MapInfo.zombieDenLocations.elements().size()
 				+ ",P:" + MapInfo.goodPartsLocations.elements().size());
@@ -74,6 +79,8 @@ public class RoboArchon extends RobotPlayer
 			{
 				myState = ArchonState.WAYPOINT;
 				Message.sendBuiltMessage();
+				// also set the next robot type y knot
+				myNextBuildRobotType = getNextBuildRobotType(); 
 			}
 			break;
 			
@@ -97,19 +104,56 @@ public class RoboArchon extends RobotPlayer
 	
 	public static void doWaypoint() throws GameActionException
 	{
-		MapLocation loc = MapInfo.getClosestPart(); 
-		if (here.equals(loc))
-			MapInfo.removeWaypoint(loc);
+		if (Micro.isInDanger())
+		{
+			Behavior.tryRetreatOrShootIfStuck();
+			return;
+		}
+		// look for waypoint
+		MapLocation dest = MapInfo.getClosestDenThenPart();
 		
-		MapLocation dest = MapInfo.getClosestPart();
+		// check if it should be deleted
+		if (dest != null && rc.canSenseLocation(dest) && rc.senseParts(dest) == 0 && rc.senseRobotAtLocation(dest) == null)
+		{
+			MapInfo.removeWaypoint(dest);
+			dest = MapInfo.getClosestPartOrDen();
+		}
+		
+		// if we don't have a waypoint, explore
 		if (dest == null)
 			dest = MapInfo.getExplorationWaypoint();
 		
-		// and send a message every certain few rounds
-		if (rc.getRoundNum() % DEST_MESSAGE_FREQ == 0)
-			Message.sendMessageSignal(DEST_MESSAGE_RANGE, MessageType.ARCHON_DEST, dest);
+		// if we are the leader
+		if (amLeader())
+		{
+			rc.setIndicatorDot(dest, 255, 255, 255);
+			if (rand.nextInt(10) == 2)
+				return;
+		}
+		else
+		{
+			// if we are a follower
+			// look for leader
+			dest = Message.recentArchonLocation;
+			if (rc.canSenseRobot(Message.recentArchonID))
+				dest = rc.senseRobot(Message.recentArchonID).location;
+		}
 
-		Behavior.tryGoToWithoutBeingShot(dest);
+		if (dest != null && !Micro.isInDanger())
+		{
+			// and send a message every certain few rounds
+			/*if (rc.getRoundNum() % DEST_ALL_MAP_MESSAGE_FREQ == 0)
+			{
+				Message.sendMessageSignal(DEST_MESSAGE_RANGE, MessageType.ARCHON_DEST, dest);
+				//System.out.println("Sent all map signal");
+			}else*/
+			if(rc.getRoundNum() % DEST_MESSAGE_FREQ == 0)
+			{
+				Message.sendMessageSignal(DEST_MESSAGE_RANGE, MessageType.ARCHON_DEST, dest);
+			}
+			// go where we should
+			Behavior.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs());
+		}
 	}
 	
 	public static void doRally() throws GameActionException
@@ -122,21 +166,28 @@ public class RoboArchon extends RobotPlayer
 		if (Message.rallyLocation == null)
 			return;
 		
-		Behavior.tryGoToWithoutBeingShot(Message.rallyLocation);
+		MapLocation closestPart = MapInfo.getClosestPart();
+		if (closestPart != null && closestPart.distanceSquaredTo(here) < rc.getType().sensorRadiusSquared)
+			Behavior.tryGoToWithoutBeingShot(closestPart, Micro.getSafeMoveDirs());
+		else
+			Behavior.tryGoToWithoutBeingShot(Message.rallyLocation, Micro.getSafeMoveDirs());
 	}
 	
 	private static void doBuild() throws GameActionException
 	{
-		RobotType nextRobotType = getNextBuildRobotType();
+		RobotType nextRobotType = myNextBuildRobotType;
+		
+		if (rc.getRoundNum() % DEST_MESSAGE_FREQ == 0)
+			Message.sendMessageSignal(DEST_MESSAGE_RANGE, MessageType.ARCHON_DEST, here);
 		
 		// return false quickly if we cannot build for an obvious reason
 		if (nextRobotType == null)
 			return;
 		if (!rc.isCoreReady())
 			return;
-		if (!rc.hasBuildRequirements(nextRobotType))
+		if (rc.getTeamParts() < nextRobotType.partCost)
 			return;
-		
+				
 		// find okay direction set
 		DirectionSet canBuild = getCanBuildDirectionSet(nextRobotType);
 		DirectionSet parity = getParityAllowedDirectionSet(nextRobotType);
@@ -257,7 +308,7 @@ public class RoboArchon extends RobotPlayer
 	public static boolean tryBuildUnit(RobotType nextRobot, Direction dir) throws GameActionException
 	{
 		// final checks
-		if (!rc.isCoreReady())
+		if (!rc.isCoreReady() || dir == null)
 			return false;
 		if (!rc.hasBuildRequirements(nextRobot))
 			return false;
@@ -319,22 +370,61 @@ public class RoboArchon extends RobotPlayer
 			nextRobotType = RobotType.SCOUT;
 		}
 */		
-		RobotType nextRobotType = (rand.nextInt(5) == 0) ? RobotType.SCOUT : RobotType.SOLDIER;
+		RobotType nextRobotType = null;
+		
+		int r = rand.nextInt(100);
+		
+		if (r < 60)
+			nextRobotType = RobotType.SOLDIER;
+		else if (r < 85)
+			nextRobotType = RobotType.SCOUT;
+		else
+			nextRobotType = RobotType.TURRET;
 		
 		return nextRobotType;
+		
+		/*
+		int numSoldiersAround = 0;
+		RobotInfo[] localAllies = Micro.getNearbyAllies();
+		for (RobotInfo ri : localAllies)
+		{
+			if (ri.type == RobotType.SOLDIER)
+				numSoldiersAround += 1;
+		}
+		
+		if (rand.nextInt(10) == 3)
+			return RobotType.SCOUT;
+		
+		if (numSoldiersAround < 3)
+			return RobotType.SOLDIER;
+			*/
+		
+		//if (rc.getTeamParts() >= RobotType.TURRET.partCost)
+		//	return RobotType.TURRET;
+		/*
+		int numRobotsAlive = rc.getRobotCount();
+		
+		if (numRobotsAlive < 20)
+		{
+			nextRobotType = (rand.nextInt(2) == 0) ? RobotType.SCOUT : RobotType.SOLDIER;
+		}
+		
+		return nextRobotType;*/
 	}
 	
 	private static boolean canBuildNow() throws GameActionException
 	{
-		// what's next to build
-		RobotType nextRobotType = getNextBuildRobotType();
-		
+		RobotType nextRobotType = myNextBuildRobotType;
 		// return false quickly if we cannot build for an obvious reason
 		if (nextRobotType == null)
 			return false;
 		if (!rc.isCoreReady())
 			return false;
 		if (!rc.hasBuildRequirements(nextRobotType))
+			return false;
+		
+		//I'm not the leader and we don't have the excess parts, giving leader time to build
+		if (!amLeader() && (rc.getTeamParts() < RobotType.TURRET.partCost + EXTRA_PARTS_FOLLOWER_WAITS))
 			return false;
 		
 		// find okay direction set
@@ -354,5 +444,20 @@ public class RoboArchon extends RobotPlayer
 			return false;
 		
 		return here.distanceSquaredTo(Message.rallyLocation) < 20;
+	}
+
+	private static boolean amLeader()
+	{
+		if (rc.getID() <= Message.recentArchonID || 
+				(rc.getRoundNum()-Message.recentArchonRound) > 2*DEST_MESSAGE_FREQ)
+		{
+			Debug.setStringRR("I am the leader!!!!!");
+			return true;
+		}
+		else
+		{
+			Debug.setStringRR("FOLLOWER: leader's ID is " + Message.recentArchonID);
+			return false;
+		}
 	}
 }

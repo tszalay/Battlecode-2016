@@ -1,4 +1,4 @@
-package ball_about_that_base;
+package space_bottity;
 
 import battlecode.common.*;
 import java.util.*;
@@ -27,6 +27,16 @@ public class DirectionSet
 	public void add(Direction d)
 	{
 		dirs |= (1<<d.ordinal());
+	}
+	
+	public void remove(Direction d)
+	{
+		dirs &= ~(1<<d.ordinal());
+	}
+	
+	public DirectionSet clone()
+	{
+		return new DirectionSet(this.dirs);
 	}
 	
 	public DirectionSet and(DirectionSet d)

@@ -1,4 +1,4 @@
-package ball_about_that_base;
+package space_bottity;
 
 import battlecode.common.*;
 
@@ -37,6 +37,15 @@ public class MapInfo extends RobotPlayer
 	public static MapLocation getClosestDen()
 	{
 		return Micro.getClosestLocationTo(zombieDenLocations.elements(), here);
+	}
+	
+	
+	public static MapLocation getClosestDenThenPart()
+	{
+		MapLocation ml = Micro.getClosestLocationTo(zombieDenLocations.elements(), here);
+		if (ml == null)
+			ml = Micro.getClosestLocationTo(goodPartsLocations.elements(), here);
+		return ml;
 	}
 	
 	public static MapLocation getClosestPartOrDen()
@@ -162,9 +171,27 @@ public class MapInfo extends RobotPlayer
 		zombieDenLocations.remove(loc);
 	}
 	
+	public static void updateLocalWaypoints() throws GameActionException
+	{
+		MapLocation loc = getClosestPart();
+		if (loc != null && rc.senseParts(loc) <= 0)
+			goodPartsLocations.remove(loc);
+		
+		loc = getClosestDen();
+		if (loc != null && rc.canSense(loc))
+		{
+			RobotInfo ri = rc.senseRobotAtLocation(loc);
+			if (ri == null || ri.type != RobotType.ZOMBIEDEN)
+				zombieDenLocations.remove(loc);
+		}
+	}
+	
 	// function to send updated info as a scout
 	public static boolean doScoutSendUpdates() throws GameActionException
 	{
+		if (Micro.isInDanger() || rc.getCoreDelay() > 5)
+			return false;
+		
 		// only send one at a time
 		if (newMapDir != null)
 		{
@@ -189,25 +216,25 @@ public class MapInfo extends RobotPlayer
 		return false;
 	}
 	
-	// function to look for nearby parts, neutrals, etc
-	private static int offsetInd = 0;
-	
-	public static void scoutAnalyzeSurroundings() throws GameActionException
+	// function to look for nearby parts, neutrals, etc, can be used by scouts or archons
+	public static void analyzeSurroundings() throws GameActionException
 	{
-		double visibleparts = 0;
+		double visibleParts = 0;
+		
+		boolean isScout = (rc.getType() == RobotType.SCOUT);
 		
 		// neutral robot check
 		RobotInfo[] neutralRobots = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.NEUTRAL);
 		for (RobotInfo ri : neutralRobots)
 		{
-			updateParts(ri.location, true);
-			visibleparts += ri.type.partCost;
+			updateParts(ri.location, isScout);
+			visibleParts += ri.type.partCost;
 		}
 		
 		// zombie den check
 		for (RobotInfo ri : Micro.getNearbyHostiles())
 			if (ri.type == RobotType.ZOMBIEDEN)
-				updateZombieDens(ri.location, true);
+				updateZombieDens(ri.location, isScout);
 		
 		// monkeypatch for now
 		here = rc.getLocation();
@@ -218,7 +245,8 @@ public class MapInfo extends RobotPlayer
 		{
 			int newval = 0;
 			// loop until we hit a location on the map
-			for (int i=7; i>=1; i--)
+			int i = isScout ? 7 : 5;
+			for (; i>=1; i--)
 			{
 				MapLocation loc = here.add(d,i);
 				if (rc.onTheMap(loc))
@@ -235,22 +263,12 @@ public class MapInfo extends RobotPlayer
 			d = d.rotateRight().rotateRight();
 		}
 		
-		int nchecked = 0;
+		MapLocation[] partsLocs = rc.sensePartLocations(rc.getType().sensorRadiusSquared);
 		
-		while (Clock.getBytecodesLeft() > 8000)
+		for (MapLocation loc : partsLocs)
 		{
-			MapLocation loc = here.add(MapUtil.allOffsX[offsetInd], MapUtil.allOffsY[offsetInd]);
-			offsetInd = (offsetInd+1) % MapUtil.allOffsX.length;
-			
-			// check for parts first
-			double nparts = rc.senseParts(loc);
-			if (nparts > 50)
-				updateParts(loc, true);
-			visibleparts += nparts;
-			
-			nchecked++;
-			if (nchecked == MapUtil.allOffsX.length)
-				break;
+			updateParts(loc, isScout);
+			visibleParts += rc.senseParts(loc);
 		}
 		//System.out.println("Scanned " + nchecked + "/" + MapUtil.allOffsX.length + " locations");
 	}
