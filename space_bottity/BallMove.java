@@ -75,15 +75,15 @@ public class BallMove extends RobotPlayer
 		
 		// if we're not in danger, try to shoot something anyway
 		// (e.g. zombie dens)
-		if (Micro.getNearbyHostiles().length > 0 &&  rc.getType().canAttack())
+		/*if (Micro.getNearbyHostiles().length > 0 &&  rc.getType().canAttack())
 		{
 			Behavior.tryAdjacentSafeMoveToward(here.directionTo(Micro.getNearbyHostiles()[0].location));
 			Behavior.tryAttackSomeone();
 			Debug.setStringTS("Last ball: tryAttack");
 			return;
-		}
+		}*/
 		
-		// if we're far, move closer using bugging nav probably
+		// if we're far, try moving closer using bugging nav probably
 		if (here.distanceSquaredTo(lastBallLocation) > maxDistSq)
 		{
 			Nav.tryGoTo(lastBallLocation,Micro.getSafeMoveDirs());
@@ -95,6 +95,7 @@ public class BallMove extends RobotPlayer
 			return;
 		}
 		
+		// otherwise get a list of all valid directions that keep us in the ball and using those
 		DirectionSet ballDirs = Micro.getSafeMoveDirs().clone();
 		
 		for (Direction d : ballDirs.getDirections())
@@ -115,6 +116,19 @@ public class BallMove extends RobotPlayer
 				lastBallMoveDir = null;
 				return;
 			}
+		}
+		
+		if (Micro.getNearbyHostiles().length > 0 &&  rc.getType().canAttack())
+		{
+			Direction d = ballDirs.getDirectionTowards(here, Micro.getNearbyHostiles()[0].location);
+			if (d != null)
+			{
+				Micro.tryMove(d);
+				return;
+			}
+			Behavior.tryAttackSomeone();
+			Debug.setStringTS("Last ball: tryAttack");
+			return;
 		}
 
 		MapLocation ml = Micro.getUnitCOM(rc.senseNearbyRobots(24, ourTeam));

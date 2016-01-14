@@ -15,7 +15,6 @@ enum MessageType
 	GOOD_PARTS,
 	RALLY_LOCATION,
 	MAP_EDGE,
-	ARCHON_DEST,
 	REMOVE_WAYPOINT
 }
 
@@ -48,11 +47,6 @@ public class Message extends RobotPlayer
 	
 	// and for any transmitted enemy messages, only keep the latest received
 	public static MapLocation recentEnemySignal = null;
-	
-	public static MapLocation recentArchonLocation = null;
-	public static MapLocation recentArchonDest = null;
-	public static int 		  recentArchonRound = 0;
-	public static int		  recentArchonID = 100000000;
 	
 	// and other things
 	public static MapLocation rallyLocation = null;
@@ -110,23 +104,8 @@ public class Message extends RobotPlayer
 			case GOOD_PARTS:
 				MapInfo.updateParts(readLocation(vals),false);				
 				break;
-			case ARCHON_DEST:
-				updateRecentArchon(sig, vals);
-				break;
 			}
 		}
-	}
-	
-	private static void updateRecentArchon(Signal s, int[] vals)
-	{
-		if (recentArchonLocation != null && s.getID() > recentArchonID
-					&& rc.getRoundNum() - recentArchonRound < 2*RoboArchon.DEST_MESSAGE_FREQ)
-			return;
-		
-		recentArchonLocation = s.getLocation();
-		recentArchonDest = readLocation(vals);
-		recentArchonRound = rc.getRoundNum();
-		recentArchonID = s.getID();
 	}
 	
 	private static int readByte(int val, int ind)

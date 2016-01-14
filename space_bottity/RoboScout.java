@@ -53,12 +53,12 @@ public class RoboScout extends RobotPlayer
 		}
 		
         // always send out info about sighted targets
-		//Sighting.doSendSightingMessage();
+		Sighting.doSendSightingMessage();
 		
 		// and use spare bytecodes to look for stuff
-		//MapInfo.analyzeSurroundings();
+		MapInfo.analyzeSurroundings();
 		// and send the updates
-		//MapInfo.doScoutSendUpdates();
+		MapInfo.doScoutSendUpdates();
 		
 		Debug.setStringTS("Scout: " + myState);
 	}
@@ -108,8 +108,8 @@ public class RoboScout extends RobotPlayer
 		// try to update the position of our ball target
 		if (!BallMove.tryUpdateTarget())
 		{
-		//	myState = ScoutState.EXPLORING;
-		//	return;
+			myState = ScoutState.EXPLORING;
+			return;
 		}
 		
 		// if there is a scout with a lower ID than me within two sq dist of ball target
@@ -122,7 +122,7 @@ public class RoboScout extends RobotPlayer
 		//if (lowestScoutID == rc.getID())
 		//	BallMove.ballMove(0, 2);
 		//else
-		BallMove.ballMove(3,15);
+		BallMove.ballMove(15,35);
 	}
 
 }

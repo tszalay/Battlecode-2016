@@ -8,19 +8,14 @@ public class RoboArchon extends RobotPlayer
 {
 	enum ArchonState
 	{
-		INIT,
 		RALLYING,
 		BUILDING,
 		WAYPOINT
 	}
 
 	static final int MAX_ROUNDS_TO_RALLY = 400;
-	static final int DEST_MESSAGE_FREQ = 10;
-	static final int DEST_MESSAGE_RANGE = 63;
-	//static final int DEST_ALL_MAP_MESSAGE_FREQ = 40;//best if not divisible by DEST_MESSAGE_FREQ
-	static final int EXTRA_PARTS_FOLLOWER_WAITS = 5;
 
-	static ArchonState myState = ArchonState.INIT;
+	static ArchonState myState = ArchonState.WAYPOINT;
 	static RobotType myNextBuildRobotType = RobotType.SCOUT;
 	static int lastBuiltRound = 0;
 
@@ -42,9 +37,6 @@ public class RoboArchon extends RobotPlayer
 		// do turn according to state
 		switch (myState)
 		{
-		case INIT:
-			doInit();
-			break;
 		case RALLYING:
 			doRally();
 			break;
@@ -70,9 +62,6 @@ public class RoboArchon extends RobotPlayer
 	{
 		switch (myState)
 		{
-		case INIT:
-			break;
-			
 		case BUILDING:
 			// keep going to the next location if we're done building
 			// (and send startup built messages)
@@ -92,27 +81,26 @@ public class RoboArchon extends RobotPlayer
 			break;
 		
 		case WAYPOINT:
-			if (canBuildNow() && rc.getRoundNum() > lastBuiltRound + 20)
+			if (canBuildNow())
 				myState = ArchonState.BUILDING;
 			break;			
 		}
 	}
 	
-	public static void doInit() throws GameActionException
-	{
-		tryBuildEven(RobotType.SCOUT);
-		myState = ArchonState.RALLYING;
-	}
-	
 	public static void doWaypoint() throws GameActionException
 	{
+		// first priority, avoid stuff
 		if (Micro.isInDanger())
 		{
 			Behavior.tryRetreatOrShootIfStuck();
 			return;
 		}
+		
 		// look for waypoint
-		MapLocation dest = MapInfo.getClosestDenThenPart();
+		MapLocation dest = MapInfo.getClosestDen();
+		
+		if (dest != null && here.distanceSquaredTo(dest) < 15)
+			return;
 		
 		// check if it should be deleted
 		if (dest != null && rc.canSenseLocation(dest) && rc.senseParts(dest) == 0 && rc.senseRobotAtLocation(dest) == null)
@@ -124,37 +112,14 @@ public class RoboArchon extends RobotPlayer
 		// if we don't have a waypoint, explore
 		if (dest == null)
 			dest = MapInfo.getExplorationWaypoint();
-		
-		// if we are the leader
-		if (amLeader())
-		{
-			rc.setIndicatorDot(dest, 255, 255, 255);
-			if (rand.nextInt(10) == 2)
-				return;
-		}
-		else
-		{
-			// if we are a follower
-			// look for leader
-			dest = Message.recentArchonLocation;
-			if (rc.canSenseRobot(Message.recentArchonID))
-				dest = rc.senseRobot(Message.recentArchonID).location;
-		}
 
-		if (dest != null && !Micro.isInDanger())
+		if (dest != null)
 		{
-			// and send a message every certain few rounds
-			/*if (rc.getRoundNum() % DEST_ALL_MAP_MESSAGE_FREQ == 0)
-			{
-				Message.sendMessageSignal(DEST_MESSAGE_RANGE, MessageType.ARCHON_DEST, dest);
-				//System.out.println("Sent all map signal");
-			}else*/
-			if(rc.getRoundNum() % DEST_MESSAGE_FREQ == 0)
-			{
-				Message.sendMessageSignal(DEST_MESSAGE_RANGE, MessageType.ARCHON_DEST, dest);
-			}
 			// go where we should
 			Behavior.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs());
+			// send a bit of a "ping"
+			if (rc.getRoundNum() % 7 == 0)
+				Message.sendSignal(63);
 		}
 	}
 	
@@ -179,29 +144,13 @@ public class RoboArchon extends RobotPlayer
 	{
 		RobotType nextRobotType = myNextBuildRobotType;
 		
-		if (rc.getRoundNum() % DEST_MESSAGE_FREQ == 0)
-			Message.sendMessageSignal(DEST_MESSAGE_RANGE, MessageType.ARCHON_DEST, here);
-		
 		// return false quickly if we cannot build for an obvious reason
 		if (nextRobotType == null)
 			return;
 		if (!rc.isCoreReady())
 			return;
-		if (rc.getTeamParts() < nextRobotType.partCost)
-			return;
-				
-		// find okay direction set
-		DirectionSet canBuild = getCanBuildDirectionSet(nextRobotType);
-		DirectionSet parity = getParityAllowedDirectionSet(nextRobotType);
-		DirectionSet validBuildDirectionSet = canBuild.and(parity);
 		
-		// other considerations like safety can be considered here
-		
-		// pick one of the allowed directions at random
-		Direction dir = validBuildDirectionSet.getRandomValid();
-		
-		// convert to directions and try to build
-		tryBuildUnit(nextRobotType, dir);
+		tryBuild(nextRobotType);
 		return;
 	}
 	
@@ -247,83 +196,23 @@ public class RoboArchon extends RobotPlayer
 		return false;
 	}
 
-	public static boolean tryBuildEven(RobotType robotToBuild) throws GameActionException
+	public static boolean tryBuild(RobotType robotToBuild) throws GameActionException
 	{
 		if (!rc.isCoreReady())
 			return false;
 		if (!rc.hasBuildRequirements(robotToBuild))
 			return false;
 
-
-		Direction dirToBuild = Direction.values()[rand.nextInt(8)];
-
-		// make sure we are building on even square (see function name)
-		if (MapUtil.isLocOdd(here.add(dirToBuild)))
-			dirToBuild = dirToBuild.rotateRight();
-
-		// rotate right two at a time
-		for(int i=0; i<4; i++)
+		Direction buildDir = getCanBuildDirectionSet(robotToBuild).getRandomValid();
+		if (buildDir != null)
 		{
-			if (rc.canBuild(dirToBuild, robotToBuild))
-			{
-				rc.build(dirToBuild, robotToBuild);
-				return true;
-			}
-
-			dirToBuild = dirToBuild.rotateRight().rotateRight();
-		} 
-
-		// failed to find any build locations
+			rc.build(buildDir, robotToBuild);
+			return true;
+		}
+		
 		return false;
 	}
 
-	public static boolean tryBuildOdd(RobotType robotToBuild) throws GameActionException
-	{
-		if (!rc.isCoreReady())
-			return false;
-		if (!rc.hasBuildRequirements(robotToBuild))
-			return false;
-
-
-		Direction dirToBuild = Direction.values()[rand.nextInt(8)];
-
-		// make sure we are building on odd square (see function name)
-		if (!MapUtil.isLocOdd(here.add(dirToBuild)))
-			dirToBuild = dirToBuild.rotateRight();
-
-		// rotate right two at a time
-		for(int i=0; i<4; i++)
-		{
-			if (rc.canBuild(dirToBuild, robotToBuild))
-			{
-				rc.build(dirToBuild, robotToBuild);
-				return true;
-			}
-
-			dirToBuild = dirToBuild.rotateRight().rotateRight();
-		} 
-
-		// failed to find any build locations
-		return false;
-	}
-
-	public static boolean tryBuildUnit(RobotType nextRobot, Direction dir) throws GameActionException
-	{
-		// final checks
-		if (!rc.isCoreReady() || dir == null)
-			return false;
-		if (!rc.hasBuildRequirements(nextRobot))
-			return false;
-		if (!rc.canBuild(dir, nextRobot))
-			return false;
-		
-		// so other archons might get a chance to build.
-		//if (rand.nextBoolean()) return false;
-		
-		rc.build(dir, nextRobot);
-		return true;
-	}
-	
 	public static DirectionSet getCanBuildDirectionSet(RobotType nextRobotType) throws GameActionException
 	{
 		// check nearby open squares
@@ -352,10 +241,32 @@ public class RoboArchon extends RobotPlayer
 		return allowedParity;
 	}
 	
+	static final int SOLDIER = RobotType.SOLDIER.ordinal();
+	static final int GUARD = RobotType.GUARD.ordinal();
+	static final int TURRET = RobotType.TURRET.ordinal();
+	static final int SCOUT = RobotType.SCOUT.ordinal();
+	
 	private static RobotType getNextBuildRobotType() throws GameActionException
 	{
 		// what's next to build: the old thing is not working?
-		return RobotType.SCOUT; 		
+		RobotInfo[] nearby = Micro.getNearbyAllies();
+		int[] nearbyUnits = new int[RobotType.values().length];
+		for (RobotInfo ri : nearby)
+			nearbyUnits[ri.type.ordinal()]++;
+		
+		int combatUnits = nearbyUnits[SOLDIER]
+						  + nearbyUnits[GUARD]
+						  + nearbyUnits[TURRET];
+		
+		if (nearbyUnits[SCOUT] < 2 || nearbyUnits[SCOUT] < combatUnits/4)
+			return RobotType.SCOUT;
+		
+		if (nearbyUnits[SOLDIER] < 10)
+			return RobotType.SOLDIER;
+		if (nearbyUnits[TURRET] < 10)
+			return RobotType.TURRET;
+		
+		return RobotType.GUARD;
 	}
 	
 	private static boolean canBuildNow() throws GameActionException
@@ -369,16 +280,10 @@ public class RoboArchon extends RobotPlayer
 		if (!rc.hasBuildRequirements(nextRobotType))
 			return false;
 		
-		//I'm not the leader and we don't have the excess parts, giving leader time to build
-		if (!amLeader() && (rc.getTeamParts() < RobotType.TURRET.partCost + EXTRA_PARTS_FOLLOWER_WAITS))
-			return false;
-		
 		// find okay direction set
 		DirectionSet canBuild = getCanBuildDirectionSet(nextRobotType);
 		DirectionSet parity = getParityAllowedDirectionSet(nextRobotType);
 		DirectionSet validBuildDirectionSet = canBuild.and(parity);
-		
-		// other considerations like safety can be considered here
 		
 		// if we have a valid direction return true
 		return (validBuildDirectionSet.any());
@@ -390,20 +295,5 @@ public class RoboArchon extends RobotPlayer
 			return false;
 		
 		return here.distanceSquaredTo(Message.rallyLocation) < 20;
-	}
-
-	private static boolean amLeader()
-	{
-		if (rc.getID() <= Message.recentArchonID || 
-				(rc.getRoundNum()-Message.recentArchonRound) > 2*DEST_MESSAGE_FREQ)
-		{
-			Debug.setStringRR("I am the leader!!!!!");
-			return true;
-		}
-		else
-		{
-			Debug.setStringRR("FOLLOWER: leader's ID is " + Message.recentArchonID);
-			return false;
-		}
 	}
 }

@@ -14,6 +14,7 @@ public class RobotPlayer
 	
 	public static MapLocation 	myBuilderLocation = null;
 	public static int			myBuilderID = -1; // dad?
+	public static int 			myBuiltRound;
 	
 	public static MicroBase Micro = null;
 	
@@ -27,6 +28,7 @@ public class RobotPlayer
 		RobotPlayer.ourTeam = rc.getTeam();
 		RobotPlayer.theirTeam = ourTeam.opponent();
 		RobotPlayer.here = rc.getLocation();
+		RobotPlayer.myBuiltRound = rc.getRoundNum();
 		
 		Debug.setStringTS("Tamas");
 		Debug.setStringAK("A-aron");

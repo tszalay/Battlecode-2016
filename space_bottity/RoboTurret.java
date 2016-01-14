@@ -17,6 +17,7 @@ public class RoboTurret extends RobotPlayer
 
 	public static void init() throws GameActionException
 	{
+		BallMove.startBalling(RobotPlayer.myBuilderID);
 	}
 	
 	public static void turn() throws GameActionException
@@ -70,7 +71,8 @@ public class RoboTurret extends RobotPlayer
 		}
 		
 		//try to move wherever everyone else is going
-		BallMove.ballMove(7,35);
+		BallMove.tryUpdateTarget();
+		BallMove.ballMove(3,15);
 	}
 	
 	public static boolean shouldUnpack() throws GameActionException
