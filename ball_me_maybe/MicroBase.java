@@ -205,7 +205,7 @@ public class MicroBase extends RobotPlayer
 	public int getRoundsUntilShootAndMove()
 	{
 		double ourDelayDecrement = 1;
-		return (int)Math.floor( Math.max( (rc.getWeaponDelay() + rc.getType().cooldownDelay), rc.getCoreDelay()) / ourDelayDecrement);
+		return (int) ( Math.floor(rc.getWeaponDelay()) + Math.floor(rc.getCoreDelay()-ourDelayDecrement + rc.getType().cooldownDelay) );
 	}
 	
 	// compute which direction moves us the farthest from the closest enemy

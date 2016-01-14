@@ -16,7 +16,8 @@ public class RoboSoldier extends RobotPlayer
 			MapInfo.removeWaypoint(here);
 		
 		//BallMove.ballMove(5, 24);
-		if (Micro.getRoundsUntilDanger()>2)
+		Debug.setStringSJF("CD = " + rc.getCoreDelay() + ", WD = " + rc.getWeaponDelay() + "... shoot and move in " + Micro.getRoundsUntilShootAndMove() + ", danger in " + Micro.getRoundsUntilDanger());
+		if (Micro.getRoundsUntilShootAndMove() < Micro.getRoundsUntilDanger()-1)
 			Behavior.tryAttackSomeone();
 		else
 			Behavior.tryRetreatOrShootIfStuck();

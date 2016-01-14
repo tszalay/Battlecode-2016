@@ -57,12 +57,16 @@ public class Behavior extends RobotPlayer
 			dir = Micro.getBestEscapeDir();
 		
 		// we can't move in best retreat dir or best escape dir, but we have some allowed moves
-		if ((dir == null || !rc.canMove(dir)) && Micro.getCanMoveDirs().any())
+		DirectionSet canMove = Micro.getCanMoveDirs();
+		canMove.remove(Direction.NONE);
+		if ((dir == null || !rc.canMove(dir)) && canMove.any())
 		{
-			DirectionSet canMove = Micro.getCanMoveDirs();
 			DirectionSet safeMove = Micro.getSafeMoveDirs();
+			safeMove.remove(Direction.NONE);
 			DirectionSet fastMove = Micro.getCanFastMoveDirs();
+			fastMove.remove(Direction.NONE);
 			DirectionSet turretSafe = Micro.getTurretSafeDirs();
+			turretSafe.remove(Direction.NONE);
 			
 			// priority 1: canMove and safeMove and turretSafe and fastMove
 			if (canMove.and(turretSafe).and(safeMove).and(fastMove).any())
