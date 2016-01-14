@@ -6,7 +6,7 @@ import java.util.*;
 // enum for encoding the type of a message in the contents
 enum MessageType
 {
-	NONE,
+	UNDER_ATTACK,//int free signals always mean under attack
 	SPAWN,
 	ZOMBIE_DEN,
 	SIGHT_TARGET,
@@ -44,12 +44,14 @@ public class Message extends RobotPlayer
 	
 	// storage for received/accumulated message info
 	public static ArrayList<SignalLocation> archonLocs = new ArrayList<SignalLocation>();
+	public static ArrayList<SignalLocation> underAttackLocs = new ArrayList<SignalLocation>();
 	
 	// and for any transmitted enemy messages, only keep the latest received
 	public static MapLocation recentEnemySignal = null;
 	
 	// and other things
 	public static MapLocation rallyLocation = null;
+	public static MapLocation closestAllyUnderAttackLocation = null;
 	
 	public static void readSignalQueue()
 	{
@@ -67,7 +69,7 @@ public class Message extends RobotPlayer
 			int[] vals = sig.getMessage();
 			MessageType type;
 			if (vals == null)
-				type = MessageType.NONE;
+				type = MessageType.UNDER_ATTACK;
 			else
 				type = MessageType.values()[readByte(vals[0],3)];
 			
@@ -76,8 +78,8 @@ public class Message extends RobotPlayer
 
 			switch (type)
 			{
-			case NONE:
-				// logic for basic signaling goes here
+			case UNDER_ATTACK:
+				underAttackLocs.add(new SignalLocation(sig,sig.getLocation()));
 				break;
 			case SPAWN:
 				archonLocs.add(new SignalLocation(sig,readLocation(vals)));
@@ -156,7 +158,25 @@ public class Message extends RobotPlayer
 		sendMessageSignal(sq_distance, v1 | (loc.x+LOC_OFFSET), (loc.y+LOC_OFFSET));
 	}
 
-	
+	//Basic signals always only done when under attack
+	public static void calcClosestAllyUnderAttack()
+	{
+		int distToClosestAlly = 1000000;
+		MapLocation bestLoc = null;
+		for (SignalLocation sm : Message.underAttackLocs )
+		{
+			int distToThisSignalOrigin = here.distanceSquaredTo(sm.loc);
+			if (distToThisSignalOrigin < distToClosestAlly)
+			{
+				distToClosestAlly = distToThisSignalOrigin;
+				bestLoc = sm.loc;
+			}
+		}
+		
+		closestAllyUnderAttackLocation = bestLoc;
+	}
+
+
 	private static void sendMessageSignal(int sq_distance, int v1, int v2) throws GameActionException
 	{
 		rc.broadcastMessageSignal(v1,v2,sq_distance);
