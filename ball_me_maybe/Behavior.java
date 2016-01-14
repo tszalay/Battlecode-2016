@@ -51,12 +51,58 @@ public class Behavior extends RobotPlayer
 	// this function always runs away, no matta whats
 	public static boolean tryRetreatOrShootIfStuck() throws GameActionException
 	{
-		Direction escapeDir = Micro.getBestEscapeDir();
+		Direction dir = Micro.getBestRetreatDir();
+		
+		if (dir == null || !rc.canMove(dir))
+			dir = Micro.getBestEscapeDir();
+		
+		// we can't move in best retreat dir or best escape dir, but we have some allowed moves
+		if ((dir == null || !rc.canMove(dir)) && Micro.getCanMoveDirs().any())
+		{
+			DirectionSet canMove = Micro.getCanMoveDirs();
+			DirectionSet safeMove = Micro.getSafeMoveDirs();
+			DirectionSet fastMove = Micro.getCanFastMoveDirs();
+			DirectionSet turretSafe = Micro.getTurretSafeDirs();
+			
+			// priority 1: canMove and safeMove and turretSafe and fastMove
+			if (canMove.and(turretSafe).and(safeMove).and(fastMove).any())
+				dir = canMove.and(turretSafe).and(safeMove).and(fastMove).getRandomValid();
+			
+			// priority 2: canMove and safeMove and turretSafe
+			else if (canMove.and(turretSafe).and(safeMove).any())
+				dir = canMove.and(turretSafe).and(safeMove).getRandomValid();
+			
+			// priority 3: canMove and safeMove and fastMove
+			else if (canMove.and(safeMove).and(fastMove).any())
+				dir = canMove.and(safeMove).and(fastMove).getRandomValid();
+			
+			// priority 4: canMove and turretSafe and fastMove
+			else if (canMove.and(turretSafe).and(fastMove).any())
+				dir = canMove.and(turretSafe).and(fastMove).getRandomValid();
+			
+			// priority 5: canMove and safeMove
+			else if (canMove.and(safeMove).any())
+				dir = canMove.and(safeMove).getRandomValid();
+
+			// priority 6: canMove and turretSafe
+			else if (canMove.and(turretSafe).any())
+				dir = canMove.and(turretSafe).getRandomValid();
+			
+			// priority 7: canMove and fastMove
+			else if (canMove.and(fastMove).any())
+				dir = canMove.and(fastMove).getRandomValid();
+
+			// priority 8: canMove baby, and you better like it
+			else
+				dir = canMove.getRandomValid();
+			
+		}
+		
 		// if we can't escape (we're stuck), try to shoot
-		if (escapeDir == null)
+		if (dir == null)
 			return tryAttackSomeone();
 		else
-			return Micro.tryMove(escapeDir);
+			return Micro.tryMove(dir);
 	}
 	
 	public static boolean tryGoToWithoutBeingShot(MapLocation target, DirectionSet dirSet) throws GameActionException

@@ -125,7 +125,7 @@ public class RoboScout extends RobotPlayer
 		DirectionSet goodDirs = Micro.getSafeMoveDirs();
 		goodDirs = goodDirs.and(Micro.getTurretSafeDirs());
 		
-		if (Micro.getRoundsUntilDanger() < 5)
+		if (Message.recentEnemySignal != null && Micro.getRoundsUntilDanger() < 5)
 			Behavior.tryRetreatTowards(Message.recentEnemySignal, goodDirs);
 		else
 			Behavior.tryGoToWithoutBeingShot(myExploringTarget, goodDirs);
