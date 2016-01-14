@@ -62,15 +62,26 @@ public class BallMove extends RobotPlayer
 		if (!rc.isCoreReady())
 			return;
 		
+		// how should balls move?
+		
+		
 		// try to retreat towards the ball or shoot if we're in danger
-		if (Micro.getRoundsUntilDanger() < 10)
+		if (Micro.getRoundsUntilDanger() < 20)
 		{
 			if (lastBallLocation != null)
-				Behavior.tryRetreatTowards(lastBallLocation, Micro.getSafeMoveDirs());
+			{
+				RobotInfo closestEnemy = Micro.getClosestUnitTo(Micro.getNearbyEnemies(), lastBallLocation);
+				if (closestEnemy != null && here.distanceSquaredTo(closestEnemy.location) < lastBallLocation.distanceSquaredTo(closestEnemy.location))
+				{
+					Behavior.tryRetreatTowards(lastBallLocation, Micro.getSafeMoveDirs());
+					return;
+				}
+			}
 			else
+			{
 				Behavior.tryGoToWithoutBeingShot(here, Micro.getSafeMoveDirs());
-			
-			return;
+				return;
+			}
 		}
 		
 		// if we're not in danger, try to shoot something anyway

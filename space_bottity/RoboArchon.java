@@ -96,6 +96,18 @@ public class RoboArchon extends RobotPlayer
 			return;
 		}
 		
+		// next priority, any of nearby units in trouble?
+		RobotInfo[] nearby = rc.senseNearbyRobots(2, ourTeam);
+		for (RobotInfo ri : nearby)
+		{
+			// aka if there are any too close, retreat
+			if (ri.type != RobotType.SCOUT)
+			{
+				if (Behavior.tryAdjacentSafeMoveToward(ri.location.directionTo(here)))
+					return;
+			}
+		}
+		
 		// look for waypoint
 		MapLocation dest = MapInfo.getClosestDen();
 		
@@ -263,8 +275,8 @@ public class RoboArchon extends RobotPlayer
 		
 		if (nearbyUnits[SOLDIER] < 10)
 			return RobotType.SOLDIER;
-		if (nearbyUnits[TURRET] < 10)
-			return RobotType.TURRET;
+		//if (nearbyUnits[TURRET] < 5)
+		//	return RobotType.TURRET;
 		
 		return RobotType.GUARD;
 	}
@@ -278,6 +290,8 @@ public class RoboArchon extends RobotPlayer
 		if (!rc.isCoreReady())
 			return false;
 		if (!rc.hasBuildRequirements(nextRobotType))
+			return false;
+		if (Micro.isInDanger())
 			return false;
 		
 		// find okay direction set
