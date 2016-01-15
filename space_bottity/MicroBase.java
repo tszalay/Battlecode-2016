@@ -306,6 +306,31 @@ public class MicroBase extends RobotPlayer
 		return dirs;
 	}
 	
+	public boolean amOverpowered() throws GameActionException
+	{
+		if (nearbyHostiles.length == 0)
+			return false;
+		
+		// calculate relevant stuff
+		double allyTotalDamagePerTurn = rc.getType().attackPower / rc.getType().attackDelay;
+		double hostileTotalDamagePerTurn = 0;
+		double hostileTotalHealth = 0;
+		for (RobotInfo ri : nearbyHostiles)
+		{
+			hostileTotalHealth += ri.health;
+			hostileTotalDamagePerTurn += ri.type.attackPower / ri.type.attackDelay;
+		}
+		for (RobotInfo ri : nearbyAllies)
+		{
+			allyTotalDamagePerTurn += ri.attackPower / ri.type.attackDelay;
+		}
+		
+		// compare enemy firepower with ours
+		double damageWeInflictBeforeDeath = allyTotalDamagePerTurn / ( rc.getHealth() / (hostileTotalDamagePerTurn) );
+		double damageTheyInflictBeforeDeath = hostileTotalDamagePerTurn / (hostileTotalHealth / allyTotalDamagePerTurn);
+		return ( damageWeInflictBeforeDeath > damageTheyInflictBeforeDeath );
+	}
+	
 	public boolean isInDanger()
 	{
 		return (getRoundsUntilDanger() < 10);
