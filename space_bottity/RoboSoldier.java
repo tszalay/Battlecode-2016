@@ -34,7 +34,7 @@ public class RoboSoldier extends RobotPlayer
 		// ping if attacked
 		if (rc.getHealth() < health)
 		{
-			Message.sendSignal(RobotType.SOLDIER.sensorRadiusSquared);
+			Message.sendSignal(RobotType.SOLDIER.sensorRadiusSquared*2);
 			health = rc.getHealth();
 		}
 		
