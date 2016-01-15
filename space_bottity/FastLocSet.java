@@ -7,7 +7,21 @@ public class FastLocSet
 {
     private static final int HASH = Math.max(GameConstants.MAP_MAX_WIDTH, GameConstants.MAP_MAX_HEIGHT);
     private int[][] value = new int[HASH][HASH];
-    private List<MapLocation> locations = new ArrayList<MapLocation>();
+    private List<MapLocation> locations = null;
+    private boolean isUsingList = false;
+    
+    // default constructor, use the arrayList
+    public FastLocSet()
+    {
+    	this(true);
+    }
+    
+    public FastLocSet(boolean useList)
+    {
+    	if (useList)
+    		locations = new ArrayList<MapLocation>();
+    	this.isUsingList = useList;
+    }
 
     public void add(MapLocation loc)
     {
@@ -16,7 +30,8 @@ public class FastLocSet
         if (value[x][y] == 0)
         {
             value[x][y] = 1;
-            locations.add(loc);
+            if (isUsingList)
+            	locations.add(loc);
         }
     }
     
@@ -27,7 +42,8 @@ public class FastLocSet
         if (value[x][y] != val)
         {
             value[x][y] = val;
-            locations.add(loc);
+            if (isUsingList)
+            	locations.add(loc);
         }
     }
 
@@ -38,7 +54,8 @@ public class FastLocSet
         if (value[x][y] > 0)
         {
             value[x][y] = 0;
-            locations.remove(loc);
+            if (isUsingList)
+            	locations.remove(loc);
         }
     }
     
@@ -55,7 +72,8 @@ public class FastLocSet
     public void clear()
     {
         value = new int[HASH][HASH];
-        locations.clear();
+        if (isUsingList)
+        	locations.clear();
     }
     
     public List<MapLocation> elements()

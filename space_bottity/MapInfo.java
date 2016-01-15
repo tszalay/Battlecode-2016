@@ -272,4 +272,12 @@ public class MapInfo extends RobotPlayer
 		}
 		//System.out.println("Scanned " + nchecked + "/" + MapUtil.allOffsX.length + " locations");
 	}
+	
+	public static void calculateSymmetry()
+	{
+		// create fastlocset without internal list
+		FastLocSet archonLocs = new FastLocSet(false);
+		
+		
+	}
 }
