@@ -176,7 +176,6 @@ public class Message extends RobotPlayer
 		closestAllyUnderAttackLocation = bestLoc;
 	}
 
-
 	private static void sendMessageSignal(int sq_distance, int v1, int v2) throws GameActionException
 	{
 		rc.broadcastMessageSignal(v1,v2,sq_distance);
