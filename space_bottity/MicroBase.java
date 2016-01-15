@@ -22,6 +22,11 @@ public class MicroBase extends RobotPlayer
 	private Direction bestRetreatDirection = null;
 	
 	private int roundsUntilDanger = -1;
+	private int amOverpowered = -1;
+	
+	private double allyTotalDamagePerTurn = -1;
+	private double hostileTotalDamagePerTurn = -1;
+	private double hostileTotalHealth = -1;
 	
 	
 	public RobotInfo[] getNearbyEnemies()
@@ -306,29 +311,103 @@ public class MicroBase extends RobotPlayer
 		return dirs;
 	}
 	
-	public boolean amOverpowered() throws GameActionException
+	public double getAllyTotalDamagePerTurn() throws GameActionException
 	{
-		if (nearbyHostiles.length == 0)
-			return false;
+		if (allyTotalDamagePerTurn != -1) // already did this calculation, just return the value
+			return allyTotalDamagePerTurn;
 		
-		// calculate relevant stuff
-		double allyTotalDamagePerTurn = rc.getType().attackPower / rc.getType().attackDelay;
-		double hostileTotalDamagePerTurn = 0;
-		double hostileTotalHealth = 0;
+		nearbyAllies = getNearbyAllies();
+		
+		allyTotalDamagePerTurn = rc.getType().attackPower / rc.getType().attackDelay;
+		
+		if (nearbyAllies == null || nearbyAllies.length == 0)
+			return allyTotalDamagePerTurn;
+		
+		if (getNearbyHostiles().length != 0)
+		{
+			MapLocation closestHostileLoc = getClosestUnitTo(nearbyHostiles,here).location;
+			for (RobotInfo ri : nearbyAllies)
+			{
+				allyTotalDamagePerTurn += ri.attackPower / ri.type.attackDelay / ((ri.location.distanceSquaredTo(closestHostileLoc)-ri.type.attackRadiusSquared)*1.4*ri.type.movementDelay + ri.type.cooldownDelay);
+			}
+		}
+		else
+		{
+			for (RobotInfo ri : nearbyAllies)
+			{
+				allyTotalDamagePerTurn += ri.attackPower / ri.type.attackDelay;
+			}
+		}
+		
+		return allyTotalDamagePerTurn;
+	}
+	
+	public double getHostileTotalDamagePerTurn() throws GameActionException
+	{
+		if (hostileTotalDamagePerTurn != -1) // already did this calculation, just return the value
+			return hostileTotalDamagePerTurn;
+		
+		nearbyHostiles = getNearbyHostiles();
+		
+		hostileTotalDamagePerTurn = 0;
+		
+		if (nearbyHostiles == null || nearbyHostiles.length == 0)
+			return hostileTotalDamagePerTurn;
+		
+		for (RobotInfo ri : nearbyHostiles)
+		{
+			hostileTotalDamagePerTurn += ri.type.attackPower / ri.type.attackDelay;
+		}
+		
+		return hostileTotalDamagePerTurn;
+	}
+	
+	public double getHostileTotalHealth() throws GameActionException
+	{
+		if (hostileTotalHealth != -1) // already did this calculation, just return the value
+			return hostileTotalHealth;
+		
+		nearbyHostiles = getNearbyHostiles();
+		hostileTotalHealth = 0;
+		
+		if (nearbyHostiles == null || nearbyHostiles.length == 0)
+			return hostileTotalHealth;
+		
 		for (RobotInfo ri : nearbyHostiles)
 		{
 			hostileTotalHealth += ri.health;
-			hostileTotalDamagePerTurn += ri.type.attackPower / ri.type.attackDelay;
-		}
-		for (RobotInfo ri : nearbyAllies)
-		{
-			allyTotalDamagePerTurn += ri.attackPower / ri.type.attackDelay;
 		}
 		
+		return hostileTotalHealth;
+	}
+	
+	public boolean amOverpowered() throws GameActionException
+	{
+		if (amOverpowered != -1) // already did this calculation, just return the value
+			return (amOverpowered == 1);
+		
+		// calculate relevant stuff
+		hostileTotalDamagePerTurn = getHostileTotalDamagePerTurn();
+		//System.out.println("hostileTotalDamagePerTurn = " + hostileTotalDamagePerTurn);
+		
+		if (hostileTotalDamagePerTurn == 0)
+		{
+			amOverpowered = 0;
+			return false;
+		}
+		
+		allyTotalDamagePerTurn = getAllyTotalDamagePerTurn();
+		hostileTotalHealth = getHostileTotalHealth();
+		
 		// compare enemy firepower with ours
-		double damageWeInflictBeforeDeath = allyTotalDamagePerTurn / ( rc.getHealth() / (hostileTotalDamagePerTurn) );
-		double damageTheyInflictBeforeDeath = hostileTotalDamagePerTurn / (hostileTotalHealth / allyTotalDamagePerTurn);
-		return ( damageWeInflictBeforeDeath > damageTheyInflictBeforeDeath );
+		double damageWeInflictBeforeDeath = allyTotalDamagePerTurn * ( rc.getHealth() / (hostileTotalDamagePerTurn) );
+		double damageTheyInflictBeforeDeath = hostileTotalDamagePerTurn * (hostileTotalHealth / allyTotalDamagePerTurn);
+		if ( damageWeInflictBeforeDeath > damageTheyInflictBeforeDeath ) // (allyTotalDamagePerTurn > hostileTotalDamagePerTurn)
+			amOverpowered = 0; // we are more powerful
+		else
+			amOverpowered = 1; // we are overpowered
+		
+		return (amOverpowered == 1);
 	}
 	
 	public boolean isInDanger()

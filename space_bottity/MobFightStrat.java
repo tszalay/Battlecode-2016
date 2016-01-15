@@ -1,6 +1,7 @@
 package space_bottity;
 
 import battlecode.common.*;
+
 import java.util.*;
 
 public class MobFightStrat extends RobotPlayer
@@ -22,6 +23,7 @@ public class MobFightStrat extends RobotPlayer
 		
 		default:
 			// if i am overpowered, kite retreat taking pot-shots
+			Debug.setStringSJF("allies = " + Micro.getNearbyAllies().length + ", hostiles = " + Micro.getNearbyHostiles().length + ", overpowered: " + Micro.amOverpowered());
 			if (Micro.amOverpowered())
 			{
 				// pot-shot when you can get away without getting hit, retreat when unable to
@@ -41,9 +43,9 @@ public class MobFightStrat extends RobotPlayer
 			}
 			
 			// not overpowered.  we don't see anyone.  listen for calls for reinforcements, and move to help
-			if (Message.closestAllyUnderAttackLocation != null)
+			if (Message.getClosestAllyUnderAttack() != null)
 			{
-				Behavior.tryAdjacentSafeMoveToward(Message.closestAllyUnderAttackLocation);
+				Behavior.tryAdjacentSafeMoveToward(Message.getClosestAllyUnderAttack());
 			}
 			break;
 		}
