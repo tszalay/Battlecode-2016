@@ -73,8 +73,8 @@ public class Message extends RobotPlayer
 			else
 				type = MessageType.values()[readByte(vals[0],3)];
 			
-			if (sig.getID() == BallMove.ballTargetID)
-				BallMove.updateBallLocation(sig.getLocation());
+//			if (sig.getID() == BallMove.ballTargetID)
+				//BallMove.updateBallLocation(sig.getLocation());
 
 			switch (type)
 			{

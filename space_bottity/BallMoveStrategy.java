@@ -67,6 +67,8 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
 		if (!tryUpdateTarget())
 			return false;
 		
+		Action.tryAttackSomeone();
+		
 		// can't do anything, but can stay in state
 		if (!rc.isCoreReady())
 			return true;
@@ -79,26 +81,16 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
 				RobotInfo closestEnemy = Micro.getClosestUnitTo(Micro.getNearbyEnemies(), lastBallLocation);
 				if (closestEnemy != null && here.distanceSquaredTo(closestEnemy.location) < lastBallLocation.distanceSquaredTo(closestEnemy.location))
 				{
-					Behavior.tryRetreatTowards(lastBallLocation, Micro.getSafeMoveDirs());
+					Action.tryRetreatTowards(lastBallLocation, Micro.getSafeMoveDirs());
 					return true;
 				}
 			}
 			else
 			{
-				Behavior.tryGoToWithoutBeingShot(here, Micro.getSafeMoveDirs());
+				Action.tryGoToWithoutBeingShot(here, Micro.getSafeMoveDirs());
 				return true;
 			}
 		}
-		
-		// if we're not in danger, try to shoot something anyway
-		// (e.g. zombie dens)
-		/*if (Micro.getNearbyHostiles().length > 0 &&  rc.getType().canAttack())
-		{
-			Behavior.tryAdjacentSafeMoveToward(here.directionTo(Micro.getNearbyHostiles()[0].location));
-			Behavior.tryAttackSomeone();
-			Debug.setStringTS("Last ball: tryAttack");
-			return;
-		}*/
 		
 		// if we're far, try moving closer using bugging nav probably
 		if (here.distanceSquaredTo(lastBallLocation) > maxDistSq)
@@ -108,7 +100,7 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
 		}
 		if (here.distanceSquaredTo(lastBallLocation) < minDistSq)
 		{
-			Behavior.tryAdjacentSafeMoveToward(here.directionTo(lastBallLocation).opposite());
+			Action.tryAdjacentSafeMoveToward(here.directionTo(lastBallLocation).opposite());
 			return true;
 		}
 		
@@ -129,25 +121,12 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
 			Direction d = ballDirs.getDirectionTowards(lastBallMoveDir);
 			if (d != null)
 			{
-				Micro.tryMove(d);
+				Action.tryMove(d);
 				lastBallMoveDir = null;
 				return true;
 			}
 		}
 		
-		if (Micro.getNearbyHostiles().length > 0 &&  rc.getType().canAttack())
-		{
-			Direction d = ballDirs.getDirectionTowards(here, Micro.getNearbyHostiles()[0].location);
-			if (d != null)
-			{
-				Micro.tryMove(d);
-				return true;
-			}
-			Behavior.tryAttackSomeone();
-			Debug.setStringTS("Last ball: tryAttack");
-			return true;
-		}
-
 		MapLocation ml = Micro.getUnitCOM(rc.senseNearbyRobots(24, ourTeam));
 		Direction ar = here.directionTo(lastBallLocation).rotateRight().rotateRight();
 		Direction al = here.directionTo(lastBallLocation).rotateLeft().rotateLeft();
@@ -158,7 +137,7 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
 			moveDir = ballDirs.getDirectionTowards(ar);
 		
 		if (moveDir != null)
-			Micro.tryMove(moveDir);
+			Action.tryMove(moveDir);
 		
 		return true;
 	}

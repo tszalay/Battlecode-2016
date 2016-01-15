@@ -23,10 +23,10 @@ public class FreeUnitStrategy extends RobotPlayer implements Strategy
 			myTarget = MapInfo.getExplorationWaypoint();
 		
 		// try to retreat towards the ball or shoot if we're in danger
-		if (Micro.getRoundsUntilDanger() < 10 && Behavior.tryRetreatTowards(myTarget, Micro.getSafeMoveDirs()))
+		if (Micro.getRoundsUntilDanger() < 10 && Action.tryRetreatTowards(myTarget, Micro.getSafeMoveDirs()))
 			return true;
 		
-		if (Behavior.tryAttackSomeone())
+		if (Action.tryAttackSomeone())
 			return true;
 
 		Nav.tryGoTo(myTarget,Micro.getSafeMoveDirs());
