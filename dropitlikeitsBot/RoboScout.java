@@ -19,6 +19,7 @@ public class RoboScout extends RobotPlayer
 	public static MapLocation myExploringTarget;
 	public static MapLocation rushingStartLoc = null;
 	public static MapLocation herdingDestLoc = null;
+	public static int herdDist = 50;
 	
 	public static void init() throws GameActionException
 	{
@@ -64,7 +65,8 @@ public class RoboScout extends RobotPlayer
 		}
 		
         // always send out info about sighted targets
-		Sighting.doSendSightingMessage();
+		
+		//Sighting.doSendSightingMessage();
 		
 		// and use spare bytecodes to look for stuff
 		MapInfo.analyzeSurroundings();
@@ -79,22 +81,22 @@ public class RoboScout extends RobotPlayer
 		RobotInfo[] zombies = Micro.getNearbyZombies();
 		RobotInfo[] allies = Micro.getNearbyAllies();
 		
+		
 		switch (myState)
 		{
 		case EXPLORING:
 			// we just keep exploring, oh yeah
 			break;
 		case BALLING:
-			// if i see zombies, rush them
-			if (zombies.length != 0)
+			//
+			if (shouldRush(allies, zombies))
 			{
 				myState = ScoutState.RUSHING;
 				rushingStartLoc = rc.getLocation();
 				
-				int herdDist = 50;
+				
 				Direction rushDir = rushingStartLoc.directionTo(Micro.getZombieCOM());
 				herdingDestLoc = rushingStartLoc.add(rushDir.dx*herdDist,rushDir.dy*herdDist);
-				break;
 			}
 				
 //			// if i see too many scouts, i am free to explore
@@ -111,8 +113,12 @@ public class RoboScout extends RobotPlayer
 			// if there is an adjacent zombie, start herding!
 			for (RobotInfo ri : zombies)
 			{
-				if (ri.location.isAdjacentTo(rc.getLocation())) myState = ScoutState.HERDING;
-				break;
+				if (ri.location.isAdjacentTo(rc.getLocation())) 
+					{
+					myState = ScoutState.HERDING;
+					break;
+					}
+					
 			}
 			break;
 		case HERDING:
@@ -120,6 +126,38 @@ public class RoboScout extends RobotPlayer
 			
 			break;
 		}		
+	}
+	private static boolean shouldRush(RobotInfo[] allies, RobotInfo[] zombies) throws GameActionException
+	{
+		boolean canSeeArchon = false;
+		
+		// don't rush if no zombies
+		if (zombies.length == 0) return false;
+		RobotInfo closestZombie = Micro.getClosestUnitTo(zombies, rc.getLocation());
+		int dist2ToZombie = rc.getLocation().distanceSquaredTo(closestZombie.location);
+		
+
+		for (RobotInfo ri : allies)
+		{
+			if (ri.type == RobotType.ARCHON) canSeeArchon = true;
+			// don't rush if another scout is closer to zombie
+			else if (ri.type == RobotType.SCOUT)
+			{
+				int otherDist2ToZombie = ri.location.distanceSquaredTo(closestZombie.location);
+				if  (otherDist2ToZombie < dist2ToZombie ) return false;
+			}
+		}
+		
+		// don't rush if you can't see your archon
+		if (!canSeeArchon) return false;
+		
+				
+
+		return true;
+		
+
+		
+		
 	}
 	
 	private static void doScoutExploring() throws GameActionException
@@ -164,13 +202,58 @@ public class RoboScout extends RobotPlayer
 
 	private static void doScoutRushing() throws GameActionException
 	{
-		// got towards zombie enter of mass
+		// got towards zombie center of mass
 		MapLocation zCOM = Micro.getZombieCOM();
 		Behavior.tryDirectMove(here.directionTo(zCOM));
 	}
 	
 	private static void doScoutHerding() throws GameActionException
 	{
-		//Micro.getRoundsUntilDanger()
+		int rud = Micro.getRoundsUntilDanger();
+		Direction herdingDir = here.directionTo(herdingDestLoc);
+		//Direction perpDir = herdingDir.rotateRight().rotateRight();
+		
+		// if you are going off the edge of the map, rotate right and keep going!
+		//int buffer = 2;
+		//for (int i = 0; i<buffer; i++)
+		
+		if (herdingDir != null && !rc.onTheMap(here.add(herdingDir)))
+		{
+			Direction newDir = getMapEdgeDir(herdingDir);
+			Debug.setStringAK("going off the map need to rotate!");
+			if (newDir !=null)
+			{
+				herdingDestLoc = here.add(newDir.dx*herdDist, newDir.dy*herdDist);	
+			}
+		}
+
+		if (rud > 2)
+			{
+			Clock.yield();// wait;
+			}
+		else if (!Behavior.tryRetreatTowards(herdingDestLoc, Micro.getCanMoveDirs()))
+				{
+				Behavior.tryDirectMove(here.directionTo(herdingDestLoc));
+				}
+		
+		
+			
+		
 	}
+	public static Direction getMapEdgeDir(Direction dir) throws GameActionException
+	{
+		// Tries the direction given in order of how close to the direction it I want to go.
+		// Doesn't move directly back
+		if (dir !=null)
+		{
+			for (int i=0;i<7;i++)
+			{
+			dir = dir.rotateRight();
+			if (rc.onTheMap(here.add(dir))) return dir;
+			}
+		}
+
+		return null;
+	}
+	
 }

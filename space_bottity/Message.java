@@ -159,8 +159,11 @@ public class Message extends RobotPlayer
 	}
 
 	//Basic signals always only done when under attack
-	public static void calcClosestAllyUnderAttack()
+	public static MapLocation getClosestAllyUnderAttack()
 	{
+		if (closestAllyUnderAttackLocation != null)
+			return closestAllyUnderAttackLocation;
+		
 		int distToClosestAlly = 1000000;
 		MapLocation bestLoc = null;
 		for (SignalLocation sm : Message.underAttackLocs )
@@ -174,6 +177,11 @@ public class Message extends RobotPlayer
 		}
 		
 		closestAllyUnderAttackLocation = bestLoc;
+		
+		// clear the buffer
+		underAttackLocs.clear();
+		
+		return closestAllyUnderAttackLocation;
 	}
 
 	private static void sendMessageSignal(int sq_distance, int v1, int v2) throws GameActionException
