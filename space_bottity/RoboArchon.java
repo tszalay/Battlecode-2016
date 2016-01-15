@@ -8,12 +8,9 @@ public class RoboArchon extends RobotPlayer
 {
 	enum ArchonState
 	{
-		RALLYING,
 		BUILDING,
 		WAYPOINT
 	}
-
-	static final int MAX_ROUNDS_TO_RALLY = 400;
 
 	static ArchonState myState = ArchonState.WAYPOINT;
 	static RobotType myNextBuildRobotType = RobotType.SCOUT;
@@ -37,9 +34,6 @@ public class RoboArchon extends RobotPlayer
 		// do turn according to state
 		switch (myState)
 		{
-		case RALLYING:
-			doRally();
-			break;
 		case BUILDING:
 			doBuild();
 			break;
@@ -75,11 +69,6 @@ public class RoboArchon extends RobotPlayer
 			}
 			break;
 			
-		case RALLYING:
-			if (arrivedAtRally() || rc.getRoundNum() > MAX_ROUNDS_TO_RALLY)
-				myState = ArchonState.WAYPOINT;			
-			break;
-		
 		case WAYPOINT:
 			if (canBuildNow())
 				myState = ArchonState.BUILDING;
@@ -92,7 +81,7 @@ public class RoboArchon extends RobotPlayer
 		// first priority, avoid stuff
 		if (Micro.isInDanger())
 		{
-			Behavior.tryRetreatOrShootIfStuck();
+			Action.tryRetreatOrShootIfStuck();
 			return;
 		}
 		
@@ -103,7 +92,7 @@ public class RoboArchon extends RobotPlayer
 			// aka if there are any too close, retreat
 			if (ri.type != RobotType.SCOUT)
 			{
-				if (Behavior.tryAdjacentSafeMoveToward(ri.location.directionTo(here)))
+				if (Action.tryAdjacentSafeMoveToward(ri.location.directionTo(here)))
 					return;
 			}
 		}
@@ -128,28 +117,11 @@ public class RoboArchon extends RobotPlayer
 		if (dest != null)
 		{
 			// go where we should
-			Behavior.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs());
+			Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs());
 			// send a bit of a "ping"
 			if (rc.getRoundNum() % 7 == 0)
 				Message.sendSignal(63);
 		}
-	}
-	
-	public static void doRally() throws GameActionException
-	{
-		// update rally location
-		if (rc.getRoundNum() == RoboScout.SIGNAL_ROUND)
-			Message.calcRallyLocation();
-		
-		// rally
-		if (Message.rallyLocation == null)
-			return;
-		
-		MapLocation closestPart = MapInfo.getClosestPart();
-		if (closestPart != null && closestPart.distanceSquaredTo(here) < rc.getType().sensorRadiusSquared)
-			Behavior.tryGoToWithoutBeingShot(closestPart, Micro.getSafeMoveDirs());
-		else
-			Behavior.tryGoToWithoutBeingShot(Message.rallyLocation, Micro.getSafeMoveDirs());
 	}
 	
 	private static void doBuild() throws GameActionException

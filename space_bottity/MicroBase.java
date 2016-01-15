@@ -414,42 +414,6 @@ public class MicroBase extends RobotPlayer
 		return (getRoundsUntilDanger() < 10);
 	}
 	
-	// tryMove expects to be given a valid direction
-	public boolean tryMove(Direction d) throws GameActionException
-	{
-		// don't do anything, but don't throw error, this is ok
-		if (d == Direction.NONE)
-		{
-			//System.out.println("Given a NONE!");
-			return false;
-		}
-		
-		// double check!
-		if (d != null && rc.canMove(d) && rc.isCoreReady())
-		{
-			rc.move(d);
-			return true;
-		}
-//		else
-//		{
-//			System.out.println("Movement exception: tried to move but couldn't!");
-//			if (d == null)
-//			{
-//				System.out.println("Reason: null direction");
-//				return false;
-//			}
-//			if (!rc.isCoreReady())
-//				System.out.println("Reason: core not ready");
-//			if (rc.isLocationOccupied(here.add(d)))
-//				System.out.println("Reason: location occupied");
-//			if (rc.senseRubble(here.add(d)) > GameConstants.RUBBLE_OBSTRUCTION_THRESH)
-//				System.out.println("Reason: too much rubble");
-//			
-//			return false;
-//		}
-		return false;
-	}
-	
 	public static RobotInfo getClosestTurretTarget(RobotInfo[] nearby, MapLocation loc)
 	{
 		int minsqdist = 1000;

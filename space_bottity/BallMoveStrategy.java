@@ -3,17 +3,27 @@ package space_bottity;
 import battlecode.common.*;
 import java.util.*;
 
-public class BallMove extends RobotPlayer
-{
-	public static int 		 	ballTargetID = -1;
-	public static MapLocation	lastBallLocation = null;
-	public static int		 	lastBallRound = 0;
-	public static Direction  	lastBallMoveDir = null;
-	
+public class BallMoveStrategy extends RobotPlayer implements Strategy
+{	
+	// minimum and maximum radii that we wish to use for the ball
+	// set on initialization
+	private int minDistSq;
+	private int maxDistSq;
+
+	// the target for this ball
+	// and its last location and whatnot
+	public int 		 	ballTargetID = -1;
+	public MapLocation	lastBallLocation = null;
+	public int		 	lastBallRound = 0;
+	public Direction  	lastBallMoveDir = null;
+
 	public static final int BALL_LOST_TIMEOUT = 20;
 	
-	public static void startBalling(int targetID) throws GameActionException
+	public BallMoveStrategy(int targetID, int minDSq, int maxDSq) throws GameActionException
 	{
+		minDistSq = minDSq;
+		maxDistSq = maxDSq;
+		
 		if (!rc.canSenseRobot(targetID))
 			return;
 		
@@ -23,7 +33,7 @@ public class BallMove extends RobotPlayer
 	}
 	
 	// this is called either by tryUpdateTarget() or by Message
-	public static void updateBallLocation(MapLocation newLoc)
+	public void updateBallLocation(MapLocation newLoc)
 	{
 		lastBallRound = rc.getRoundNum();
 		
@@ -35,7 +45,7 @@ public class BallMove extends RobotPlayer
 		lastBallLocation = newLoc;
 	}
 	
-	public static boolean tryUpdateTarget() throws GameActionException
+	private boolean tryUpdateTarget() throws GameActionException
 	{
 		// if we're still within sight range, just update the position
 		if (rc.canSenseRobot(ballTargetID))
@@ -48,22 +58,20 @@ public class BallMove extends RobotPlayer
 			return true;
 		
 		// we lost the ball!
-		ballTargetID = -1;
 		return false;
 	}
-	
-	public static boolean hasBallTarget()
+
+	public boolean tryTurn() throws GameActionException
 	{
-		return ballTargetID >= 0;
-	}
-	
-	public static void ballMove(int minDistSq, int maxDistSq) throws GameActionException
-	{
+		// first check if we can still ball
+		if (!tryUpdateTarget())
+			return false;
+		
+		Action.tryAttackSomeone();
+		
+		// can't do anything, but can stay in state
 		if (!rc.isCoreReady())
-			return;
-		
-		// how should balls move?
-		
+			return true;
 		
 		// try to retreat towards the ball or shoot if we're in danger
 		if (Micro.getRoundsUntilDanger() < 20)
@@ -73,37 +81,27 @@ public class BallMove extends RobotPlayer
 				RobotInfo closestEnemy = Micro.getClosestUnitTo(Micro.getNearbyEnemies(), lastBallLocation);
 				if (closestEnemy != null && here.distanceSquaredTo(closestEnemy.location) < lastBallLocation.distanceSquaredTo(closestEnemy.location))
 				{
-					Behavior.tryRetreatTowards(lastBallLocation, Micro.getSafeMoveDirs());
-					return;
+					Action.tryRetreatTowards(lastBallLocation, Micro.getSafeMoveDirs());
+					return true;
 				}
 			}
 			else
 			{
-				Behavior.tryGoToWithoutBeingShot(here, Micro.getSafeMoveDirs());
-				return;
+				Action.tryGoToWithoutBeingShot(here, Micro.getSafeMoveDirs());
+				return true;
 			}
 		}
-		
-		// if we're not in danger, try to shoot something anyway
-		// (e.g. zombie dens)
-		/*if (Micro.getNearbyHostiles().length > 0 &&  rc.getType().canAttack())
-		{
-			Behavior.tryAdjacentSafeMoveToward(here.directionTo(Micro.getNearbyHostiles()[0].location));
-			Behavior.tryAttackSomeone();
-			Debug.setStringTS("Last ball: tryAttack");
-			return;
-		}*/
 		
 		// if we're far, try moving closer using bugging nav probably
 		if (here.distanceSquaredTo(lastBallLocation) > maxDistSq)
 		{
 			Nav.tryGoTo(lastBallLocation,Micro.getSafeMoveDirs());
-			return;
+			return true;
 		}
 		if (here.distanceSquaredTo(lastBallLocation) < minDistSq)
 		{
-			Behavior.tryAdjacentSafeMoveToward(here.directionTo(lastBallLocation).opposite());
-			return;
+			Action.tryAdjacentSafeMoveToward(here.directionTo(lastBallLocation).opposite());
+			return true;
 		}
 		
 		// otherwise get a list of all valid directions that keep us in the ball and using those
@@ -123,25 +121,12 @@ public class BallMove extends RobotPlayer
 			Direction d = ballDirs.getDirectionTowards(lastBallMoveDir);
 			if (d != null)
 			{
-				Micro.tryMove(d);
+				Action.tryMove(d);
 				lastBallMoveDir = null;
-				return;
+				return true;
 			}
 		}
 		
-		if (Micro.getNearbyHostiles().length > 0 &&  rc.getType().canAttack())
-		{
-			Direction d = ballDirs.getDirectionTowards(here, Micro.getNearbyHostiles()[0].location);
-			if (d != null)
-			{
-				Micro.tryMove(d);
-				return;
-			}
-			Behavior.tryAttackSomeone();
-			Debug.setStringTS("Last ball: tryAttack");
-			return;
-		}
-
 		MapLocation ml = Micro.getUnitCOM(rc.senseNearbyRobots(24, ourTeam));
 		Direction ar = here.directionTo(lastBallLocation).rotateRight().rotateRight();
 		Direction al = here.directionTo(lastBallLocation).rotateLeft().rotateLeft();
@@ -152,6 +137,8 @@ public class BallMove extends RobotPlayer
 			moveDir = ballDirs.getDirectionTowards(ar);
 		
 		if (moveDir != null)
-			Micro.tryMove(moveDir);
+			Action.tryMove(moveDir);
+		
+		return true;
 	}
 }

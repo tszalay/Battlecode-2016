@@ -2,8 +2,6 @@ package space_bottity;
 
 import battlecode.common.*;
 
-
-
 public class RoboTurret extends RobotPlayer
 {
 	// last round that a turret performed an action
@@ -17,7 +15,6 @@ public class RoboTurret extends RobotPlayer
 
 	public static void init() throws GameActionException
 	{
-		BallMove.startBalling(RobotPlayer.myBuilderID);
 	}
 	
 	public static void turn() throws GameActionException
@@ -40,7 +37,7 @@ public class RoboTurret extends RobotPlayer
 //		if (roundSinceLastPack < TURRET_PACK_DELAY)
 //			return;
 		
-		if (Behavior.tryAttackSomeone())
+		if (Action.tryAttackSomeone())
 		{
 			lastTurretRound = rc.getRoundNum();
 			return;
@@ -70,9 +67,6 @@ public class RoboTurret extends RobotPlayer
 			return;
 		}
 		
-		//try to move wherever everyone else is going
-		BallMove.tryUpdateTarget();
-		BallMove.ballMove(3,15);
 	}
 	
 	public static boolean shouldUnpack() throws GameActionException
