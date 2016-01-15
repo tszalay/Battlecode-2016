@@ -24,6 +24,9 @@ public class MobFightStrat extends RobotPlayer
 		default:
 			// if i am overpowered, kite retreat taking pot-shots
 			Debug.setStringSJF("allies = " + Micro.getNearbyAllies().length + ", hostiles = " + Micro.getNearbyHostiles().length + ", overpowered: " + Micro.amOverpowered());
+			if (Behavior.tryAttackSomeone())
+				return;
+			
 			if (Micro.amOverpowered())
 			{
 				// pot-shot when you can get away without getting hit, retreat when unable to
