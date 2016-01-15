@@ -9,13 +9,16 @@ public class RoboScout extends RobotPlayer
 	private enum ScoutState
 	{
 		EXPLORING,
-		BALLING
+		BALLING,
+		RUSHING,
+		HERDING
 	}
 
-	public static final int SIGNAL_ROUND = 30; 
-	
-	public static ScoutState myState = ScoutState.EXPLORING;
+	public static final int SIGNAL_ROUND = 30; 	
+	public static ScoutState myState = ScoutState.BALLING;
 	public static MapLocation myExploringTarget;
+	public static MapLocation rushingStartLoc = null;
+	public static MapLocation herdingDestLoc = null;
 	
 	public static void init() throws GameActionException
 	{
@@ -23,6 +26,7 @@ public class RoboScout extends RobotPlayer
 		if (rc.getRoundNum() < SIGNAL_ROUND)
 		{
 			if (myBuilderLocation != null)
+				myState = ScoutState.BALLING;
 				Message.sendMessageSignal(Message.FULL_MAP_DIST_SQ, MessageType.SPAWN, myBuilderLocation);
 		}
 		else
@@ -40,7 +44,8 @@ public class RoboScout extends RobotPlayer
 	{
 		// state machine update
 		updateState();
-			
+		Debug.setStringAK(myState.toString());
+		
 		// do turn according to state
 		switch (myState)
 		{
@@ -49,6 +54,12 @@ public class RoboScout extends RobotPlayer
 			break;
 		case BALLING:
 			doScoutBalling();
+			break;
+		case RUSHING:
+			doScoutRushing();
+			break;
+		case HERDING:
+			doScoutHerding();
 			break;
 		}
 		
@@ -65,27 +76,51 @@ public class RoboScout extends RobotPlayer
 	
 	private static void updateState() throws GameActionException
 	{
+		RobotInfo[] zombies = Micro.getNearbyZombies();
+		RobotInfo[] allies = Micro.getNearbyAllies();
+		
 		switch (myState)
 		{
 		case EXPLORING:
 			// we just keep exploring, oh yeah
 			break;
 		case BALLING:
-			// if i see too many scouts, i am free to explore
-			RobotInfo[] allies = Micro.getNearbyAllies();
-			int numScouts = 0;
-			for (RobotInfo ri : allies)
+			// if i see zombies, rush them
+			if (zombies.length != 0)
 			{
-				if (ri.type == RobotType.SCOUT)
-					numScouts += 1;
+				myState = ScoutState.RUSHING;
+				rushingStartLoc = rc.getLocation();
+				
+				int herdDist = 50;
+				Direction rushDir = rushingStartLoc.directionTo(Micro.getZombieCOM());
+				herdingDestLoc = rushingStartLoc.add(rushDir.dx*herdDist,rushDir.dy*herdDist);
+				break;
 			}
-			//if (numScouts > 5)
-			//	myState = ScoutState.EXPLORING;
+				
+//			// if i see too many scouts, i am free to explore
+//			int numScouts = 0;
+//			for (RobotInfo ri : allies)
+//			{
+//				if (ri.type == RobotType.SCOUT)
+//					numScouts += 1;
+//			}
+//			if (numScouts > 5)
+//				myState = ScoutState.EXPLORING;
+//			break;
+		case RUSHING:
+			// if there is an adjacent zombie, start herding!
+			for (RobotInfo ri : zombies)
+			{
+				if (ri.location.isAdjacentTo(rc.getLocation())) myState = ScoutState.HERDING;
+				break;
+			}
+			break;
+		case HERDING:
+			// for now, just keep on herding until you are overrun or achieve ultimate glory
 			
 			break;
 		}		
 	}
-	
 	
 	private static void doScoutExploring() throws GameActionException
 	{
@@ -104,11 +139,13 @@ public class RoboScout extends RobotPlayer
 	}
 
 	private static void doScoutBalling() throws GameActionException
+
 	{
 		// try to update the position of our ball target
 		if (!BallMove.tryUpdateTarget())
 		{
-			myState = ScoutState.EXPLORING;
+			// AK for now, disable exploring
+			// myState = ScoutState.EXPLORING;
 			return;
 		}
 		
@@ -122,7 +159,18 @@ public class RoboScout extends RobotPlayer
 		//if (lowestScoutID == rc.getID())
 		//	BallMove.ballMove(0, 2);
 		//else
-		BallMove.ballMove(15,35);
+		BallMove.ballMove(5,13);
 	}
 
+	private static void doScoutRushing() throws GameActionException
+	{
+		// got towards zombie enter of mass
+		MapLocation zCOM = Micro.getZombieCOM();
+		Behavior.tryDirectMove(here.directionTo(zCOM));
+	}
+	
+	private static void doScoutHerding() throws GameActionException
+	{
+		//Micro.getRoundsUntilDanger()
+	}
 }
