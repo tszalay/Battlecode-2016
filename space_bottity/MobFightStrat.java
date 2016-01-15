@@ -38,17 +38,13 @@ public class MobFightStrat extends RobotPlayer
 				return;
 			}
 			
-			// not overpowered.  if we see anyone, shoot
-			if (Micro.getNearbyHostiles().length > 0)
-			{
-				Behavior.tryAttackSomeone();
-				return;
-			}
-			
 			// not overpowered.  we don't see anyone.  listen for calls for reinforcements, and move to help
 			if (Message.getClosestAllyUnderAttack() != null)
 			{
-				Behavior.tryAdjacentSafeMoveToward(Message.getClosestAllyUnderAttack());
+				if (!Behavior.tryAdjacentSafeMoveToward(Message.getClosestAllyUnderAttack()))
+				{
+					Micro.tryMove(here.directionTo(Message.getClosestAllyUnderAttack()));
+				}
 			}
 			break;
 		}

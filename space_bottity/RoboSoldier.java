@@ -13,7 +13,7 @@ public class RoboSoldier extends RobotPlayer
 	
 	
 //	public static double lastRoundHealth = 60;//for soldier
-	public static MapLocation closestAllyUnderAttackLocation = null;
+//	public static MapLocation closestAllyUnderAttackLocation = null;
 	public static double health = RobotType.SOLDIER.maxHealth;
 //	public static int roundsSinceAllyOrIWasAttacked = 100000;
 //	public static int roundsToWaitBeforeDefensive = 10;
