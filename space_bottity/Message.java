@@ -177,6 +177,10 @@ public class Message extends RobotPlayer
 		}
 		
 		closestAllyUnderAttackLocation = bestLoc;
+		
+		// clear the buffer
+		underAttackLocs.clear();
+		
 		return closestAllyUnderAttackLocation;
 	}
 
