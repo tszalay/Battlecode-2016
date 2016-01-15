@@ -153,11 +153,19 @@ public class Behavior extends RobotPlayer
 
 	public static boolean tryDirectMove(Direction dir) throws GameActionException
 	{
-		// Tries the direction given, plus the two adjacent directions, if blocked.
-		if(!Micro.tryMove(dir))
-			{
-			if(!Micro.tryMove(dir.rotateLeft())) return !Micro.tryMove(dir.rotateRight());
-			}
-		return true;
+		
+		// Tries the direction given in order of how close to the direction it I want to go.
+		// Doesn't move directly back
+		if (dir !=null)
+		{
+			if(Micro.tryMove(dir)) return true;
+			if(Micro.tryMove(dir.rotateLeft())) return true;
+			if(Micro.tryMove(dir.rotateRight())) return true;
+			if(Micro.tryMove(dir.rotateLeft().rotateLeft())) return true;
+			if(Micro.tryMove(dir.rotateRight().rotateRight())) return true;
+			if(Micro.tryMove(dir.rotateLeft().rotateLeft().rotateLeft())) return true;
+			if(Micro.tryMove(dir.rotateRight().rotateRight().rotateRight())) return true;
+		}
+		return false;
 	}
 }
