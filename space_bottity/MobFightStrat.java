@@ -4,7 +4,7 @@ import battlecode.common.*;
 
 import java.util.*;
 
-public class MobFightStrat extends RobotPlayer
+public class MobFightStrat extends RobotPlayer implements Strategy
 {
 	private static RobotType type;
 	
@@ -13,40 +13,54 @@ public class MobFightStrat extends RobotPlayer
 		this.type = type;
 	}
 	
-	public static void doTurn() throws GameActionException
+	public boolean tryTurn() throws GameActionException
 	{
 		switch (type)
 		{
 		case TURRET:
-			Action.tryAttackSomeone();
-			break;
+			return (Action.tryAttackSomeone());
 		
 		default:
 			// if i am overpowered, kite retreat taking pot-shots
-			// Debug.setStringSJF("allies = " + Micro.getNearbyAllies().length + ", hostiles = " + Micro.getNearbyHostiles().length + ", overpowered: " + Micro.amOverpowered());
+			Debug.setStringSJF("allies = " + Micro.getNearbyAllies().length + ", hostiles = " + Micro.getNearbyHostiles().length + ", overpowered: " + Micro.amOverpowered());
 			if (Action.tryAttackSomeone())
-				return;
+				return true;
 			
 			if (Micro.amOverpowered())
 			{
 				// pot-shot when you can get away without getting hit, retreat when unable to
 				if (Micro.getRoundsUntilDanger() > Micro.getRoundsUntilShootAndMove() + 1)
-					Action.tryAttackSomeone();
+				{
+					if (!Action.tryAttackSomeone())
+						return Action.tryRetreatOrShootIfStuck();
+					else
+						return true;
+				}
 				else
-					Action.tryRetreatOrShootIfStuck();
-				
-				return;
+				{
+					return Action.tryRetreatOrShootIfStuck();
+				}
 			}
 			
 			// not overpowered.  we don't see anyone.  listen for calls for reinforcements, and move to help
-			if (Message.getClosestAllyUnderAttack() != null)
+			MapLocation allyLoc = Message.getClosestAllyUnderAttack();
+			if (allyLoc != null)
 			{
-				if (!Action.tryAdjacentSafeMoveToward(Message.getClosestAllyUnderAttack()))
+				RobotInfo enemyAttackingAlly = Micro.getClosestUnitTo(Micro.getNearbyHostiles(), allyLoc);
+				if (enemyAttackingAlly == null)
+					return Action.tryMove(here.directionTo(allyLoc));
+				
+				if (!Action.tryAdjacentSafeMoveToward(enemyAttackingAlly.location))
 				{
-					Action.tryMove(here.directionTo(Message.getClosestAllyUnderAttack()));
+					Direction dir = Micro.getCanFastMoveDirs().getDirectionTowards(here.directionTo(enemyAttackingAlly.location));
+					return Action.tryMove(dir);
+				}
+				else
+				{
+					return true;
 				}
 			}
-			break;
+			return false;
 		}
 	}
 }

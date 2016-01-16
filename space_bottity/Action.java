@@ -13,8 +13,8 @@ public class Action extends RobotPlayer
 		if (!rc.isWeaponReady())
 			return false;
 		
-		RobotInfo zombieTarget = Micro.getLowestHealth(Micro.getNearbyZombies());
-		RobotInfo enemyTarget = Micro.getLowestHealth(Micro.getNearbyEnemies());
+		RobotInfo zombieTarget = Micro.getLowestHealthInMyRange(Micro.getNearbyZombies());
+		RobotInfo enemyTarget = Micro.getLowestHealthInMyRange(Micro.getNearbyEnemies());
 		
 		if (zombieTarget != null && rc.canAttackLocation(zombieTarget.location))
 		{

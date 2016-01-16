@@ -355,7 +355,8 @@ public class MicroBase extends RobotPlayer
 		
 		for (RobotInfo ri : nearbyHostiles)
 		{
-			hostileTotalDamagePerTurn += ri.type.attackPower / ri.type.attackDelay;
+			if (here.distanceSquaredTo(ri.location) <= ri.type.attackRadiusSquared+1)
+				hostileTotalDamagePerTurn += ri.type.attackPower / ri.type.attackDelay;
 		}
 		
 		return hostileTotalDamagePerTurn;
@@ -518,6 +519,27 @@ public class MicroBase extends RobotPlayer
 			{
 				target = ri;
 				break; // archon targets take priority over ALL
+			}
+		}
+		
+		return target;
+	}
+	
+	public RobotInfo getLowestHealthInMyRange(RobotInfo[] bots)
+	{
+		RobotInfo target = null;
+		
+		for (RobotInfo ri : bots)
+		{
+			if (here.distanceSquaredTo(ri.location) <= rc.getType().attackRadiusSquared)
+			{
+				if (target == null || ri.health < target.health)
+					target = ri;
+				if (ri.type == RobotType.ARCHON)
+				{
+					target = ri;
+					break; // archon targets take priority over ALL
+				}
 			}
 		}
 		
