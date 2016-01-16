@@ -15,15 +15,18 @@ public class RoboArchon extends RobotPlayer
 	static ArchonState myState = ArchonState.WAYPOINT;
 	static RobotType myNextBuildRobotType = RobotType.SCOUT;
 	static int lastBuiltRound = 0;
+	
+	public static Strategy myStrategy;
 
 	public static void init() throws GameActionException
 	{
+		myStrategy = new BlitzTeamStrat(RobotType.ARCHON, null);
 	}
 	
 	public static void turn() throws GameActionException
 	{
 		// state machine update
-		updateState();
+//		updateState();
 		Debug.setStringSJF(myState.toString());
 		
 		MapInfo.removeWaypoint(here);
@@ -32,15 +35,17 @@ public class RoboArchon extends RobotPlayer
 		tryActivateNeutrals();
 		
 		// do turn according to state
-		switch (myState)
-		{
-		case BUILDING:
-			doBuild();
-			break;
-		case WAYPOINT:
-			doWaypoint();
-			break;
-		}
+//		switch (myState)
+//		{
+//		case BUILDING:
+//			doBuild();
+//			break;
+//		case WAYPOINT:
+//			doWaypoint();
+//			break;
+//		}
+		
+		myStrategy.tryTurn();
 	
 		// always do this, no reason not to
 		tryRepair();
