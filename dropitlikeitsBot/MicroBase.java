@@ -337,23 +337,7 @@ public class MicroBase extends RobotPlayer
 			rc.move(d);
 			return true;
 		}
-//		else
-//		{
-//			System.out.println("Movement exception: tried to move but couldn't!");
-//			if (d == null)
-//			{
-//				System.out.println("Reason: null direction");
-//				return false;
-//			}
-//			if (!rc.isCoreReady())
-//				System.out.println("Reason: core not ready");
-//			if (rc.isLocationOccupied(here.add(d)))
-//				System.out.println("Reason: location occupied");
-//			if (rc.senseRubble(here.add(d)) > GameConstants.RUBBLE_OBSTRUCTION_THRESH)
-//				System.out.println("Reason: too much rubble");
-//			
-//			return false;
-//		}
+
 		return false;
 	}
 	

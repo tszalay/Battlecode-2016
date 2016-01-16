@@ -28,8 +28,9 @@ public class RoboArchon extends RobotPlayer
 			lastBuiltRound = rc.getRoundNum();
 			}
 		
-		myStrategy.tryTurn();
-	
+		// for now, all archons just blitz all the time
+		myStrategy.tryTurn();		
+		
 		// always do this, no reason not to
 		tryRepair();
 

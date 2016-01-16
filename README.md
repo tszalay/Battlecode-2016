@@ -5,6 +5,10 @@
 
 ## Master TODO
 
+### For Seeding Submission
+
+- Scouts in Ball Move still get shot.
+
 ### _For Sprint Submission_
 - Archons go to and pick up parts
 - Units clear rubble in the way of Archon - AK will work on this with soldiers

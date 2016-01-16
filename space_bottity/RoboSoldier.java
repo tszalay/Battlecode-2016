@@ -1,7 +1,6 @@
 package space_bottity;
 
 import battlecode.common.*;
-import space_bottity.RoboArchon.ArchonState;
 
 public class RoboSoldier extends RobotPlayer
 {
@@ -10,10 +9,12 @@ public class RoboSoldier extends RobotPlayer
 	
 	public static void init() throws GameActionException
 	{
-		if (rc.getID() % 2 == 0)
-			myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 2, 10);
-		else
-			myStrategy = new MobFightStrat(RobotType.SOLDIER);
+		myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 2, 10);
+		
+//		if (rc.getID() % 2 == 0)
+//			myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 2, 10);
+//		else
+//			myStrategy = new MobFightStrat(RobotType.SOLDIER);
 		myHealth = rc.getType().maxHealth;
 	}
 	
