@@ -38,7 +38,7 @@ public class TurtleArchonStrategy extends RobotPlayer implements Strategy
 			// here is where should give an override strategy if shit be going down
 			if (Micro.getRoundsUntilDanger() < 10)
 			{
-				Action.tryRetreatTowards(turtleLocation, Micro.getSafeMoveDirs());
+				Action.tryRetreatOrShootIfStuck();
 			}
 			else
 			{
@@ -50,11 +50,17 @@ public class TurtleArchonStrategy extends RobotPlayer implements Strategy
 		// are we in any danger?
 		if (Micro.getRoundsUntilDanger() < 10)
 		{
-			Action.tryRetreatTowards(Micro.getAllyCOM(), Micro.getSafeMoveDirs());
+			if (Micro.getRoundsUntilDanger() > 5)
+				Action.tryRetreatTowards(Micro.getAllyCOM(), Micro.getSafeMoveDirs());
+			else
+				Action.tryRetreatOrShootIfStuck();
 			return true;
 		}
 		
-		if ()
+		if (tryBuild())
+		{
+			return true;
+		}
 		
 			
 		return true;
@@ -73,11 +79,15 @@ public class TurtleArchonStrategy extends RobotPlayer implements Strategy
 		
 		RobotType robotToBuild = null;
 		
-		if (units.Scouts < 2 || units.Scouts < units.Turrets/4)
+		if (units.Soldiers < 5)
+		{
+			robotToBuild = RobotType.SOLDIER;
+		}
+		else if (units.Scouts < 2 || units.Scouts < units.Turrets/4)
 		{
 			robotToBuild = RobotType.SCOUT;
 		}
-		else if (units.Turrets < 8)
+		else if (units.Turrets < 15)
 		{
 			robotToBuild = RobotType.TURRET;
 		}

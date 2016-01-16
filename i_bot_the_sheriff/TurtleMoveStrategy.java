@@ -16,11 +16,15 @@ public class TurtleMoveStrategy extends RobotPlayer implements Strategy
 		switch (rc.getType())
 		{
 		case TURRET:
-			break;
+			Action.tryAttackSomeone();
+			return true;
+			
 		case TTM:
 			break;
+			
 		case SCOUT:
 			break;
+			
 		case SOLDIER:
 			break;
 		}
