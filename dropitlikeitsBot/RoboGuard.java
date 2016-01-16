@@ -14,6 +14,6 @@ public class RoboGuard extends RobotPlayer
 		if (rc.senseParts(here)==0)
 			MapInfo.removeWaypoint(here);
 			
-		BallMove.ballMove(3, 15);
+		BallMove.ballMove(3, 10);
 	}
 }

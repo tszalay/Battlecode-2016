@@ -474,6 +474,15 @@ public class MicroBase extends RobotPlayer
 		return false;
 	}
 	
+	public static MapLocation getVisibleArchonLoc(RobotInfo[] allies) throws GameActionException
+	{
+		for (RobotInfo ri : allies)
+		{
+			if (ri.type == RobotType.ARCHON) return ri.location;
+		}
+		return null;
+	}
+	
 //	public boolean canWin1v1(RobotInfo enemy) throws GameActionException
 //	{
 //		MapLocation onecloser = here.add(here.directionTo(enemy.location));

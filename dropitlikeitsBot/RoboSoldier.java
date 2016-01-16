@@ -15,6 +15,6 @@ public class RoboSoldier extends RobotPlayer
 			MapInfo.removeWaypoint(here);
 		
 		BallMove.tryUpdateTarget();
-		BallMove.ballMove(3, 15);
+		BallMove.ballMove(3, 10);
 	}
 }

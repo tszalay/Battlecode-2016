@@ -70,10 +70,9 @@ public class RoboArchon extends RobotPlayer
 				// myState = ArchonState.WAYPOINT; AK for testing always build
 				Message.sendBuiltMessage();
 				// also set the next robot type y knot
-				// myNextBuildRobotType = getNextBuildRobotType(); 
-				
-				// AK for testing purposes always build scout.
-				myNextBuildRobotType = RobotType.SCOUT;
+				myNextBuildRobotType = getNextBuildRobotType(); 
+			
+				//myNextBuildRobotType = RobotType.SCOUT;
 				lastBuiltRound = rc.getRoundNum();
 			}
 			break;
