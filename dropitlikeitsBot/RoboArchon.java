@@ -280,7 +280,7 @@ public class RoboArchon extends RobotPlayer
 		//if (nearbyUnits[TURRET] < 5)
 		//	return RobotType.TURRET;
 		
-		return RobotType.GUARD;
+		return RobotType.SOLDIER;
 	}
 	
 	private static boolean canBuildNow() throws GameActionException

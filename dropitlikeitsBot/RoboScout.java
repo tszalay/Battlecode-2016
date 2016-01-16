@@ -11,14 +11,15 @@ public class RoboScout extends RobotPlayer
 		EXPLORING,
 		BALLING,
 		RUSHING,
-		HERDING
+		HERDING,
+		KAMIKAZE;
 	}
 
 	public static final int SIGNAL_ROUND = 30; 	
 	public static ScoutState myState = ScoutState.BALLING;
 	public static MapLocation myExploringTarget;
 	public static MapLocation rushingStartLoc = null;
-	public static MapLocation herdingDestLoc = null;
+	public static MapLocation herdingDestLoc = null;	
 	public static int herdDist = 100;
 	
 	public static void init() throws GameActionException
@@ -62,6 +63,9 @@ public class RoboScout extends RobotPlayer
 		case HERDING:
 			doScoutHerding();
 			break;
+		case KAMIKAZE:
+			doScoutKamikaze();
+			break;
 		}
 		
         // always send out info about sighted targets
@@ -94,7 +98,7 @@ public class RoboScout extends RobotPlayer
 				myState = ScoutState.RUSHING;
 				rushingStartLoc = here;
 				
-				Direction rushDir = rushingStartLoc.directionTo(Micro.getZombieCOM());
+				Direction rushDir = rushingStartLoc.directionTo(Micro.getClosestUnitTo(zombies, here).location);
 				herdingDestLoc = rushingStartLoc.add(rushDir.dx*herdDist,rushDir.dy*herdDist);
 			}
 			
@@ -128,14 +132,18 @@ public class RoboScout extends RobotPlayer
 		case HERDING:
 			// for now, just keep on herding until you are overrun or achieve ultimate glory
 			
-			
 			// if you don't see zombies anymore, they're probably gone!
 			if (zombies.length == 0)
 			{
 				myState = ScoutState.BALLING;
 			}
 			
-			
+			if (shouldKamikaze(enemies, zombies))
+			{
+				myState = ScoutState.KAMIKAZE;
+			}
+			break;
+		case KAMIKAZE:
 			break;
 		}		
 	}
@@ -169,7 +177,15 @@ public class RoboScout extends RobotPlayer
 		return true;
 
 	}
-	
+
+	private static boolean shouldKamikaze(RobotInfo[] enemies, RobotInfo[] zombies) throws GameActionException
+	{
+		// don't rush if no enemies
+		if (enemies.length == 0) return false;
+		// don't rush if no zombies
+		if (zombies.length == 0) return false;
+		else return true;
+	}
 	private static void doScoutExploring() throws GameActionException
 	{
 		Debug.setStringTS("Exploring to " + myExploringTarget);
@@ -207,7 +223,7 @@ public class RoboScout extends RobotPlayer
 		//if (lowestScoutID == rc.getID())
 		//	BallMove.ballMove(0, 2);
 		//else
-		BallMove.ballMove(5,8);
+		BallMove.ballMove(5,13);
 	}
 
 	private static void doScoutRushing() throws GameActionException
@@ -235,8 +251,14 @@ public class RoboScout extends RobotPlayer
 	
 		if (herdingDir == null) return;
 		
+		// if there's a unit in your way, bug! It might be a neutral or zombie den
+		if (rc.isLocationOccupied(here.add(herdingDir)))
+		{
+			Nav.tryGoTo(herdingDestLoc, Micro.getCanMoveDirs());
+		}
+		
 		// if you are going off the edge of the map, rotate right and keep going!
-		// check 2 squares ahead to avoid corners
+		// check 3 squares ahead to avoid corners
 		MapLocation lookAhead = here.add(herdingDir);
 		if (!rc.onTheMap(lookAhead.add(herdingDir)))
 		{
@@ -248,6 +270,8 @@ public class RoboScout extends RobotPlayer
 			}
 		}
 		
+		
+		
 		if (rud > 2)
 			{
 			Clock.yield();// wait if not in immediate danger;
@@ -257,7 +281,6 @@ public class RoboScout extends RobotPlayer
 				Behavior.tryDirectMove(here.directionTo(herdingDestLoc));
 				}
 	}
-	
 	
 	public static Direction getMapEdgeDir(MapLocation loc, Direction dir) throws GameActionException
 	{
@@ -271,8 +294,22 @@ public class RoboScout extends RobotPlayer
 			if (rc.onTheMap(loc.add(dir))) return dir;
 			}
 		}
-
 		return null;
 	}
 	
+	private static void doScoutKamikaze() throws GameActionException
+	{
+		RobotInfo[] zombies = Micro.getNearbyZombies();
+		RobotInfo[] allies = Micro.getNearbyAllies();
+		RobotInfo[] enemies = Micro.getNearbyEnemies();
+		
+		if (enemies.length != 0)
+		{
+			RobotInfo closestEnemy = Micro.getClosestUnitTo(enemies, here);
+			if (!Behavior.tryRetreatTowards(closestEnemy.location, Micro.getSafeMoveDirs()))
+			{
+				Behavior.tryDirectMove(here.directionTo(closestEnemy.location));
+			}
+		}
+	}
 }

@@ -10,6 +10,7 @@ public class MicroBase extends RobotPlayer
 	private RobotInfo[] nearbyZombies = null;
 	private RobotInfo[] nearbyHostiles = null;
 	private RobotInfo[] nearbyAllies = null;
+	private RobotInfo[] nearbyNeutrals = null;
 	
 	private DirectionSet canMoveDirs = null;
 	private DirectionSet safeMoveDirs = null;
@@ -31,6 +32,15 @@ public class MicroBase extends RobotPlayer
 		
 		nearbyEnemies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, theirTeam);
 		return nearbyEnemies;
+	}
+	
+	public RobotInfo[] getNearbyNeutrals()
+	{
+		if (nearbyNeutrals != null)
+			return nearbyNeutrals;
+		
+		nearbyNeutrals = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.NEUTRAL);
+		return nearbyNeutrals;
 	}
 	
 	public RobotInfo[] getNearbyAllies()
