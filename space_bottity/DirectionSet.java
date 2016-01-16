@@ -121,6 +121,21 @@ public class DirectionSet
 		else if (leftDist < rightDist || leftDist < distSq)
 			return best.rotateLeft();
 		
+		// still none. look to sides
+		int rightRightDist = distSq;
+		int leftLeftDist = distSq;
+		
+		if (isValid(best.rotateRight().rotateRight()))
+			rightDist = from.add(best.rotateRight().rotateRight()).distanceSquaredTo(to);
+		if (isValid(best.rotateLeft().rotateLeft()))
+			leftDist = from.add(best.rotateLeft().rotateLeft()).distanceSquaredTo(to);
+		
+		// pew pew pew
+		if (rightRightDist < leftLeftDist)
+			return best.rotateRight().rotateRight();
+		else if (leftLeftDist < rightRightDist || leftLeftDist < distSq)
+			return best.rotateLeft().rotateLeft();
+		
 		return null;
 	}
 	
