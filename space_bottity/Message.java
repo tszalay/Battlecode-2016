@@ -6,14 +6,12 @@ import java.util.*;
 // enum for encoding the type of a message in the contents
 enum MessageType
 {
-	UNDER_ATTACK,//int free signals always mean under attack
-	SPAWN,
+	UNDER_ATTACK, //int free signals always mean under attack
 	ZOMBIE_DEN,
 	SIGHT_TARGET,
 	SPAM,
 	FREE_BEER,
 	GOOD_PARTS,
-	RALLY_LOCATION,
 	MAP_EDGE,
 	REMOVE_WAYPOINT
 }
@@ -35,22 +33,19 @@ class SignalLocation extends RobotPlayer
 public class Message extends RobotPlayer
 {	
 	// bookkeeping stuff
-	private static final int TYPE_BITS = 8;
-	private static final int SHIFT_BITS = 32-TYPE_BITS;
-	private static final int SHIFT_MASK = ((1 << SHIFT_BITS)-1);
-	private static final int LOC_OFFSET = 20000;
 	public static final int FULL_MAP_DIST_SQ = GameConstants.MAP_MAX_HEIGHT*GameConstants.MAP_MAX_HEIGHT +
 											   GameConstants.MAP_MAX_WIDTH*GameConstants.MAP_MAX_WIDTH;
 	
-	// storage for received/accumulated message info
-	public static ArrayList<SignalLocation> archonLocs = new ArrayList<SignalLocation>();
+	// get set by MapInfo... awkward
+	public static int MAP_OFF_X = 0;
+	public static int MAP_OFF_Y = 0;
+	
 	public static ArrayList<SignalLocation> underAttackLocs = new ArrayList<SignalLocation>();
 	
 	// and for any transmitted enemy messages, only keep the latest received
 	public static MapLocation recentEnemySignal = null;
 	
 	// and other things
-	public static MapLocation rallyLocation = null;
 	public static MapLocation closestAllyUnderAttackLocation = null;
 	
 	public static void readSignalQueue()
@@ -71,7 +66,7 @@ public class Message extends RobotPlayer
 			if (vals == null)
 				type = MessageType.UNDER_ATTACK;
 			else
-				type = MessageType.values()[readByte(vals[0],3)];
+				type = readType(vals[0]);
 			
 //			if (sig.getID() == BallMove.ballTargetID)
 				//BallMove.updateBallLocation(sig.getLocation());
@@ -81,83 +76,35 @@ public class Message extends RobotPlayer
 			case UNDER_ATTACK:
 				underAttackLocs.add(new SignalLocation(sig,sig.getLocation()));
 				break;
-			case SPAWN:
-				archonLocs.add(new SignalLocation(sig,readLocation(vals)));
-				break;
 			case FREE_BEER:
 				break;
 			case SPAM:
 				break;
 			case SIGHT_TARGET:
-				Sighting.addSightedTarget(readLocation(vals),
-						RobotType.values()[readByte(vals[1],3)],
+				Sighting.addSightedTarget(readLocation(vals[0]),
+						RobotType.values()[readByte(vals[1],0)],
 						rc.getRoundNum()-1);
 				break;
 			case ZOMBIE_DEN:
-				MapInfo.updateZombieDens(readLocation(vals),false);
-				break;
-			case RALLY_LOCATION:
-				rallyLocation = readLocation(vals);
+				MapInfo.updateZombieDens(readLocation(vals[0]),false);
 				break;
 			case MAP_EDGE:
-				MapLocation ml = readLocation(vals);
-				MapInfo.updateMapEdge(Direction.values()[ml.x],ml.y,false);
+				MapInfo.updateMapEdges(readLocation(vals[0]), readLocation(vals[1]));
 				break;
 			case GOOD_PARTS:
-				MapInfo.updateParts(readLocation(vals),false);				
+				MapInfo.updateParts(readLocation(vals[0]),false);				
 				break;
 			}
 		}
-	}
-	
-	private static int readByte(int val, int ind)
-	{
-		return (val>>>(ind*8))&255;
-	}
-	
-	private static MapLocation readLocation(int[] vals)
-	{
-		return new MapLocation((vals[0]&SHIFT_MASK)-LOC_OFFSET, vals[1]-LOC_OFFSET);
 	}
 	
 	// to be called by Archon
 	public static void sendBuiltMessage() throws GameActionException
 	{
-		// send all four map edge signals
-		Message.sendMessageSignal(2, MessageType.MAP_EDGE,
-				new MapLocation(Direction.NORTH.ordinal(), MapInfo.mapMin.y));
-		Message.sendMessageSignal(2, MessageType.MAP_EDGE,
-				new MapLocation(Direction.EAST.ordinal(), MapInfo.mapMax.x));
-		Message.sendMessageSignal(2, MessageType.MAP_EDGE,
-				new MapLocation(Direction.SOUTH.ordinal(), MapInfo.mapMax.y));
-		Message.sendMessageSignal(2, MessageType.MAP_EDGE,
-				new MapLocation(Direction.WEST.ordinal(), MapInfo.mapMin.x));
+		// send all four map edges in one go
+		Message.sendMessageSignal(9, MessageType.MAP_EDGE, MapInfo.mapMin, MapInfo.mapMax);
 	}
 	
-	// also by archon
-	public static void calcRallyLocation()
-	{
-		int bestID = 1000000;
-		MapLocation bestloc = null;
-
-		for (SignalLocation sm : Message.archonLocs)
-		{
-			if (sm.sig.getID() < bestID)
-			{
-				bestloc = sm.loc;
-				bestID = sm.sig.getID();
-			}
-		}
-		
-		rallyLocation = bestloc;
-	}
-	
-	public static void sendMessageSignal(int sq_distance, MessageType type, MapLocation loc) throws GameActionException
-	{
-		int v1 = (type.ordinal() << SHIFT_BITS);
-		sendMessageSignal(sq_distance, v1 | (loc.x+LOC_OFFSET), (loc.y+LOC_OFFSET));
-	}
-
 	//Basic signals always only done when under attack
 	public static MapLocation getClosestAllyUnderAttack()
 	{
@@ -182,6 +129,60 @@ public class Message extends RobotPlayer
 		underAttackLocs.clear();
 		
 		return closestAllyUnderAttackLocation;
+	}
+	
+	public static void sendSightingSignal(int sq_distance, MapLocation loc)
+	{
+		
+	}
+	
+	
+	
+	// low-level functions past here
+	
+	
+	private static int readByte(int val, int ind)
+	{
+		return (val>>>(ind*8))&255;
+	}
+	
+	private static MapLocation readLocation(int val)
+	{
+		return new MapLocation(readByte(val,0)+MAP_OFF_X, readByte(val,1)+MAP_OFF_Y);
+	}
+	
+	// writes a particular byte
+	// (gotta | all the bytes together to make a message)
+	public static int writeByte(int val, int ind)
+	{
+		return (val << (ind*8));
+	}
+	
+	// writes a maplocation to the lowest two bytes of ints n stuff
+	public static int writeLocation(MapLocation loc)
+	{
+		return writeByte(loc.x-MAP_OFF_X,0) | writeByte(loc.y-MAP_OFF_Y,1);
+	}
+	
+	// and the type byte
+	public static int writeType(MessageType type)
+	{
+		return writeByte(type.ordinal(), 3);
+	}
+	
+	public static MessageType readType(int val)
+	{
+		return MessageType.values()[readByte(val, 3)];
+	}
+	
+	public static void sendMessageSignal(int sq_distance, MessageType type, MapLocation loc1, MapLocation loc2) throws GameActionException
+	{
+		sendMessageSignal(sq_distance, writeType(type) | writeLocation(loc1), writeLocation(loc2));
+	}
+	
+	public static void sendMessageSignal(int sq_distance, MessageType type, MapLocation loc) throws GameActionException
+	{
+		sendMessageSignal(sq_distance, writeType(type) | writeLocation(loc), 0);
 	}
 
 	private static void sendMessageSignal(int sq_distance, int v1, int v2) throws GameActionException

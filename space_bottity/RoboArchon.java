@@ -274,12 +274,4 @@ public class RoboArchon extends RobotPlayer
 		// if we have a valid direction return true
 		return (validBuildDirectionSet.any());
 	}
-	
-	private static boolean arrivedAtRally()
-	{
-		if (Message.rallyLocation == null)
-			return false;
-		
-		return here.distanceSquaredTo(Message.rallyLocation) < 20;
-	}
 }

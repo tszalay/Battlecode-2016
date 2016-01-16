@@ -13,6 +13,8 @@ public class RoboScout extends RobotPlayer
 		// start off balling around closest archon
 		if (myBuilderLocation != null)
 			myStrategy = new BallMoveStrategy(myBuilderID, 16, 48);
+		else
+			myStrategy = new FreeUnitStrategy();
 	}
 	
 	public static void turn() throws GameActionException

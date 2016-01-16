@@ -13,8 +13,7 @@ public class MapInfo extends RobotPlayer
 	public static MapLocation mapMax = new MapLocation(18001,18001);
 	
 	// update the boundary on one of the map min/maxes
-	public static Direction newMapDir = null;
-	public static int newMapVal;
+	public static boolean newMapEdge = false;
 	
 	public static MapLocation newZombieDen = null;
 	public static MapLocation newParts = null;
@@ -98,12 +97,24 @@ public class MapInfo extends RobotPlayer
 		return maxDistSq;
 	}
 	
-	// these are to be called by scouts or by Message,
-	// to update the given edge
+	// from receiving a message, don't need to bother signaling
+	public static void updateMapEdges(MapLocation newMin, MapLocation newMax)
+	{
+		mapMin = new MapLocation(
+					Math.max(mapMin.x, newMin.x),
+					Math.max(mapMin.y, newMin.y)
+				);
+		mapMax = new MapLocation(
+				Math.min(mapMax.x, newMax.x),
+				Math.min(mapMax.y, newMax.y)
+			);
+		
+		System.out.println("Map min: " + mapMin + ", Map max: " + mapMax);
+	}
+	
+	// called by local units when checking for map edge info
 	public static void updateMapEdge(Direction dir, int val, boolean sendUpdate)
 	{
-		boolean newval = false;
-		
 		// update the correct direction
 		switch (dir)
 		{
@@ -112,7 +123,7 @@ public class MapInfo extends RobotPlayer
 			{
 				mapMin = new MapLocation(mapMin.x,val);
 				if (sendUpdate)
-					newval = true;
+					newMapEdge = true;
 			}
 			break;
 		case EAST:
@@ -120,7 +131,7 @@ public class MapInfo extends RobotPlayer
 			{
 				mapMax = new MapLocation(val,mapMax.y);
 				if (sendUpdate)
-					newval = true;
+					newMapEdge = true;
 			}
 			break;
 		case WEST:
@@ -128,7 +139,7 @@ public class MapInfo extends RobotPlayer
 			{
 				mapMin = new MapLocation(val,mapMin.y);
 				if (sendUpdate)
-					newval = true;
+					newMapEdge = true;
 			}
 			break;
 		case SOUTH:
@@ -136,20 +147,13 @@ public class MapInfo extends RobotPlayer
 			{
 				mapMax = new MapLocation(mapMax.x,val);
 				if (sendUpdate)
-					newval = true;
+					newMapEdge = true;
 			}
 			break;
 		default:
 			System.out.print("Invalid direction to updateMapEdge");
 			break;
 		}
-		
-		// and post it to be sent
-		if (newval)
-		{
-			newMapDir = dir;
-			newMapVal = val;
-		}		
 	}
 
 	
@@ -208,11 +212,9 @@ public class MapInfo extends RobotPlayer
 			return false;
 		
 		// only send one at a time
-		if (newMapDir != null)
+		if (newMapEdge)
 		{
-			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.MAP_EDGE,
-					new MapLocation(newMapDir.ordinal(), newMapVal));
-			newMapDir = null;
+			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.MAP_EDGE, mapMin, mapMax);
 			return true;
 		}
 		if (newZombieDen != null)
@@ -290,9 +292,6 @@ public class MapInfo extends RobotPlayer
 	
 	public static void calculateSymmetry()
 	{
-		if (numInitialArchons == 0)
-			return;
-		
 		// create fastlocset without internal list
 		FastLocSet archonLocs = new FastLocSet(false);
 
@@ -300,6 +299,9 @@ public class MapInfo extends RobotPlayer
 		MapLocation[] theirArchons = rc.getInitialArchonLocations(theirTeam);
 		
 		numInitialArchons = ourArchons.length;
+		
+		if (numInitialArchons == 0)
+			return;
 		
 		int xtot = 0;
 		int ytot = 0;
@@ -317,6 +319,12 @@ public class MapInfo extends RobotPlayer
 		
 		// this _might_ be like half a unit away from the actual center
 		mapCenter = new MapLocation(xtot/(2*numInitialArchons),ytot/(2*numInitialArchons));
+		// and set Message's map offsets
+		Message.MAP_OFF_X = mapCenter.x - 128;
+		Message.MAP_OFF_Y = mapCenter.y - 128;
+		// and the map edge min and max
+		mapMin = mapCenter.add(-GameConstants.MAP_MAX_WIDTH/2-1,-GameConstants.MAP_MAX_HEIGHT/2-1);
+		mapMax = mapCenter.add(GameConstants.MAP_MAX_WIDTH/2+1,GameConstants.MAP_MAX_HEIGHT/2+1);
 		
 		// this, on the other hand, is exactly twice the center
 		dblCenter = new MapLocation(xtot/numInitialArchons,ytot/numInitialArchons);
