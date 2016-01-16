@@ -7,6 +7,7 @@
 
 ### For Seeding Submission
 
+- Need archons to send "get help" messages so that soldiers in mob fight attack dens.
 - Scouts in Ball Move still get shot.
 
 ### _For Sprint Submission_
