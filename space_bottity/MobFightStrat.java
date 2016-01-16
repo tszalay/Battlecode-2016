@@ -29,31 +29,7 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 			if (Action.tryAttackSomeone())
 				return true;
 			
-			// if you are out-ranged, move in
-			RobotInfo rangedHostile = null;
-			for (RobotInfo ri : Micro.getNearbyHostiles())
-			{
-				if (ri.type == RobotType.RANGEDZOMBIE || ri.type == RobotType.VIPER)
-				{
-					rangedHostile = ri;
-					continue;
-				}
-			}
-			if (rangedHostile != null)
-			{
-				Direction dir = Micro.getCanFastMoveDirs().getDirectionTowards(here.directionTo(rangedHostile.location));
-				if (!Action.tryMove(dir))
-				{
-					dir = Micro.getCanMoveDirs().getDirectionTowards(here.directionTo(rangedHostile.location));
-					return Action.tryMove(dir);
-				}
-				else
-				{
-					return true;
-				}
-			}
-			
-			// we don't see anyone.  listen for calls for reinforcements, and move to help
+			// we can't attack anyone.  listen for calls for reinforcements, and move to help
 			allyLoc = Message.getClosestAllyUnderAttack();
 			if (allyLoc != null)
 			{
@@ -63,10 +39,10 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 				
 				if (!Action.tryAdjacentSafeMoveToward(enemyAttackingAlly.location))
 				{
-					Direction dir = Micro.getCanFastMoveDirs().getDirectionTowards(here.directionTo(rangedHostile.location));
+					Direction dir = Micro.getCanFastMoveDirs().getDirectionTowards(here.directionTo(enemyAttackingAlly.location));
 					if (!Action.tryMove(dir))
 					{
-						dir = Micro.getCanMoveDirs().getDirectionTowards(here.directionTo(rangedHostile.location));
+						dir = Micro.getCanMoveDirs().getDirectionTowards(here.directionTo(enemyAttackingAlly.location));
 						return Action.tryMove(dir);
 					}
 					else
@@ -79,6 +55,38 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 					return true;
 				}
 			}
+			
+			// if out of their range and alone, retreat
+			if (rc.senseNearbyRobots(2, ourTeam).length < 3)
+			{
+				return Action.tryRetreatOrShootIfStuck();
+			}
+			
+			// if you are out-ranged, move in
+//			RobotInfo rangedHostile = null;
+//			for (RobotInfo ri : Micro.getNearbyHostiles())
+//			{
+//				if (ri.type == RobotType.RANGEDZOMBIE || ri.type == RobotType.VIPER)
+//				{
+//					rangedHostile = ri;
+//					continue;
+//				}
+//			}
+//			if (rangedHostile != null)
+//			{
+//				Direction dir = Micro.getCanFastMoveDirs().getDirectionTowards(here.directionTo(rangedHostile.location));
+//				if (!Action.tryMove(dir))
+//				{
+//					dir = Micro.getCanMoveDirs().getDirectionTowards(here.directionTo(rangedHostile.location));
+//					return Action.tryMove(dir);
+//				}
+//				else
+//				{
+//					return true;
+//				}
+//			}
+			
+			
 			return false;
 		
 		default:
