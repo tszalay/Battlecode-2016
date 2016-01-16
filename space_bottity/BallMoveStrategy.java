@@ -5,6 +5,8 @@ import java.util.*;
 
 public class BallMoveStrategy extends RobotPlayer implements Strategy
 {	
+	private String stratName;
+	
 	// minimum and maximum radii that we wish to use for the ball
 	// set on initialization
 	private int minDistSq;
@@ -21,6 +23,7 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
 	
 	public BallMoveStrategy(int targetID, int minDSq, int maxDSq) throws GameActionException
 	{
+		this.stratName = "BallMoveStrat";	
 		minDistSq = minDSq;
 		maxDistSq = maxDSq;
 		
@@ -63,6 +66,8 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
 
 	public boolean tryTurn() throws GameActionException
 	{
+		Debug.setStringAK("My Strategy: " + this.stratName);
+		
 		// first check if we can still ball
 		if (!tryUpdateTarget())
 			return false;

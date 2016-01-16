@@ -8,15 +8,19 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 {
 	private RobotType type;
 	private RobotInfo myArchon = null;
+	private String stratName;
 	
 	public BlitzTeamStrat(RobotType type, RobotInfo myArchon)
 	{
 		this.type = type;
 		this.myArchon = myArchon;
+		this.stratName = "BlitzTeamStrat";	
 	}
+	
 	
 	public boolean tryTurn() throws GameActionException
 	{
+		Debug.setStringAK("My Strategy: " + this.stratName);
 		switch (type)
 		{
 		case ARCHON:

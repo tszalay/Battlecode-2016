@@ -28,7 +28,6 @@ public class RoboArchon extends RobotPlayer
 		// state machine update
 		updateState();
 		Debug.setStringSJF(myState.toString());
-		
 		MapInfo.removeWaypoint(here);
 		
 		// always try this if we can, before moving

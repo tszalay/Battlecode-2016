@@ -7,14 +7,18 @@ import java.util.*;
 public class MobFightStrat extends RobotPlayer implements Strategy
 {
 	private static RobotType type;
+	private static String stratName;
 	
 	public MobFightStrat(RobotType type)
 	{
 		this.type = type;
+		this.stratName = "MobFightStrat";
 	}
 	
 	public boolean tryTurn() throws GameActionException
 	{
+		Debug.setStringAK("My Strategy: " + this.stratName);
+		
 		MapLocation allyLoc = null;
 		
 		switch (type)
