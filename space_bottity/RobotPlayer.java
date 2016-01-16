@@ -53,6 +53,9 @@ public class RobotPlayer
 			}
 		}
 		
+		// and try go get the map symmetry. everyone can do this
+		MapInfo.calculateSymmetry();
+		
 		try
 		{
 			switch (robotc.getType())

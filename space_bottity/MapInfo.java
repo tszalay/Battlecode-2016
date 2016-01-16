@@ -18,6 +18,21 @@ public class MapInfo extends RobotPlayer
 	
 	public static MapLocation newZombieDen = null;
 	public static MapLocation newParts = null;
+	
+	public static int numInitialArchons = 0;
+
+	// note - HFLIP means flip along horizontal axis (same x)
+	// and VFLIP means flip along vertical axis (same y)
+	// (DIAG is 
+	private static final int SYM_ROT = 1;
+	private static final int SYM_HFLIP = 2;
+	private static final int SYM_VFLIP = 4;
+	
+	// if it is neither of these, it's some other bullshit
+	private static int mapSymmetry = SYM_ROT|SYM_HFLIP|SYM_VFLIP;
+	
+	public static MapLocation mapCenter = null;
+	private static MapLocation dblCenter = null;
 
 	// the following functions are to be called mainly by Archons to set destinations
 	
@@ -277,7 +292,75 @@ public class MapInfo extends RobotPlayer
 	{
 		// create fastlocset without internal list
 		FastLocSet archonLocs = new FastLocSet(false);
+
+		MapLocation[] ourArchons = rc.getInitialArchonLocations(ourTeam);
+		MapLocation[] theirArchons = rc.getInitialArchonLocations(theirTeam);
 		
+		numInitialArchons = ourArchons.length;
 		
+		int xtot = 0;
+		int ytot = 0;
+		
+		// first compute the center of the map
+		// which is just the average of all of the archon locations
+		for (int i=0; i<ourArchons.length; i++)
+		{
+			xtot += ourArchons[i].x;
+			ytot += ourArchons[i].y;
+			xtot += theirArchons[i].x;
+			ytot += theirArchons[i].y;
+			archonLocs.add(ourArchons[i]);
+		}
+		
+		// this _might_ be like half a unit away from the actual center
+		mapCenter = new MapLocation(xtot/(2*numInitialArchons),ytot/(2*numInitialArchons));
+		
+		// this, on the other hand, is exactly twice the center
+		dblCenter = new MapLocation(xtot/numInitialArchons,ytot/numInitialArchons);
+		
+		// now go through and whittle down possible symmetries to what we hope is the real one
+		for (MapLocation loc : theirArchons)
+		{
+			// calculate horizontal, vertical, and rotational symmetric locations
+			MapLocation loc_horiz = new MapLocation(loc.x, dblCenter.y-loc.y);
+			MapLocation loc_vert = new MapLocation(dblCenter.x-loc.x, loc.y);
+			MapLocation loc_rot = new MapLocation(loc_vert.x,loc_horiz.y);
+			
+			if (!archonLocs.contains(loc_horiz))
+				mapSymmetry &= ~(SYM_HFLIP);
+			if (!archonLocs.contains(loc_vert))
+				mapSymmetry &= ~(SYM_VFLIP);
+			if (!archonLocs.contains(loc_rot))
+				mapSymmetry &= ~(SYM_ROT);
+		}
+		
+		// has more than one symmetry, so it doesn't really matter
+		// and it's probably rotation because of the map editor
+		if (Integer.bitCount(mapSymmetry) > 1)
+			mapSymmetry = SYM_ROT;
 	}
+	
+		
+	   
+	    public static MapLocation mapSymmetricLocation(MapLocation loc) throws GameActionException
+	    {
+	    	MapLocation loc_sym = null;
+	    	
+	    	switch (mapSymmetry)
+	    	{
+	    	case SYM_ROT:
+	    		loc_sym = new MapLocation(dblCenter.x-loc.x,dblCenter.y-loc.y);
+	    		break;
+	    	case SYM_HFLIP:
+	    		loc_sym = new MapLocation(loc.x, dblCenter.y-loc.y);
+	    		break;
+	    	case SYM_VFLIP:
+	    		loc_sym = new MapLocation(dblCenter.x-loc.x, loc.y);
+	    		break;
+			default:
+				break;
+	    	}
+	    	
+	    	return loc_sym;
+	    }
 }
