@@ -97,6 +97,17 @@ public class MapInfo extends RobotPlayer
 		return maxDistSq;
 	}
 	
+	// distance to closest corner
+	public static int closestCornerDistanceSq()
+	{
+		int minDx = Math.abs(mapMin.x-here.x);
+		int minDy = Math.abs(mapMin.y-here.y);
+		minDx = Math.min(minDx, Math.abs(mapMax.x-here.x));
+		minDy = Math.min(minDy, Math.abs(mapMax.y-here.y));
+		
+		return minDx*minDx + minDy*minDy;
+	}
+	
 	// from receiving a message, don't need to bother signaling
 	public static void updateMapEdges(MapLocation newMin, MapLocation newMax)
 	{

@@ -13,6 +13,17 @@ public class TurtleMoveStrategy extends RobotPlayer implements Strategy
 	
 	public boolean tryTurn() throws GameActionException
 	{
+		switch (rc.getType())
+		{
+		case TURRET:
+			break;
+		case TTM:
+			break;
+		case SCOUT:
+			break;
+		case SOLDIER:
+			break;
+		}
 		return true;
 	}
 }
