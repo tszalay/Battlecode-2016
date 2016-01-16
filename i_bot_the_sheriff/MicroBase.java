@@ -28,6 +28,21 @@ public class MicroBase extends RobotPlayer
 	private double hostileTotalDamagePerTurn = -1;
 	private double hostileTotalHealth = -1;
 	
+	private static final int[] typePriorities = 
+		{
+			-1,	//0: ZOMBIEDEN
+			0,	//1: STANDARDZOMBIE
+			2,	//2: RANGEDZOMBIE
+			1,	//3: FASTZOMBIE
+			3,	//4: BIGZOMBIE
+			9,	//5: ARCHON
+			2,	//6: SCOUT
+			2,	//7: SOLDIER
+			1,	//8: GUARD
+			10,	//9: VIPER
+			10,	//10: TURRET
+			8	//11: TTM
+		};
 	
 	public RobotInfo[] getNearbyEnemies()
 	{

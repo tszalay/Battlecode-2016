@@ -32,8 +32,12 @@ public class TurtleArchonStrategy extends RobotPlayer implements Strategy
 				overrideStrategy = null;
 		}
 		
+		// are we close to a corner? good enough
+		if (MapInfo.closestCornerDistanceSq() < 53 || rc.getRoundNum() > 400)
+			turtleLocation = here;
+		
 		// if we're far from the closest corner, let's go there
-		if (MapInfo.closestCornerDistanceSq() > 53)
+		if (here.distanceSquaredTo(turtleLocation) > 53)
 		{
 			// here is where should give an override strategy if shit be going down
 			if (Micro.getRoundsUntilDanger() < 10)
@@ -42,7 +46,10 @@ public class TurtleArchonStrategy extends RobotPlayer implements Strategy
 			}
 			else
 			{
-				Nav.tryGoTo(turtleLocation, Micro.getSafeMoveDirs());
+				if (new UnitCounts(Micro.getNearbyAllies()).Soldiers < 4)
+					tryBuild();
+				else
+					Nav.tryGoTo(turtleLocation, Micro.getSafeMoveDirs());
 			}
 			return true;
 		}
