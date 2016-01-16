@@ -26,7 +26,7 @@ public class RoboArchon extends RobotPlayer
 	public static void turn() throws GameActionException
 	{
 		// state machine update
-//		updateState();
+		updateState();
 		Debug.setStringSJF(myState.toString());
 		
 		MapInfo.removeWaypoint(here);
@@ -35,15 +35,15 @@ public class RoboArchon extends RobotPlayer
 		tryActivateNeutrals();
 		
 		// do turn according to state
-//		switch (myState)
-//		{
-//		case BUILDING:
-//			doBuild();
-//			break;
-//		case WAYPOINT:
-//			doWaypoint();
-//			break;
-//		}
+		switch (myState)
+		{
+		case BUILDING:
+			doBuild();
+			break;
+		case WAYPOINT:
+			doWaypoint();
+			break;
+		}
 		
 		myStrategy.tryTurn();
 	
@@ -83,50 +83,51 @@ public class RoboArchon extends RobotPlayer
 	
 	public static void doWaypoint() throws GameActionException
 	{
-		// first priority, avoid stuff
-		if (Micro.isInDanger())
-		{
-			Action.tryRetreatOrShootIfStuck();
-			return;
-		}
-		
-		// next priority, any of nearby units in trouble?
-		RobotInfo[] nearby = rc.senseNearbyRobots(2, ourTeam);
-		for (RobotInfo ri : nearby)
-		{
-			// aka if there are any too close, retreat
-			if (ri.type != RobotType.SCOUT)
-			{
-				if (Action.tryAdjacentSafeMoveToward(ri.location.directionTo(here)))
-					return;
-			}
-		}
-		
-		// look for waypoint
-		MapLocation dest = MapInfo.getClosestDen();
-		
-		if (dest != null && here.distanceSquaredTo(dest) < 15)
-			return;
-		
-		// check if it should be deleted
-		if (dest != null && rc.canSenseLocation(dest) && rc.senseParts(dest) == 0 && rc.senseRobotAtLocation(dest) == null)
-		{
-			MapInfo.removeWaypoint(dest);
-			dest = MapInfo.getClosestPartOrDen();
-		}
-		
-		// if we don't have a waypoint, explore
-		if (dest == null)
-			dest = MapInfo.getExplorationWaypoint();
-
-		if (dest != null)
-		{
-			// go where we should
-			Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs());
-			// send a bit of a "ping"
-			if (rc.getRoundNum() % 7 == 0)
-				Message.sendSignal(63);
-		}
+		myStrategy.tryTurn();
+//		// first priority, avoid stuff
+//		if (Micro.isInDanger())
+//		{
+//			Action.tryRetreatOrShootIfStuck();
+//			return;
+//		}
+//		
+//		// next priority, any of nearby units in trouble?
+//		RobotInfo[] nearby = rc.senseNearbyRobots(2, ourTeam);
+//		for (RobotInfo ri : nearby)
+//		{
+//			// aka if there are any too close, retreat
+//			if (ri.type != RobotType.SCOUT)
+//			{
+//				if (Action.tryAdjacentSafeMoveToward(ri.location.directionTo(here)))
+//					return;
+//			}
+//		}
+//		
+//		// look for waypoint
+//		MapLocation dest = MapInfo.getClosestDen();
+//		
+//		if (dest != null && here.distanceSquaredTo(dest) < 15)
+//			return;
+//		
+//		// check if it should be deleted
+//		if (dest != null && rc.canSenseLocation(dest) && rc.senseParts(dest) == 0 && rc.senseRobotAtLocation(dest) == null)
+//		{
+//			MapInfo.removeWaypoint(dest);
+//			dest = MapInfo.getClosestPartOrDen();
+//		}
+//		
+//		// if we don't have a waypoint, explore
+//		if (dest == null)
+//			dest = MapInfo.getExplorationWaypoint();
+//
+//		if (dest != null)
+//		{
+//			// go where we should
+//			Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs());
+//			// send a bit of a "ping"
+//			if (rc.getRoundNum() % 7 == 0)
+//				Message.sendSignal(63);
+//		}
 	}
 	
 	private static void doBuild() throws GameActionException
