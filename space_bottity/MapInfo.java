@@ -340,27 +340,25 @@ public class MapInfo extends RobotPlayer
 			mapSymmetry = SYM_ROT;
 	}
 	
-		
-	   
-	    public static MapLocation mapSymmetricLocation(MapLocation loc) throws GameActionException
-	    {
-	    	MapLocation loc_sym = null;
-	    	
-	    	switch (mapSymmetry)
-	    	{
-	    	case SYM_ROT:
-	    		loc_sym = new MapLocation(dblCenter.x-loc.x,dblCenter.y-loc.y);
-	    		break;
-	    	case SYM_HFLIP:
-	    		loc_sym = new MapLocation(loc.x, dblCenter.y-loc.y);
-	    		break;
-	    	case SYM_VFLIP:
-	    		loc_sym = new MapLocation(dblCenter.x-loc.x, loc.y);
-	    		break;
-			default:
-				break;
-	    	}
-	    	
-	    	return loc_sym;
-	    }
+    public static MapLocation getSymmetricLocation(MapLocation loc) throws GameActionException
+    {
+    	MapLocation loc_sym = null;
+    	
+    	switch (mapSymmetry)
+    	{
+    	case SYM_ROT:
+    		loc_sym = new MapLocation(dblCenter.x-loc.x,dblCenter.y-loc.y);
+    		break;
+    	case SYM_HFLIP:
+    		loc_sym = new MapLocation(loc.x, dblCenter.y-loc.y);
+    		break;
+    	case SYM_VFLIP:
+    		loc_sym = new MapLocation(dblCenter.x-loc.x, loc.y);
+    		break;
+		default:
+			break;
+    	}
+    	
+    	return loc_sym;
+    }
 }
