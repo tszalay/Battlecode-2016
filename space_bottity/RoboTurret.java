@@ -11,10 +11,15 @@ public class RoboTurret extends RobotPlayer
 	static int lastPackRound = 0;
 	static int lastMovedRound = 0;
 	
-	static final int PACK_DELAY = 20;
+	static final int PACK_DELAY = 50;
+	
+	static Strategy myStrategy = null;
+	public static double myHealth;
 
 	public static void init() throws GameActionException
 	{
+		myStrategy = new MobFightStrat(RobotType.TURRET);
+		myHealth = RobotType.TURRET.maxHealth;
 	}
 	
 	public static void turn() throws GameActionException
@@ -34,21 +39,29 @@ public class RoboTurret extends RobotPlayer
 	public static void turnTurret() throws GameActionException
 	{
 //		int roundSinceLastPack = rc.getRoundNum() - lastPackRound;
-//		if (roundSinceLastPack < TURRET_PACK_DELAY)
+//		if (roundSinceLastPack < GameConstants.TURRET_TRANSFORM_DELAY)
 //			return;
+//		
+//		if (myStrategy.tryTurn())
+//		{
+//			lastTurretRound = rc.getRoundNum();
+//			return;
+//		}
+//		
+//		// if we fired recently, don't pack
+//		if (rc.getRoundNum() - lastTurretRound < PACK_DELAY)
+//			return;
+//		
+//		rc.pack();
+//		lastPackRound = rc.getRoundNum();
 		
-		if (Action.tryAttackSomeone())
+		if (rc.getHealth() < myHealth)
 		{
-			lastTurretRound = rc.getRoundNum();
-			return;
+			myHealth = rc.getHealth();
+			Message.sendSignal(RobotType.TURRET.sensorRadiusSquared*2);
 		}
 		
-		// if we fired recently, don't pack
-		if (rc.getRoundNum() - lastTurretRound < PACK_DELAY)
-			return;
-		
-		rc.pack();
-		lastPackRound = rc.getRoundNum();
+		myStrategy.tryTurn();
 	}
 
 	public static void turnTTM() throws GameActionException
