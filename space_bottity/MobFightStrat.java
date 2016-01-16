@@ -43,7 +43,10 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 					if (!Action.tryMove(dir))
 					{
 						dir = Micro.getCanMoveDirs().getDirectionTowards(here.directionTo(enemyAttackingAlly.location));
-						return Action.tryMove(dir);
+						if (!Action.tryMove(dir))
+							return Nav.tryGoTo(enemyAttackingAlly.location, Micro.getCanMoveDirs()); // don't just sit there, FULL SURROUND
+						else
+							return true;
 					}
 					else
 					{
