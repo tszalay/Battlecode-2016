@@ -108,8 +108,6 @@ public class MapInfo extends RobotPlayer
 				Math.min(mapMax.x, newMax.x),
 				Math.min(mapMax.y, newMax.y)
 			);
-		
-		System.out.println("Map min: " + mapMin + ", Map max: " + mapMax);
 	}
 	
 	// called by local units when checking for map edge info
