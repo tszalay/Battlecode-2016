@@ -15,10 +15,71 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 	
 	public boolean tryTurn() throws GameActionException
 	{
+		MapLocation allyLoc = null;
+		
 		switch (type)
 		{
 		case TURRET:
 			return (Action.tryAttackSomeone());
+			
+		case GUARD:
+			// get in their face
+			// don't retreat unless you are out-numbered
+			// retreating is for the weak
+			if (Action.tryAttackSomeone())
+				return true;
+			
+			// if you are out-ranged, move in
+			RobotInfo rangedHostile = null;
+			for (RobotInfo ri : Micro.getNearbyHostiles())
+			{
+				if (ri.type == RobotType.RANGEDZOMBIE || ri.type == RobotType.VIPER)
+				{
+					rangedHostile = ri;
+					continue;
+				}
+			}
+			if (rangedHostile != null)
+			{
+				Direction dir = Micro.getCanFastMoveDirs().getDirectionTowards(here.directionTo(rangedHostile.location));
+				if (!Action.tryMove(dir))
+				{
+					dir = Micro.getCanMoveDirs().getDirectionTowards(here.directionTo(rangedHostile.location));
+					return Action.tryMove(dir);
+				}
+				else
+				{
+					return true;
+				}
+			}
+			
+			// we don't see anyone.  listen for calls for reinforcements, and move to help
+			allyLoc = Message.getClosestAllyUnderAttack();
+			if (allyLoc != null)
+			{
+				RobotInfo enemyAttackingAlly = Micro.getClosestUnitTo(Micro.getNearbyHostiles(), allyLoc);
+				if (enemyAttackingAlly == null)
+					return Action.tryMove(here.directionTo(allyLoc));
+				
+				if (!Action.tryAdjacentSafeMoveToward(enemyAttackingAlly.location))
+				{
+					Direction dir = Micro.getCanFastMoveDirs().getDirectionTowards(here.directionTo(rangedHostile.location));
+					if (!Action.tryMove(dir))
+					{
+						dir = Micro.getCanMoveDirs().getDirectionTowards(here.directionTo(rangedHostile.location));
+						return Action.tryMove(dir);
+					}
+					else
+					{
+						return true;
+					}
+				}
+				else
+				{
+					return true;
+				}
+			}
+			return false;
 		
 		default:
 			// if i am overpowered, kite retreat taking pot-shots
@@ -43,7 +104,7 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 			}
 			
 			// not overpowered.  we don't see anyone.  listen for calls for reinforcements, and move to help
-			MapLocation allyLoc = Message.getClosestAllyUnderAttack();
+			allyLoc = Message.getClosestAllyUnderAttack();
 			if (allyLoc != null)
 			{
 				RobotInfo enemyAttackingAlly = Micro.getClosestUnitTo(Micro.getNearbyHostiles(), allyLoc);
@@ -53,7 +114,15 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 				if (!Action.tryAdjacentSafeMoveToward(enemyAttackingAlly.location))
 				{
 					Direction dir = Micro.getCanFastMoveDirs().getDirectionTowards(here.directionTo(enemyAttackingAlly.location));
-					return Action.tryMove(dir);
+					if (!Action.tryMove(dir))
+					{
+						dir = Micro.getCanMoveDirs().getDirectionTowards(here.directionTo(enemyAttackingAlly.location));
+						return Action.tryMove(dir);
+					}
+					else
+					{
+						return true;
+					}
 				}
 				else
 				{

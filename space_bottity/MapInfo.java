@@ -290,6 +290,9 @@ public class MapInfo extends RobotPlayer
 	
 	public static void calculateSymmetry()
 	{
+		if (numInitialArchons == 0)
+			return;
+		
 		// create fastlocset without internal list
 		FastLocSet archonLocs = new FastLocSet(false);
 
