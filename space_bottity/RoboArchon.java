@@ -6,13 +6,6 @@ import battlecode.common.*;
 
 public class RoboArchon extends RobotPlayer
 {
-	enum ArchonState
-	{
-		BUILDING,
-		WAYPOINT
-	}
-
-	static ArchonState myState = ArchonState.WAYPOINT;
 	static RobotType myNextBuildRobotType = RobotType.SCOUT;
 	static int lastBuiltRound = 0;
 	
@@ -25,24 +18,15 @@ public class RoboArchon extends RobotPlayer
 	
 	public static void turn() throws GameActionException
 	{
-		// state machine update
-		updateState();
-		Debug.setStringSJF(myState.toString());
-		MapInfo.removeWaypoint(here);
-		
 		// always try this if we can, before moving
 		tryActivateNeutrals();
 		
-		// do turn according to state
-		switch (myState)
-		{
-		case BUILDING:
+		if (canBuildNow()) 
+			{
 			doBuild();
-			break;
-		case WAYPOINT:
-			doWaypoint();
-			break;
-		}
+			myNextBuildRobotType = getNextBuildRobotType(); 
+			lastBuiltRound = rc.getRoundNum();
+			}
 		
 		myStrategy.tryTurn();
 	
@@ -56,29 +40,6 @@ public class RoboArchon extends RobotPlayer
 				+ ",P:" + MapInfo.goodPartsLocations.elements().size());
 	}
 	
-	private static void updateState() throws GameActionException // this will probably need tweaking
-	{
-		switch (myState)
-		{
-		case BUILDING:
-			// keep going to the next location if we're done building
-			// (and send startup built messages)
-			if (rc.isCoreReady())
-			{
-				myState = ArchonState.WAYPOINT;
-				Message.sendBuiltMessage();
-				// also set the next robot type y knot
-				myNextBuildRobotType = getNextBuildRobotType(); 
-				lastBuiltRound = rc.getRoundNum();
-			}
-			break;
-			
-		case WAYPOINT:
-			if (canBuildNow())
-				myState = ArchonState.BUILDING;
-			break;			
-		}
-	}
 	
 	public static void doWaypoint() throws GameActionException
 	{
