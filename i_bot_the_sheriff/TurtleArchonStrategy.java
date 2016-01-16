@@ -35,7 +35,15 @@ public class TurtleArchonStrategy extends RobotPlayer implements Strategy
 		// if we're far from the closest corner, let's go there
 		if (MapInfo.closestCornerDistanceSq() > 53)
 		{
-			Nav.tryGoTo(turtleLocation, Micro.getSafeMoveDirs());
+			// here is where should give an override strategy if shit be going down
+			if (Micro.getRoundsUntilDanger() < 10)
+			{
+				Action.tryRetreatTowards(turtleLocation, Micro.getSafeMoveDirs());
+			}
+			else
+			{
+				Nav.tryGoTo(turtleLocation, Micro.getSafeMoveDirs());
+			}
 			return true;
 		}
 		
@@ -46,10 +54,61 @@ public class TurtleArchonStrategy extends RobotPlayer implements Strategy
 			return true;
 		}
 		
-		// count number of units nearby to decide what to build
-		
+		if ()
 		
 			
 		return true;
 	}
+	
+	private boolean tryBuild() throws GameActionException
+	{
+		if (!rc.isCoreReady())
+			return false;
+		
+		if (rc.getTeamParts() < 1.5*RobotType.TURRET.partCost)
+			return false;
+		
+		// figure out what robot to try and build
+		UnitCounts units = new UnitCounts(Micro.getNearbyAllies());
+		
+		RobotType robotToBuild = null;
+		
+		if (units.Scouts < 2 || units.Scouts < units.Turrets/4)
+		{
+			robotToBuild = RobotType.SCOUT;
+		}
+		else if (units.Turrets < 8)
+		{
+			robotToBuild = RobotType.TURRET;
+		}
+		else
+		{
+			return false;
+		}
+		
+		if (!rc.hasBuildRequirements(robotToBuild))
+			return false;
+
+		Direction buildDir = getCanBuildDirectionSet(robotToBuild).getRandomValid();
+		if (buildDir != null)
+		{
+			overrideStrategy = new BuildingStrategy(robotToBuild, buildDir);
+			return true;
+		}
+		
+		return false;
+	}
+	
+	public static DirectionSet getCanBuildDirectionSet(RobotType nextRobotType) throws GameActionException
+	{
+		// check nearby open squares
+		DirectionSet valid = new DirectionSet();
+		for (Direction dir : Direction.values()) // check all Directions around
+		{
+			if (rc.canBuild(dir, nextRobotType))
+				valid.add(dir); // add this direction to the DirectionSet of valid build directions
+		}
+		return valid;
+	}
+
 }
