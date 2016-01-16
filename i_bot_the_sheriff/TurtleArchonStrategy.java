@@ -106,7 +106,7 @@ public class TurtleArchonStrategy extends RobotPlayer implements Strategy
 		if (!rc.hasBuildRequirements(robotToBuild))
 			return false;
 
-		Direction buildDir = getCanBuildDirectionSet(robotToBuild).getRandomValid();
+		Direction buildDir = Micro.getCanBuildDirectionSet(robotToBuild).getRandomValid();
 		if (buildDir != null)
 		{
 			overrideStrategy = new BuildingStrategy(robotToBuild, buildDir);
@@ -115,17 +115,4 @@ public class TurtleArchonStrategy extends RobotPlayer implements Strategy
 		
 		return false;
 	}
-	
-	public static DirectionSet getCanBuildDirectionSet(RobotType nextRobotType) throws GameActionException
-	{
-		// check nearby open squares
-		DirectionSet valid = new DirectionSet();
-		for (Direction dir : Direction.values()) // check all Directions around
-		{
-			if (rc.canBuild(dir, nextRobotType))
-				valid.add(dir); // add this direction to the DirectionSet of valid build directions
-		}
-		return valid;
-	}
-
 }
