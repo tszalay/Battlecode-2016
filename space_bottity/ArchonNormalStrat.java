@@ -39,20 +39,13 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 			return;
 		}
 		
-//		// next priority, any of nearby units in trouble?
-//		RobotInfo[] nearby = rc.senseNearbyRobots(2, ourTeam);
-//		for (RobotInfo ri : nearby)
-//		{
-//			// aka if there are any too close, retreat
-//			if (ri.type != RobotType.SCOUT)
-//			{
-//				if (Action.tryAdjacentSafeMoveToward(ri.location.directionTo(here)))
-//					return;
-//			}
-//		}
-		
 		// look for waypoint
-		MapLocation dest = MapInfo.getClosestDen();
+		MapLocation dest = senseClosestNeutral();
+		if (dest == null)
+			dest = senseClosestPart();
+		if (dest == null)
+			dest = MapInfo.getClosestDen();
+		
 		
 		if (dest != null && here.distanceSquaredTo(dest) < 15)
 			return;
@@ -184,5 +177,40 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 		
 		// if we have a valid direction return true
 		return (validBuildDirectionSet.any());
+	}
+	
+	public static MapLocation senseClosestPart() throws GameActionException
+	{
+		MapLocation[] parts = rc.sensePartLocations(rc.getType().sensorRadiusSquared);
+		
+		if (parts == null || parts.length == 0)
+			return null;
+		
+		MapLocation closestPartLoc = null;
+		for (MapLocation loc : parts)
+		{
+			// don't try to go to a part we can't get
+			if ( (closestPartLoc == null && rc.senseRobotAtLocation(loc) == null && rc.senseRubble(loc) < GameConstants.RUBBLE_OBSTRUCTION_THRESH) || (closestPartLoc != null && here.distanceSquaredTo(loc) < here.distanceSquaredTo(closestPartLoc) && rc.senseRobotAtLocation(loc) == null && rc.senseRubble(loc) < GameConstants.RUBBLE_OBSTRUCTION_THRESH))
+				closestPartLoc = loc;
+		}
+		
+		return closestPartLoc;
+	}
+	
+	public static MapLocation senseClosestNeutral() throws GameActionException
+	{
+		RobotInfo[] neutrals = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared,Team.NEUTRAL);
+		
+		if (neutrals == null || neutrals.length == 0)
+			return null;
+		
+		MapLocation closestNeutralLoc = null;
+		for (RobotInfo ri : neutrals)
+		{
+			if (closestNeutralLoc == null || ri.type == RobotType.ARCHON || (ri.type != RobotType.ARCHON && here.distanceSquaredTo(ri.location) < here.distanceSquaredTo(closestNeutralLoc)))
+				closestNeutralLoc = ri.location;
+		}
+		
+		return closestNeutralLoc; // will return an archon location even if it's not really the closest
 	}
 }
