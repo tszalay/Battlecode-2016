@@ -6,13 +6,44 @@ import java.util.*;
 
 public class BlitzTeamStrat extends RobotPlayer implements Strategy
 {
-	private RobotType type;
 	private RobotInfo myArchon = null;
 	private String stratName;
 	
-	public BlitzTeamStrat(RobotType type, RobotInfo myArchon) throws GameActionException
+	
+	public static boolean shouldBlitz()
 	{
-		this.type = type;
+		MapLocation[] theirArchons = rc.getInitialArchonLocations(theirTeam);
+		MapLocation[] ourArchons = rc.getInitialArchonLocations(ourTeam);
+		
+		int myDist = 0;
+		for (MapLocation them : theirArchons)
+		{
+			if (myDist == 0 || here.distanceSquaredTo(them) < myDist)
+				myDist = here.distanceSquaredTo(them);
+		}
+		
+		int shortestDist = myDist;
+		for (MapLocation us : ourArchons)
+		{
+			for (MapLocation them : theirArchons)
+			{
+				if (us.distanceSquaredTo(them) < shortestDist)
+					shortestDist = us.distanceSquaredTo(them);
+			}
+		}
+		
+		MapLocation[] parts = rc.sensePartLocations(RobotType.ARCHON.sensorRadiusSquared);
+		if (parts != null && parts.length > 0)
+			return true;
+		if (myDist == shortestDist)
+			return true;
+		
+		return false;
+	}
+	
+	
+	public BlitzTeamStrat(RobotInfo myArchon) throws GameActionException
+	{
 		this.myArchon = myArchon;
 		this.stratName = "BlitzTeamStrat";	
 		
@@ -23,7 +54,7 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 	public boolean tryTurn() throws GameActionException
 	{
 		Debug.setStringAK("My Strategy: " + this.stratName);
-		switch (type)
+		switch (rc.getType())
 		{
 		case ARCHON:
 			MapLocation partLoc = senseClosestPart();
@@ -91,7 +122,7 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 	
 	public MapLocation senseClosestPart() throws GameActionException
 	{
-		MapLocation[] parts = rc.sensePartLocations(type.sensorRadiusSquared);
+		MapLocation[] parts = rc.sensePartLocations(rc.getType().sensorRadiusSquared);
 		
 		if (parts == null || parts.length == 0)
 			return null;
@@ -109,7 +140,7 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 	
 	public MapLocation senseClosestNeutral() throws GameActionException
 	{
-		RobotInfo[] neutrals = rc.senseNearbyRobots(type.sensorRadiusSquared,Team.NEUTRAL);
+		RobotInfo[] neutrals = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared,Team.NEUTRAL);
 		
 		if (neutrals == null || neutrals.length == 0)
 			return null;
@@ -131,7 +162,7 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 		if (!rc.hasBuildRequirements(robotToBuild))
 			return false;
 
-		Direction buildDir = getCanBuildDirectionSet(robotToBuild).getRandomValid();
+		Direction buildDir = Micro.getCanBuildDirectionSet(robotToBuild).getRandomValid();
 		if (buildDir != null)
 		{
 			rc.build(buildDir, robotToBuild);
@@ -139,17 +170,5 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 		}
 		
 		return false;
-	}
-
-	public static DirectionSet getCanBuildDirectionSet(RobotType nextRobotType) throws GameActionException
-	{
-		// check nearby open squares
-		DirectionSet valid = new DirectionSet();
-		for (Direction dir : Direction.values()) // check all Directions around
-		{
-			if (rc.canBuild(dir, nextRobotType))
-				valid.add(dir); // add this direction to the DirectionSet of valid build directions
-		}
-		return valid;
 	}
 }

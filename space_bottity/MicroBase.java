@@ -626,6 +626,9 @@ public class MicroBase extends RobotPlayer
 	
 	public DirectionSet getCanBuildDirectionSet(RobotType nextRobotType) throws GameActionException
 	{
+		if (nextRobotType == null)
+			return new DirectionSet();
+		
 		// check nearby open squares
 		DirectionSet valid = new DirectionSet();
 		for (Direction dir : Direction.values()) // check all Directions around

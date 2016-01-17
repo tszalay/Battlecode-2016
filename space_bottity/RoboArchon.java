@@ -10,32 +10,8 @@ public class RoboArchon extends RobotPlayer
 
 	public static void init() throws GameActionException
 	{
-		MapLocation[] theirArchons = rc.getInitialArchonLocations(theirTeam);
-		MapLocation[] ourArchons = rc.getInitialArchonLocations(ourTeam);
-		
-		int myDist = 0;
-		for (MapLocation them : theirArchons)
-		{
-			if (myDist == 0 || here.distanceSquaredTo(them) < myDist)
-				myDist = here.distanceSquaredTo(them);
-		}
-		
-		int shortestDist = myDist;
-		for (MapLocation us : ourArchons)
-		{
-			for (MapLocation them : theirArchons)
-			{
-				if (us.distanceSquaredTo(them) < shortestDist)
-					shortestDist = us.distanceSquaredTo(them);
-			}
-		}
-		
-		MapLocation[] parts = rc.sensePartLocations(RobotType.ARCHON.sensorRadiusSquared);
-		if (parts != null && parts.length > 0)
-			myStrategy = new BlitzTeamStrat(RobotType.ARCHON, null);
-		
-		if (myDist == shortestDist)
-			myStrategy = new BlitzTeamStrat(RobotType.ARCHON, null);
+		if (BlitzTeamStrat.shouldBlitz())
+			myStrategy = new BlitzTeamStrat(null);
 		else
 			myStrategy = new ArchonNormalStrat();
 	}

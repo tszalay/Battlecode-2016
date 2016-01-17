@@ -55,6 +55,8 @@ public class RobotPlayer
 		
 		// and try go get the map symmetry. everyone can do this
 		MapInfo.calculateSymmetry();
+		// also initialize Micro
+		Micro = new MicroBase();
 		
 		try
 		{
