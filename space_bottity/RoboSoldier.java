@@ -29,9 +29,10 @@ public class RoboSoldier extends RobotPlayer
 			Message.sendSignal(RobotType.SOLDIER.sensorRadiusSquared*2);
 		}
 		
-		if (here.distanceSquaredTo(MapInfo.getClosestDen()) < 100)
+		MapLocation closestDen = MapInfo.getClosestDen();
+		if (closestDen != null && here.distanceSquaredTo(closestDen) < 100)
 		{
-			myStrategy = new MobFightStrat(MapInfo.getClosestDen());
+			myStrategy = new MobFightStrat(closestDen);
 		}
 		
 		if (!myStrategy.tryTurn())

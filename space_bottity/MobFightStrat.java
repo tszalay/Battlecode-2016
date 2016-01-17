@@ -12,6 +12,7 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 	public MobFightStrat()
 	{
 		this.stratName = "MobFightStrat";
+		this.target = null;
 	}
 	
 	public MobFightStrat(MapLocation target)
@@ -156,7 +157,13 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 	
 	public void updateTarget() throws GameActionException
 	{
-		if (rc.canSenseLocation(target) && rc.senseRobotAtLocation(target) == null || rc.senseRobotAtLocation(target).team == ourTeam)
+		if (target == null)
+		{
+			target = Message.getClosestAllyUnderAttack();
+			return;
+		}
+		
+		if (rc.canSenseLocation(target) && (rc.senseRobotAtLocation(target) == null || rc.senseRobotAtLocation(target).team == ourTeam))
 			target = null;
 		if (target == null)
 			target = Message.getClosestAllyUnderAttack();
