@@ -126,6 +126,9 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
 			Direction d = ballDirs.getDirectionTowards(lastBallMoveDir);
 			if (d != null)
 			{
+				//first try clear rubble if it's stopping you
+				if (Action.tryClearRubble(d)) return true;
+				
 				Action.tryMove(d);
 				lastBallMoveDir = null;
 				return true;
@@ -146,4 +149,6 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
 		
 		return true;
 	}
+	
+
 }

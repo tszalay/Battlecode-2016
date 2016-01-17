@@ -70,6 +70,9 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 
 		if (dest != null)
 		{
+			// put indicator at waypoint
+			rc.setIndicatorDot(dest, rc.getID()%255, 255, 255);
+			Debug.setStringAK("Waypoint = " + dest);
 			// go where we should
 			Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs());
 			// send a bit of a "ping"

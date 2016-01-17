@@ -60,12 +60,9 @@ public class RoboScout extends RobotPlayer
 		Sighting.doSendSightingMessage();
 		
 		// and use spare bytecodes to look for stuff
-		MapInfo.analyzeSurroundings();
-		// and send the updates
-		MapInfo.doScoutSendUpdates();
-		
-		// AK want to send "need help" message at the location of a zombie den if I can see a zombie den
-		// MobFightSoldiers should go there and kill it.
+		// MapInfo.analyzeSurroundings();
+		// and send the updates AK don't do this automtically - herding one's can't do it
+		//MapInfo.doScoutSendUpdates();
 
 	}
 }

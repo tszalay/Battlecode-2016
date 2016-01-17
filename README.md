@@ -7,9 +7,9 @@
 
 ### For Seeding Submission
 
-- GTFO code for Archon that is screwed - running even without safe dirs or digging away.
-- Need scouts to send "get help" messages so that soldiers in mob fight attack dens.
-
+- can't have all archons blitz
+- archons get stuck in their balls
+- GTFO code for Archon that is screwed - running even without safe dirs or digging away, avoid small rubble
 - Scouts in Ball Move still get shot.
 
 
