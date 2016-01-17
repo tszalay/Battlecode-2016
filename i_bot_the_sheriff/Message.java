@@ -6,14 +6,15 @@ import java.util.*;
 // enum for encoding the type of a message in the contents
 enum MessageType
 {
-	UNDER_ATTACK, //int free signals always mean under attack
+	UNDER_ATTACK, // int free signals always mean under attack
 	ZOMBIE_DEN,
 	SIGHT_TARGET,
 	SPAM,
 	FREE_BEER,
 	GOOD_PARTS,
 	MAP_EDGE,
-	REMOVE_WAYPOINT
+	REMOVE_WAYPOINT,
+	NEW_STRATEGY
 }
 
 class SignalLocation extends RobotPlayer
@@ -47,6 +48,7 @@ public class Message extends RobotPlayer
 	
 	// and other things
 	public static MapLocation closestAllyUnderAttackLocation = null;
+	public static Strategy.Type recentStrategySignal = null;
 	
 	public static void readSignalQueue()
 	{
@@ -94,15 +96,22 @@ public class Message extends RobotPlayer
 			case GOOD_PARTS:
 				MapInfo.updateParts(readLocation(vals[0]),false);				
 				break;
+			case NEW_STRATEGY:
+				recentStrategySignal = Strategy.Type.values()[vals[1]];
+				break;
+			case REMOVE_WAYPOINT:
+				break;
 			}
 		}
 	}
 	
 	// to be called by Archon
-	public static void sendBuiltMessage() throws GameActionException
+	public static void sendBuiltMessage(Strategy.Type strat) throws GameActionException
 	{
 		// send all four map edges in one go
 		Message.sendMessageSignal(9, MessageType.MAP_EDGE, MapInfo.mapMin, MapInfo.mapMax);
+		// and a strategy to use
+		Message.sendMessageSignal(9, MessageType.NEW_STRATEGY, strat.ordinal());
 	}
 	
 	//Basic signals always only done when under attack
@@ -173,6 +182,11 @@ public class Message extends RobotPlayer
 	public static MessageType readType(int val)
 	{
 		return MessageType.values()[readByte(val, 3)];
+	}
+	
+	public static void sendMessageSignal(int sq_distance, MessageType type, int val) throws GameActionException
+	{
+		sendMessageSignal(sq_distance, writeType(type), val);
 	}
 	
 	public static void sendMessageSignal(int sq_distance, MessageType type, MapLocation loc1, MapLocation loc2) throws GameActionException
