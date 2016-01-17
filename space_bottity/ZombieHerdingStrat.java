@@ -147,9 +147,9 @@ public class ZombieHerdingStrat extends RobotPlayer implements Strategy
 		RobotInfo closestZombie = Micro.getClosestUnitTo(zombies, here);
 		if (closestZombie !=null)
 		{
-			if (!Behavior.tryRetreatTowards(closestZombie.location, Micro.getSafeMoveDirs()))
+			if (!Action.tryRetreatTowards(closestZombie.location, Micro.getSafeMoveDirs()))
 			{
-				Behavior.tryDirectMove(here.directionTo(closestZombie.location));
+				Action.tryGoToWithoutBeingShot(closestZombie.location,Micro.getCanMoveDirs());
 			}
 		}
 	}
@@ -187,9 +187,9 @@ public class ZombieHerdingStrat extends RobotPlayer implements Strategy
 		{
 			Clock.yield();// wait if not in immediate danger;
 		}
-		else if (!Behavior.tryRetreatTowards(herdingDestLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs())))
+		else if (!Action.tryRetreatTowards(herdingDestLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs())))
 		{
-			Behavior.tryDirectMove(here.directionTo(herdingDestLoc));
+			Action.tryGoToWithoutBeingShot(herdingDestLoc,Micro.getCanMoveDirs());
 		}
 	}
 
@@ -217,9 +217,9 @@ public class ZombieHerdingStrat extends RobotPlayer implements Strategy
 		if (enemies.length != 0)
 		{
 			RobotInfo closestEnemy = Micro.getClosestUnitTo(enemies, here);
-			if (!Behavior.tryRetreatTowards(closestEnemy.location, Micro.getSafeMoveDirs()))
+			if (!Action.tryRetreatTowards(closestEnemy.location, Micro.getSafeMoveDirs()))
 			{
-				Behavior.tryDirectMove(here.directionTo(closestEnemy.location));
+				Action.tryGoToWithoutBeingShot(closestEnemy.location,Micro.getCanMoveDirs());
 			}
 		}
 	}
