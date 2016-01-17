@@ -47,7 +47,7 @@ public class RoboScout extends RobotPlayer
 			myStrategy = new ZombieHerdingStrat();
 			ZombieHerdingStrat.rushingStartLoc = here;
 			
-			Direction rushDir = here.directionTo(Micro.getClosestUnitTo(zombies, here).location);
+			Direction rushDir = here.directionTo(Micro.getClosestUnitTo(zombies, here).location).rotateRight().rotateRight();//go perp
 			ZombieHerdingStrat.herdingDestLoc = here.add(rushDir.dx*ZombieHerdingStrat.herdDist,rushDir.dy*ZombieHerdingStrat.herdDist);
 		}
 		

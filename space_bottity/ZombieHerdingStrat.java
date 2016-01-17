@@ -156,7 +156,7 @@ public class ZombieHerdingStrat extends RobotPlayer implements Strategy
 
 	private boolean doScoutHerding() throws GameActionException
 	{
-		int rud = Micro.getRoundsUntilDanger();
+		int rud = Micro.getRoundsUntilDanger();		
 		Direction herdingDir = here.directionTo(herdingDestLoc);
 		//Direction perpDir = herdingDir.rotateRight().rotateRight();
 
