@@ -30,7 +30,7 @@ public class RoboSoldier extends RobotPlayer
 		}
 		
 		MapLocation closestDen = MapInfo.getClosestDen();
-		if (closestDen != null && here.distanceSquaredTo(closestDen) < 100)
+		if (closestDen != null && here.distanceSquaredTo(closestDen) < 400)
 		{
 			myStrategy = new MobFightStrat(closestDen);
 		}
