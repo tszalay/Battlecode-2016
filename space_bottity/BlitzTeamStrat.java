@@ -82,9 +82,6 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 			else if (mapPartLoc != null)
 				Action.tryGoToWithoutBeingShot(mapPartLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
 			
-			else if (MapInfo.mapCenter != null)
-				Action.tryGoToWithoutBeingShot(MapInfo.mapCenter, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
-			
 			else
 				Action.tryGoToWithoutBeingShot(MapInfo.getExplorationWaypoint(), Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
 			
