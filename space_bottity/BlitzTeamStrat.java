@@ -15,26 +15,31 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 		MapLocation[] theirArchons = rc.getInitialArchonLocations(theirTeam);
 		MapLocation[] ourArchons = rc.getInitialArchonLocations(ourTeam);
 		
-		int myDist = 0;
+		if (ourArchons.length < 2)
+			return false;
+		
+		int x = 0;
+		int y = 0;
 		for (MapLocation them : theirArchons)
 		{
-			if (myDist == 0 || here.distanceSquaredTo(them) < myDist)
-				myDist = here.distanceSquaredTo(them);
+			x += them.x;
+			y += them.y;
 		}
+		x = x/theirArchons.length;
+		y = y/theirArchons.length;
+		MapLocation theirCOM = new MapLocation(x,y);
+		int myDist = here.distanceSquaredTo(theirCOM);
 		
 		int shortestDist = myDist;
 		for (MapLocation us : ourArchons)
 		{
-			for (MapLocation them : theirArchons)
-			{
-				if (us.distanceSquaredTo(them) < shortestDist)
-					shortestDist = us.distanceSquaredTo(them);
-			}
+			if (us.distanceSquaredTo(theirCOM) < shortestDist)
+				shortestDist = us.distanceSquaredTo(theirCOM);
 		}
 		
 		MapLocation[] parts = rc.sensePartLocations(RobotType.ARCHON.sensorRadiusSquared);
-		if (parts != null && parts.length > 0)
-			return true;
+//		if (parts != null && parts.length > 0)
+//			return true;
 		if (myDist == shortestDist)
 			return true;
 		
