@@ -21,6 +21,7 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 	{
 		Debug.setStringAK("My Strategy: " + this.stratName);
 		
+		myNextBuildRobotType = getNextBuildRobotType();
 		if (canBuildNow())
 			doBuild();
 		else
@@ -143,7 +144,6 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 	
 	private static RobotType getNextBuildRobotType() throws GameActionException
 	{
-		// what's next to build: the old thing is not working?
 		RobotInfo[] nearby = Micro.getNearbyAllies();
 		int[] nearbyUnits = new int[RobotType.values().length];
 		for (RobotInfo ri : nearby)

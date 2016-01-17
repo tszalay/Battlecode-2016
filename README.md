@@ -7,8 +7,11 @@
 
 ### For Seeding Submission
 
+- GTFO code for Archon that is screwed - running even without safe dirs or digging away.
 - Need scouts to send "get help" messages so that soldiers in mob fight attack dens.
+
 - Scouts in Ball Move still get shot.
+
 
 ### _For Sprint Submission_
 - Archons go to and pick up parts
