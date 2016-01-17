@@ -7,6 +7,10 @@
 
 ### For Seeding Submission
 
+- The blitz Archon's scout should get a message to use BlitzTeamStrat
+- If we have 3+ archons, one should build a turret turtle
+- All archons should look for parts and neutrals within sensor range and get them, regardless of strat
+
 - GTFO code for Archon that is screwed - running even without safe dirs or digging away.
 - Need scouts to send "get help" messages so that soldiers in mob fight attack dens.
 
