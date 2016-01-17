@@ -154,13 +154,13 @@ public class ZombieHerdingStrat extends RobotPlayer implements Strategy
 		}
 	}
 
-	private static void doScoutHerding() throws GameActionException
+	private boolean doScoutHerding() throws GameActionException
 	{
 		int rud = Micro.getRoundsUntilDanger();
 		Direction herdingDir = here.directionTo(herdingDestLoc);
 		//Direction perpDir = herdingDir.rotateRight().rotateRight();
 
-		if (herdingDir == null) return;
+		if (herdingDir == null) return false;
 
 		// if there's a unit in your way, bug! It might be a neutral or zombie den
 		if (rc.isLocationOccupied(here.add(herdingDir)))
@@ -181,16 +181,18 @@ public class ZombieHerdingStrat extends RobotPlayer implements Strategy
 			}
 		}
 
-
-
-		if (rud > 2)
+		Debug.setStringAK("rud = " + rud);
+		if (rud > 5)
 		{
 			Clock.yield();// wait if not in immediate danger;
 		}
-		else if (!Action.tryRetreatTowards(herdingDestLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs())))
+		else
 		{
-			Action.tryGoToWithoutBeingShot(herdingDestLoc,Micro.getCanMoveDirs());
+			DirectionSet safeDirs = Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs());
+			if (Nav.tryGoTo(herdingDestLoc, safeDirs)) return true;
+			if (Nav.tryGoTo(herdingDestLoc,Micro.getCanMoveDirs())); return true;
 		}
+		return false;
 	}
 
 	public static Direction getMapEdgeDir(MapLocation loc, Direction dir) throws GameActionException
