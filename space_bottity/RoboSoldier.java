@@ -15,7 +15,7 @@ public class RoboSoldier extends RobotPlayer
 		if (rc.getID() % 2 == 0)
 			myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 2, 10);
 		else
-			myStrategy = new MobFightStrat(RobotType.SOLDIER);
+			myStrategy = new MobFightStrat();
 		myHealth = rc.getType().maxHealth;
 	}
 	

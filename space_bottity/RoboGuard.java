@@ -9,7 +9,7 @@ public class RoboGuard extends RobotPlayer
 	
 	public static void init() throws GameActionException
 	{
-		myStrategy = new MobFightStrat(RobotType.GUARD);
+		myStrategy = new MobFightStrat();
 		myHealth = rc.getType().maxHealth;
 	}
 	

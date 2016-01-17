@@ -6,12 +6,10 @@ import java.util.*;
 
 public class MobFightStrat extends RobotPlayer implements Strategy
 {
-	private static RobotType type;
 	private static String stratName;
 	
-	public MobFightStrat(RobotType type)
+	public MobFightStrat()
 	{
-		this.type = type;
 		this.stratName = "MobFightStrat";
 	}
 	
@@ -21,7 +19,7 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 		
 		MapLocation allyLoc = null;
 		
-		switch (type)
+		switch (rc.getType())
 		{
 		case TURRET:
 			return (Action.tryAttackSomeone());

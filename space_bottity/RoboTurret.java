@@ -1,4 +1,4 @@
-package i_bot_the_sheriff;
+package space_bottity;
 
 import battlecode.common.*;
 
