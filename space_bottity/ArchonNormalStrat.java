@@ -39,17 +39,17 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 			return;
 		}
 		
-		// next priority, any of nearby units in trouble?
-		RobotInfo[] nearby = rc.senseNearbyRobots(2, ourTeam);
-		for (RobotInfo ri : nearby)
-		{
-			// aka if there are any too close, retreat
-			if (ri.type != RobotType.SCOUT)
-			{
-				if (Action.tryAdjacentSafeMoveToward(ri.location.directionTo(here)))
-					return;
-			}
-		}
+//		// next priority, any of nearby units in trouble?
+//		RobotInfo[] nearby = rc.senseNearbyRobots(2, ourTeam);
+//		for (RobotInfo ri : nearby)
+//		{
+//			// aka if there are any too close, retreat
+//			if (ri.type != RobotType.SCOUT)
+//			{
+//				if (Action.tryAdjacentSafeMoveToward(ri.location.directionTo(here)))
+//					return;
+//			}
+//		}
 		
 		// look for waypoint
 		MapLocation dest = MapInfo.getClosestDen();
