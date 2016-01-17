@@ -23,7 +23,9 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 		
 		myNextBuildRobotType = getNextBuildRobotType();
 		if (canBuildNow())
+		{
 			doBuild();
+		}
 		else
 			doWaypoint();
 		
@@ -47,8 +49,8 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 			dest = MapInfo.getClosestDen();
 		
 		
-		if (dest != null && here.distanceSquaredTo(dest) < 15)
-			return;
+//		if (dest != null && here.distanceSquaredTo(dest) < 15)
+//			return;
 		
 		// check if it should be deleted
 		if (dest != null && rc.canSenseLocation(dest) && rc.senseParts(dest) == 0 && rc.senseRobotAtLocation(dest) == null)
@@ -71,6 +73,9 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 			// send a bit of a "ping"
 			if (rc.getRoundNum() % 7 == 0)
 				Message.sendSignal(63);
+			
+			//try clear rubble if it's stopping you
+			if (Action.tryClearRubble(here.directionTo(dest)));
 		}
 	}
 	
@@ -149,7 +154,7 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 						  + nearbyUnits[GUARD]
 						  + nearbyUnits[TURRET];
 		
-		if (nearbyUnits[SCOUT] == 0 || nearbyUnits[SCOUT] < combatUnits/4)
+		if (nearbyUnits[SCOUT] < 2 || nearbyUnits[SCOUT] < combatUnits/4)
 			return RobotType.SCOUT;
 		
 		if (nearbyUnits[SOLDIER] < 10)

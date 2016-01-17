@@ -10,7 +10,7 @@ public class RoboSoldier extends RobotPlayer
 	
 	public static void init() throws GameActionException
 	{
-		myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 2, 10);
+		myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 13, 13);
 //		myStrategy = new MobFightStrat();
 		
 //		if (rc.getID() % 2 == 0)
@@ -39,7 +39,7 @@ public class RoboSoldier extends RobotPlayer
 		
 		if (!myStrategy.tryTurn())
 		{
-			myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 2, 10);
+			myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 13, 13);
 			if (lastBallLocation != null)
 				Action.tryGoToWithoutBeingShot(lastBallLocation, Micro.getSafeMoveDirs());
 		}

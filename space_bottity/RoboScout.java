@@ -33,6 +33,8 @@ public class RoboScout extends RobotPlayer
 //		}
 	}
 	
+	static final int SCOUT = RobotType.SCOUT.ordinal();
+	
 	public static void turn() throws GameActionException
 	{
 		RobotInfo[] zombies = Micro.getNearbyZombies();
@@ -51,6 +53,20 @@ public class RoboScout extends RobotPlayer
 			ZombieHerdingStrat.herdingDestLoc = here.add(rushDir.dx*ZombieHerdingStrat.herdDist,rushDir.dy*ZombieHerdingStrat.herdDist);
 		}
 		
+		// go explore if enough scouts here.
+		int lowestScoutID = rc.getID();
+		RobotInfo[] nearby = Micro.getNearbyAllies();
+		int[] nearbyUnits = new int[RobotType.values().length];
+		for (RobotInfo ri : nearby)
+		{
+			nearbyUnits[ri.type.ordinal()]++;
+			if (ri.type == RobotType.SCOUT && ri.ID < lowestScoutID)
+				lowestScoutID = ri.ID;
+		}
+		
+		if (nearbyUnits[SCOUT] > 2 && rc.getID() == lowestScoutID)
+			myStrategy = new ExploreStrat();
+		
 		// Free unit if everything else breaks
 		if (!myStrategy.tryTurn())
 			myStrategy = new FreeUnitStrategy();
@@ -60,7 +76,7 @@ public class RoboScout extends RobotPlayer
 		Sighting.doSendSightingMessage();
 		
 		// and use spare bytecodes to look for stuff
-		// MapInfo.analyzeSurroundings();
+		 MapInfo.analyzeSurroundings();
 		// and send the updates AK don't do this automtically - herding one's can't do it
 		//MapInfo.doScoutSendUpdates();
 
