@@ -7,17 +7,22 @@ import java.util.*;
 public class MobFightStrat extends RobotPlayer implements Strategy
 {
 	private static String stratName;
+	private static MapLocation target;
 	
 	public MobFightStrat()
 	{
 		this.stratName = "MobFightStrat";
 	}
 	
+	public MobFightStrat(MapLocation target)
+	{
+		this.stratName = "MobFightStrat";
+		this.target = target;
+	}
+	
 	public boolean tryTurn() throws GameActionException
 	{
 		Debug.setStringAK("My Strategy: " + this.stratName);
-		
-		MapLocation allyLoc = null;
 		
 		switch (rc.getType())
 		{
@@ -32,12 +37,12 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 				return true;
 			
 			// we can't attack anyone.  listen for calls for reinforcements, and move to help
-			allyLoc = Message.getClosestAllyUnderAttack();
-			if (allyLoc != null)
+			updateTarget();
+			if (target != null)
 			{
-				RobotInfo enemyAttackingAlly = Micro.getClosestUnitTo(Micro.getNearbyHostiles(), allyLoc);
+				RobotInfo enemyAttackingAlly = Micro.getClosestUnitTo(Micro.getNearbyHostiles(), target);
 				if (enemyAttackingAlly == null)
-					return Action.tryMove(here.directionTo(allyLoc));
+					return Action.tryMove(here.directionTo(target));
 				
 				if (!Action.tryAdjacentSafeMoveToward(enemyAttackingAlly.location))
 				{
@@ -117,12 +122,12 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 			}
 			
 			// not overpowered.  we don't see anyone.  listen for calls for reinforcements, and move to help
-			allyLoc = Message.getClosestAllyUnderAttack();
-			if (allyLoc != null)
+			updateTarget();
+			if (target != null)
 			{
-				RobotInfo enemyAttackingAlly = Micro.getClosestUnitTo(Micro.getNearbyHostiles(), allyLoc);
+				RobotInfo enemyAttackingAlly = Micro.getClosestUnitTo(Micro.getNearbyHostiles(), target);
 				if (enemyAttackingAlly == null)
-					return Action.tryMove(here.directionTo(allyLoc));
+					return Action.tryMove(here.directionTo(target));
 				
 				if (!Action.tryAdjacentSafeMoveToward(enemyAttackingAlly.location))
 				{
@@ -147,5 +152,13 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 			}
 			return false;
 		}
+	}
+	
+	public void updateTarget() throws GameActionException
+	{
+		if (rc.canSenseLocation(target) && rc.senseRobotAtLocation(target) == null || rc.senseRobotAtLocation(target).team == ourTeam)
+			target = null;
+		if (target == null)
+			target = Message.getClosestAllyUnderAttack();
 	}
 }

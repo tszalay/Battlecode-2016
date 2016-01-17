@@ -9,13 +9,13 @@ public class RoboSoldier extends RobotPlayer
 	
 	public static void init() throws GameActionException
 	{
-//		myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 2, 10);
-//		myStrategy = new MobFightStrat(RobotType.SOLDIER);
+		myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 2, 10);
+//		myStrategy = new MobFightStrat();
 		
-		if (rc.getID() % 2 == 0)
-			myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 2, 10);
-		else
-			myStrategy = new MobFightStrat();
+//		if (rc.getID() % 2 == 0)
+//			myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 2, 10);
+//		else
+//			myStrategy = new MobFightStrat();
 		myHealth = rc.getType().maxHealth;
 	}
 	
@@ -29,7 +29,15 @@ public class RoboSoldier extends RobotPlayer
 			Message.sendSignal(RobotType.SOLDIER.sensorRadiusSquared*2);
 		}
 		
-		myStrategy.tryTurn();
+		if (here.distanceSquaredTo(MapInfo.getClosestDen()) < 100)
+		{
+			myStrategy = new MobFightStrat(MapInfo.getClosestDen());
+		}
+		
+		if (!myStrategy.tryTurn())
+		{
+			myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 2, 10);
+		}
 	}
 }
 	
