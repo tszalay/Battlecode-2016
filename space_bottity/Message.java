@@ -133,6 +133,8 @@ public class Message extends RobotPlayer
 			}
 		}
 		
+		if (bestLoc == null) return null;
+		
 		closestAllyUnderAttackLocation = bestLoc;
 		
 		if (rc.canSenseLocation(closestAllyUnderAttackLocation) && (rc.senseRobotAtLocation(closestAllyUnderAttackLocation)==null || rc.senseRobotAtLocation(closestAllyUnderAttackLocation).team == ourTeam))
