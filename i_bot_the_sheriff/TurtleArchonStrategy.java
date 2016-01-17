@@ -109,7 +109,7 @@ public class TurtleArchonStrategy extends RobotPlayer implements Strategy
 		Direction buildDir = Micro.getCanBuildDirectionSet(robotToBuild).getRandomValid();
 		if (buildDir != null)
 		{
-			overrideStrategy = new BuildingStrategy(robotToBuild, buildDir);
+			overrideStrategy = new BuildingStrategy(robotToBuild, buildDir, Strategy.Type.TURTLE);
 			return true;
 		}
 		

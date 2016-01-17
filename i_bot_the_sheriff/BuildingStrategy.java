@@ -6,9 +6,13 @@ import java.util.*;
 
 public class BuildingStrategy extends RobotPlayer implements Strategy
 {
+	// which strategy to use
+	Strategy.Type myStrat = null;
+	
 	// creating the strategy actually forces us to build, so it better be valid
-	public BuildingStrategy(RobotType robot, Direction dir) throws GameActionException
+	public BuildingStrategy(RobotType robot, Direction dir, Strategy.Type strat) throws GameActionException
 	{
+		myStrat = strat;
 		rc.build(dir, robot);
 	}
 	
@@ -19,7 +23,7 @@ public class BuildingStrategy extends RobotPlayer implements Strategy
 		if (!rc.isCoreReady())
 			return true;
 		
-		Message.sendBuiltMessage();
+		Message.sendBuiltMessage(myStrat);
 		return false;
 	}
 }
