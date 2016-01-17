@@ -6,6 +6,7 @@ public class RoboSoldier extends RobotPlayer
 {
 	public static Strategy myStrategy;
 	public static double myHealth;
+	public static MapLocation lastBallLocation;
 	
 	public static void init() throws GameActionException
 	{
@@ -32,12 +33,15 @@ public class RoboSoldier extends RobotPlayer
 		MapLocation closestDen = MapInfo.getClosestDen();
 		if (closestDen != null && here.distanceSquaredTo(closestDen) < 400)
 		{
+			lastBallLocation = here;
 			myStrategy = new MobFightStrat(closestDen);
 		}
 		
 		if (!myStrategy.tryTurn())
 		{
 			myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 2, 10);
+			if (lastBallLocation != null)
+				Action.tryGoToWithoutBeingShot(lastBallLocation, Micro.getSafeMoveDirs());
 		}
 	}
 }

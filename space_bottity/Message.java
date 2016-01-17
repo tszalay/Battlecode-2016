@@ -1,6 +1,7 @@
 package space_bottity;
 
 import battlecode.common.*;
+
 import java.util.*;
 
 // enum for encoding the type of a message in the contents
@@ -115,7 +116,7 @@ public class Message extends RobotPlayer
 	}
 	
 	//Basic signals always only done when under attack
-	public static MapLocation getClosestAllyUnderAttack()
+	public static MapLocation getClosestAllyUnderAttack() throws GameActionException
 	{
 		if (closestAllyUnderAttackLocation != null)
 			return closestAllyUnderAttackLocation;
@@ -133,6 +134,9 @@ public class Message extends RobotPlayer
 		}
 		
 		closestAllyUnderAttackLocation = bestLoc;
+		
+		if (rc.canSenseLocation(closestAllyUnderAttackLocation) && (rc.senseRobotAtLocation(closestAllyUnderAttackLocation)==null || rc.senseRobotAtLocation(closestAllyUnderAttackLocation).team == ourTeam))
+				closestAllyUnderAttackLocation = null;
 		
 		// clear the buffer
 		underAttackLocs.clear();

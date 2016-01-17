@@ -124,9 +124,10 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 			
 			// not overpowered.  we don't see anyone.  listen for calls for reinforcements, and move to help
 			updateTarget();
-			Debug.setStringSJF("target = " + target.toString());
+			
 			if (target != null)
 			{
+				Debug.setStringSJF("target = " + target.toString());
 				RobotInfo enemyAttackingAlly = Micro.getClosestUnitTo(Micro.getNearbyHostiles(), target);
 				if (enemyAttackingAlly == null)
 				{
