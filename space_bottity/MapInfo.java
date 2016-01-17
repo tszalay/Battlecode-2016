@@ -223,7 +223,7 @@ public class MapInfo extends RobotPlayer
 		// only send one at a time
 		if (newMapEdge)
 		{
-			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.MAP_EDGE, mapMin, mapMax);
+			//Message.sendMessageSignal(fullMapDistanceSq(), MessageType.MAP_EDGE, mapMin, mapMax);
 			return true;
 		}
 		if (newZombieDen != null)

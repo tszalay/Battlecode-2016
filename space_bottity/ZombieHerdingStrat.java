@@ -103,8 +103,9 @@ public class ZombieHerdingStrat extends RobotPlayer implements Strategy
 
 		// don't rush if no zombies
 		if (zombies.length == 0) return false;
-		RobotInfo closestZombie = Micro.getClosestUnitTo(zombies, rc.getLocation());
-		int dist2ToZombie = rc.getLocation().distanceSquaredTo(closestZombie.location);
+		
+		// don't rush if the only zombie is a den
+		if (zombies.length == 1 && zombies[0].type == RobotType.ZOMBIEDEN) return false;
 
 		// don't rush if you see fast zombies
 		for (RobotInfo ri : zombies)
@@ -112,6 +113,8 @@ public class ZombieHerdingStrat extends RobotPlayer implements Strategy
 			if (ri.type == RobotType.FASTZOMBIE) return false;
 		}
 
+		RobotInfo closestZombie = Micro.getClosestUnitTo(zombies, rc.getLocation());
+		int dist2ToZombie = rc.getLocation().distanceSquaredTo(closestZombie.location);
 		for (RobotInfo ri : allies)
 		{
 			if (ri.type == RobotType.ARCHON) canSeeArchon = true;
@@ -124,6 +127,7 @@ public class ZombieHerdingStrat extends RobotPlayer implements Strategy
 		}	
 		// don't rush if you can't see your archon
 		if (!canSeeArchon) return false;
+		
 		return true;
 
 	}
@@ -181,7 +185,6 @@ public class ZombieHerdingStrat extends RobotPlayer implements Strategy
 			}
 		}
 
-		Debug.setStringAK("rud = " + rud);
 		if (rud > 5)
 		{
 			Clock.yield();// wait if not in immediate danger;

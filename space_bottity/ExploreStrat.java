@@ -22,8 +22,7 @@ public class ExploreStrat extends RobotPlayer implements Strategy
 		
 		Debug.setStringAK("My Strategy: " + this.stratName);
 		
-		Debug.setStringTS("Exploring to " + myExploringTarget);
-		
+
 		// get a random waypoint and move towards it
 		if (myExploringTarget == null || here.distanceSquaredTo(myExploringTarget) < 24 || !MapInfo.isOnMap(myExploringTarget))
 			myExploringTarget = MapInfo.getExplorationWaypoint();
@@ -36,6 +35,7 @@ public class ExploreStrat extends RobotPlayer implements Strategy
 		else
 			Action.tryGoToWithoutBeingShot(myExploringTarget, goodDirs);
 		
+		Debug.setStringAK("Exploring to " + myExploringTarget);		
         // always send out info about sighted targets
 		Sighting.doSendSightingMessage();
 		
@@ -45,5 +45,31 @@ public class ExploreStrat extends RobotPlayer implements Strategy
 		MapInfo.doScoutSendUpdates();
 		
 		return true;
+	}
+	
+	
+	static final int SCOUT = RobotType.SCOUT.ordinal();
+	static final int ARCHON = RobotType.ARCHON.ordinal();
+	public static boolean shouldExplore(RobotInfo[] allies, RobotInfo[] zombies) throws GameActionException
+	{
+
+		int lowestScoutID = rc.getID();
+		RobotInfo[] nearby = Micro.getNearbyAllies();
+		int[] nearbyUnits = new int[RobotType.values().length];
+		for (RobotInfo ri : nearby)
+		{
+			nearbyUnits[ri.type.ordinal()]++;
+			if (ri.type == RobotType.SCOUT && ri.ID < lowestScoutID)
+				lowestScoutID = ri.ID;
+		}
+		
+		// explore if there are too many scouts nearby and an Archon is nearby
+		if (nearbyUnits[ARCHON] > 0 && nearbyUnits[SCOUT] > 2 && rc.getID() == lowestScoutID) return true;
+		
+		// explore if there are no zombies and I'm near an Archon
+		// probably I'm herding and the zombies got killed
+		if (nearbyUnits[ARCHON] == 0 && zombies.length == 0) return true;	
+		
+		return false;
 	}
 }
