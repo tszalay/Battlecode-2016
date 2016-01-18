@@ -7,6 +7,7 @@
 
 ### For Seeding Submission
 
+- soldiers switching back from mob to do ball get lost and sit around.
 - add rubble removal and decisions about when to dig vs go around.
 - scouts built in turret range should gtfo
 - strange error saying scout can't move there bc too much rubble?

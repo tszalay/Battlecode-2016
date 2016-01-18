@@ -12,7 +12,7 @@ public class RoboScout extends RobotPlayer
 	{
 		// start off balling around closest archon
 		if (myBuilderLocation != null)
-			myStrategy = new BallMoveStrategy(myBuilderID, 14, 35);
+			myStrategy = new BallMoveStrategy(myBuilderID, 14, 24);
 		else
 			myStrategy = new FreeUnitStrategy();
 //		 
@@ -69,7 +69,7 @@ public class RoboScout extends RobotPlayer
 		
 		Sighting.doSendSightingMessage();
 		MapInfo.analyzeSurroundings();
-		
+
 		if (sendUpdates) // zombie herding zombies don't have time to send updates
 		{
 		MapInfo.doScoutSendUpdates();

@@ -22,7 +22,7 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 		Debug.setStringAK("My Strategy: " + this.stratName);
 		
 		myNextBuildRobotType = getNextBuildRobotType();
-		if (canBuildNow())
+		if (canBuildNow() && (rc.getRoundNum()+rc.getID())%3 == 0) //AK give them some time to move
 		{
 			doBuild();
 		}
