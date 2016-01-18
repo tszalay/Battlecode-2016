@@ -13,11 +13,25 @@ public class MapInfo extends RobotPlayer
 	public static MapLocation mapMax = new MapLocation(18001,18001);
 	
 	// update the boundary on one of the map min/maxes
-	public static Direction newMapDir = null;
-	public static int newMapVal;
+	public static boolean newMapEdge = false;
 	
 	public static MapLocation newZombieDen = null;
 	public static MapLocation newParts = null;
+	
+	public static int numInitialArchons = 0;
+
+	// note - HFLIP means flip along horizontal axis (same x)
+	// and VFLIP means flip along vertical axis (same y)
+	// (DIAG is 
+	private static final int SYM_ROT = 1;
+	private static final int SYM_HFLIP = 2;
+	private static final int SYM_VFLIP = 4;
+	
+	// if it is neither of these, it's some other bullshit
+	private static int mapSymmetry = SYM_ROT|SYM_HFLIP|SYM_VFLIP;
+	
+	public static MapLocation mapCenter = null;
+	private static MapLocation dblCenter = null;
 
 	// the following functions are to be called mainly by Archons to set destinations
 	
@@ -83,11 +97,33 @@ public class MapInfo extends RobotPlayer
 		return maxDistSq;
 	}
 	
-	// these are to be called by scouts or by Message,
-	// to update the given edge
+	// distance to closest corner
+	public static int closestCornerDistanceSq()
+	{
+		int minDx = Math.abs(mapMin.x-here.x);
+		int minDy = Math.abs(mapMin.y-here.y);
+		minDx = Math.min(minDx, Math.abs(mapMax.x-here.x));
+		minDy = Math.min(minDy, Math.abs(mapMax.y-here.y));
+		
+		return minDx*minDx + minDy*minDy;
+	}
+	
+	// from receiving a message, don't need to bother signaling
+	public static void updateMapEdges(MapLocation newMin, MapLocation newMax)
+	{
+		mapMin = new MapLocation(
+					Math.max(mapMin.x, newMin.x),
+					Math.max(mapMin.y, newMin.y)
+				);
+		mapMax = new MapLocation(
+				Math.min(mapMax.x, newMax.x),
+				Math.min(mapMax.y, newMax.y)
+			);
+	}
+	
+	// called by local units when checking for map edge info
 	public static void updateMapEdge(Direction dir, int val, boolean sendUpdate)
 	{
-		boolean newval = false;
 		
 		// update the correct direction
 		switch (dir)
@@ -97,7 +133,7 @@ public class MapInfo extends RobotPlayer
 			{
 				mapMin = new MapLocation(mapMin.x,val);
 				if (sendUpdate)
-					newval = true;
+					newMapEdge = true;
 			}
 			break;
 		case EAST:
@@ -105,7 +141,7 @@ public class MapInfo extends RobotPlayer
 			{
 				mapMax = new MapLocation(val,mapMax.y);
 				if (sendUpdate)
-					newval = true;
+					newMapEdge = true;
 			}
 			break;
 		case WEST:
@@ -113,7 +149,7 @@ public class MapInfo extends RobotPlayer
 			{
 				mapMin = new MapLocation(val,mapMin.y);
 				if (sendUpdate)
-					newval = true;
+					newMapEdge = true;
 			}
 			break;
 		case SOUTH:
@@ -121,20 +157,13 @@ public class MapInfo extends RobotPlayer
 			{
 				mapMax = new MapLocation(mapMax.x,val);
 				if (sendUpdate)
-					newval = true;
+					newMapEdge = true;
 			}
 			break;
 		default:
 			System.out.print("Invalid direction to updateMapEdge");
 			break;
 		}
-		
-		// and post it to be sent
-		if (newval)
-		{
-			newMapDir = dir;
-			newMapVal = val;
-		}		
 	}
 
 	
@@ -192,22 +221,29 @@ public class MapInfo extends RobotPlayer
 		if (Micro.isInDanger() || rc.getCoreDelay() > 5)
 			return false;
 		
+		// AK this function is not working - they don't recognize parts that are already on the list
+		// keep messaging forever. Hack for now limit the updates to every 10 rounds.
+		if (rc.getRoundNum()%10 != 0)
+			return false;
+		
 		// only send one at a time
-		if (newMapDir != null)
+		if (newMapEdge)
 		{
-			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.MAP_EDGE,
-					new MapLocation(newMapDir.ordinal(), newMapVal));
-			newMapDir = null;
+			Debug.setStringAK("sending new Map Edge Signal");
+			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.MAP_EDGE, mapMin, mapMax);
+			newMapEdge = false;
 			return true;
 		}
 		if (newZombieDen != null)
 		{
+			Debug.setStringAK("sending new Zombie Den signal");
 			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.ZOMBIE_DEN, newZombieDen);
 			newZombieDen = null;
 			return true;
 		}
 		if (newParts != null)
 		{
+			Debug.setStringAK("sending new Parts signal");
 			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.GOOD_PARTS, newParts);
 			newParts = null;
 			return true;
@@ -265,11 +301,97 @@ public class MapInfo extends RobotPlayer
 		
 		MapLocation[] partsLocs = rc.sensePartLocations(rc.getType().sensorRadiusSquared);
 		
-		for (MapLocation loc : partsLocs)
+		if (partsLocs.length > 0)
 		{
-			updateParts(loc, isScout);
-			visibleParts += rc.senseParts(loc);
+			for (MapLocation loc : partsLocs)
+			{
+				updateParts(loc, isScout);
+				visibleParts += rc.senseParts(loc);
+			}
 		}
 		//System.out.println("Scanned " + nchecked + "/" + MapUtil.allOffsX.length + " locations");
 	}
+	
+	public static void calculateSymmetry()
+	{
+		// create fastlocset without internal list
+		FastLocSet archonLocs = new FastLocSet(false);
+
+		MapLocation[] ourArchons = rc.getInitialArchonLocations(ourTeam);
+		MapLocation[] theirArchons = rc.getInitialArchonLocations(theirTeam);
+		
+		numInitialArchons = ourArchons.length;
+		
+		if (numInitialArchons == 0)
+			return;
+		
+		int xtot = 0;
+		int ytot = 0;
+		
+		// first compute the center of the map
+		// which is just the average of all of the archon locations
+		for (int i=0; i<ourArchons.length; i++)
+		{
+			xtot += ourArchons[i].x;
+			ytot += ourArchons[i].y;
+			xtot += theirArchons[i].x;
+			ytot += theirArchons[i].y;
+			archonLocs.add(ourArchons[i]);
+		}
+		
+		// this _might_ be like half a unit away from the actual center
+		mapCenter = new MapLocation(xtot/(2*numInitialArchons),ytot/(2*numInitialArchons));
+		// and set Message's map offsets
+		Message.MAP_OFF_X = mapCenter.x - 128;
+		Message.MAP_OFF_Y = mapCenter.y - 128;
+		// and the map edge min and max
+		mapMin = mapCenter.add(-GameConstants.MAP_MAX_WIDTH/2-1,-GameConstants.MAP_MAX_HEIGHT/2-1);
+		mapMax = mapCenter.add(GameConstants.MAP_MAX_WIDTH/2+1,GameConstants.MAP_MAX_HEIGHT/2+1);
+		
+		// this, on the other hand, is exactly twice the center
+		dblCenter = new MapLocation(xtot/numInitialArchons,ytot/numInitialArchons);
+		
+		// now go through and whittle down possible symmetries to what we hope is the real one
+		for (MapLocation loc : theirArchons)
+		{
+			// calculate horizontal, vertical, and rotational symmetric locations
+			MapLocation loc_horiz = new MapLocation(loc.x, dblCenter.y-loc.y);
+			MapLocation loc_vert = new MapLocation(dblCenter.x-loc.x, loc.y);
+			MapLocation loc_rot = new MapLocation(loc_vert.x,loc_horiz.y);
+			
+			if (!archonLocs.contains(loc_horiz))
+				mapSymmetry &= ~(SYM_HFLIP);
+			if (!archonLocs.contains(loc_vert))
+				mapSymmetry &= ~(SYM_VFLIP);
+			if (!archonLocs.contains(loc_rot))
+				mapSymmetry &= ~(SYM_ROT);
+		}
+		
+		// has more than one symmetry, so it doesn't really matter
+		// and it's probably rotation because of the map editor
+		if (Integer.bitCount(mapSymmetry) > 1)
+			mapSymmetry = SYM_ROT;
+	}
+	
+    public static MapLocation getSymmetricLocation(MapLocation loc) throws GameActionException
+    {
+    	MapLocation loc_sym = null;
+    	
+    	switch (mapSymmetry)
+    	{
+    	case SYM_ROT:
+    		loc_sym = new MapLocation(dblCenter.x-loc.x,dblCenter.y-loc.y);
+    		break;
+    	case SYM_HFLIP:
+    		loc_sym = new MapLocation(loc.x, dblCenter.y-loc.y);
+    		break;
+    	case SYM_VFLIP:
+    		loc_sym = new MapLocation(dblCenter.x-loc.x, loc.y);
+    		break;
+		default:
+			break;
+    	}
+    	
+    	return loc_sym;
+    }
 }

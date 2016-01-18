@@ -1,21 +1,21 @@
 package team023;
 
 import battlecode.common.*;
+
 import java.util.*;
 
 // enum for encoding the type of a message in the contents
 enum MessageType
 {
-	NONE,
-	SPAWN,
+	UNDER_ATTACK, // int free signals always mean under attack
 	ZOMBIE_DEN,
 	SIGHT_TARGET,
 	SPAM,
 	FREE_BEER,
 	GOOD_PARTS,
-	RALLY_LOCATION,
 	MAP_EDGE,
-	ARCHON_DEST
+	REMOVE_WAYPOINT,
+	NEW_STRATEGY
 }
 
 class SignalLocation extends RobotPlayer
@@ -35,26 +35,21 @@ class SignalLocation extends RobotPlayer
 public class Message extends RobotPlayer
 {	
 	// bookkeeping stuff
-	private static final int TYPE_BITS = 8;
-	private static final int SHIFT_BITS = 32-TYPE_BITS;
-	private static final int SHIFT_MASK = ((1 << SHIFT_BITS)-1);
-	private static final int LOC_OFFSET = 20000;
 	public static final int FULL_MAP_DIST_SQ = GameConstants.MAP_MAX_HEIGHT*GameConstants.MAP_MAX_HEIGHT +
 											   GameConstants.MAP_MAX_WIDTH*GameConstants.MAP_MAX_WIDTH;
 	
-	// storage for received/accumulated message info
-	public static ArrayList<SignalLocation> archonLocs = new ArrayList<SignalLocation>();
+	// get set by MapInfo... awkward
+	public static int MAP_OFF_X = 0;
+	public static int MAP_OFF_Y = 0;
+	
+	public static ArrayList<SignalLocation> underAttackLocs = new ArrayList<SignalLocation>();
 	
 	// and for any transmitted enemy messages, only keep the latest received
 	public static MapLocation recentEnemySignal = null;
 	
-	public static MapLocation recentArchonLocation = null;
-	public static MapLocation recentArchonDest = null;
-	public static int 		  recentArchonRound = 0;
-	public static int		  recentArchonID = 100000000;
-	
 	// and other things
-	public static MapLocation rallyLocation = null;
+	public static MapLocation closestAllyUnderAttackLocation = null;
+	public static Strategy.Type recentStrategySignal = null;
 	
 	public static void readSignalQueue()
 	{
@@ -72,108 +67,144 @@ public class Message extends RobotPlayer
 			int[] vals = sig.getMessage();
 			MessageType type;
 			if (vals == null)
-				type = MessageType.NONE;
+				type = MessageType.UNDER_ATTACK;
 			else
-				type = MessageType.values()[readByte(vals[0],3)];
+				type = readType(vals[0]);
+			
+//			if (sig.getID() == BallMove.ballTargetID)
+				//BallMove.updateBallLocation(sig.getLocation());
 
 			switch (type)
 			{
-			case NONE:
-				// logic for basic signaling goes here
-				break;
-			case SPAWN:
-				archonLocs.add(new SignalLocation(sig,readLocation(vals)));
+			case UNDER_ATTACK:
+				underAttackLocs.add(new SignalLocation(sig,sig.getLocation()));
 				break;
 			case FREE_BEER:
 				break;
 			case SPAM:
 				break;
 			case SIGHT_TARGET:
-				Sighting.addSightedTarget(readLocation(vals),
-						RobotType.values()[readByte(vals[1],3)],
+				Sighting.addSightedTarget(readLocation(vals[0]),
+						RobotType.values()[readByte(vals[1],0)],
 						rc.getRoundNum()-1);
 				break;
 			case ZOMBIE_DEN:
-				MapInfo.updateZombieDens(readLocation(vals),false);
-				break;
-			case RALLY_LOCATION:
-				rallyLocation = readLocation(vals);
+				MapInfo.updateZombieDens(readLocation(vals[0]),false);
 				break;
 			case MAP_EDGE:
-				MapLocation ml = readLocation(vals);
-				MapInfo.updateMapEdge(Direction.values()[ml.x],ml.y,false);
+				MapInfo.updateMapEdges(readLocation(vals[0]), readLocation(vals[1]));
 				break;
 			case GOOD_PARTS:
-				MapInfo.updateParts(readLocation(vals),false);				
+				MapInfo.updateParts(readLocation(vals[0]),false);				
 				break;
-			case ARCHON_DEST:
-				updateRecentArchon(sig, vals);
+			case NEW_STRATEGY:
+				recentStrategySignal = Strategy.Type.values()[vals[1]];
+				break;
+			case REMOVE_WAYPOINT:
 				break;
 			}
 		}
 	}
 	
-	private static void updateRecentArchon(Signal s, int[] vals)
+	// to be called by Archon
+	public static void sendBuiltMessage(Strategy.Type strat) throws GameActionException
 	{
-		if (recentArchonLocation != null && s.getID() > recentArchonID
-					&& rc.getRoundNum() - recentArchonRound < 2*RoboArchon.DEST_MESSAGE_FREQ)
-			return;
-		
-		recentArchonLocation = s.getLocation();
-		recentArchonDest = readLocation(vals);
-		recentArchonRound = rc.getRoundNum();
-		recentArchonID = s.getID();
+		// send all four map edges in one go
+		Message.sendMessageSignal(9, MessageType.MAP_EDGE, MapInfo.mapMin, MapInfo.mapMax);
+		// and a strategy to use
+		Message.sendMessageSignal(9, MessageType.NEW_STRATEGY, strat.ordinal());
 	}
+	
+	//Basic signals always only done when under attack
+	public static MapLocation getClosestAllyUnderAttack() throws GameActionException
+	{
+		if (closestAllyUnderAttackLocation != null)
+			return closestAllyUnderAttackLocation;
+		
+		int distToClosestAlly = 1000000;
+		MapLocation bestLoc = null;
+		for (SignalLocation sm : Message.underAttackLocs )
+		{
+			int distToThisSignalOrigin = here.distanceSquaredTo(sm.loc);
+			if (distToThisSignalOrigin < distToClosestAlly)
+			{
+				distToClosestAlly = distToThisSignalOrigin;
+				bestLoc = sm.loc;
+			}
+		}
+		
+		if (bestLoc == null) return null;
+		
+		closestAllyUnderAttackLocation = bestLoc;
+		
+		if (rc.canSenseLocation(closestAllyUnderAttackLocation) && (rc.senseRobotAtLocation(closestAllyUnderAttackLocation)==null || rc.senseRobotAtLocation(closestAllyUnderAttackLocation).team == ourTeam))
+				closestAllyUnderAttackLocation = null;
+		
+		// clear the buffer
+		underAttackLocs.clear();
+		
+		return closestAllyUnderAttackLocation;
+	}
+	
+	public static void sendSightingSignal(int sq_distance, MapLocation loc)
+	{
+		
+	}
+	
+	
+	
+	// low-level functions past here
+	
 	
 	private static int readByte(int val, int ind)
 	{
 		return (val>>>(ind*8))&255;
 	}
 	
-	private static MapLocation readLocation(int[] vals)
+	private static MapLocation readLocation(int val)
 	{
-		return new MapLocation((vals[0]&SHIFT_MASK)-LOC_OFFSET, vals[1]-LOC_OFFSET);
+		return new MapLocation(readByte(val,0)+MAP_OFF_X, readByte(val,1)+MAP_OFF_Y);
 	}
 	
-	// to be called by Archon
-	public static void sendBuiltMessage() throws GameActionException
+	// writes a particular byte
+	// (gotta | all the bytes together to make a message)
+	public static int writeByte(int val, int ind)
 	{
-		// send all four map edge signals
-		Message.sendMessageSignal(2, MessageType.MAP_EDGE,
-				new MapLocation(Direction.NORTH.ordinal(), MapInfo.mapMin.y));
-		Message.sendMessageSignal(2, MessageType.MAP_EDGE,
-				new MapLocation(Direction.EAST.ordinal(), MapInfo.mapMax.x));
-		Message.sendMessageSignal(2, MessageType.MAP_EDGE,
-				new MapLocation(Direction.SOUTH.ordinal(), MapInfo.mapMax.y));
-		Message.sendMessageSignal(2, MessageType.MAP_EDGE,
-				new MapLocation(Direction.WEST.ordinal(), MapInfo.mapMin.x));
+		return (val << (ind*8));
 	}
 	
-	// also by archon
-	public static void calcRallyLocation()
+	// writes a maplocation to the lowest two bytes of ints n stuff
+	public static int writeLocation(MapLocation loc)
 	{
-		int bestID = 1000000;
-		MapLocation bestloc = null;
-
-		for (SignalLocation sm : Message.archonLocs)
-		{
-			if (sm.sig.getID() < bestID)
-			{
-				bestloc = sm.loc;
-				bestID = sm.sig.getID();
-			}
-		}
-		
-		rallyLocation = bestloc;
+		return writeByte(loc.x-MAP_OFF_X,0) | writeByte(loc.y-MAP_OFF_Y,1);
+	}
+	
+	// and the type byte
+	public static int writeType(MessageType type)
+	{
+		return writeByte(type.ordinal(), 3);
+	}
+	
+	public static MessageType readType(int val)
+	{
+		return MessageType.values()[readByte(val, 3)];
+	}
+	
+	public static void sendMessageSignal(int sq_distance, MessageType type, int val) throws GameActionException
+	{
+		sendMessageSignal(sq_distance, writeType(type), val);
+	}
+	
+	public static void sendMessageSignal(int sq_distance, MessageType type, MapLocation loc1, MapLocation loc2) throws GameActionException
+	{
+		sendMessageSignal(sq_distance, writeType(type) | writeLocation(loc1), writeLocation(loc2));
 	}
 	
 	public static void sendMessageSignal(int sq_distance, MessageType type, MapLocation loc) throws GameActionException
 	{
-		int v1 = (type.ordinal() << SHIFT_BITS);
-		sendMessageSignal(sq_distance, v1 | (loc.x+LOC_OFFSET), (loc.y+LOC_OFFSET));
+		sendMessageSignal(sq_distance, writeType(type) | writeLocation(loc), 0);
 	}
 
-	
 	private static void sendMessageSignal(int sq_distance, int v1, int v2) throws GameActionException
 	{
 		rc.broadcastMessageSignal(v1,v2,sq_distance);

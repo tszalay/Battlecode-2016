@@ -6,148 +6,73 @@ import java.util.*;
 
 public class RoboScout extends RobotPlayer
 {
-	private enum ScoutState
-	{
-		SIGHTING,
-		EXPLORING,
-		SHADOWING
-	}
-
-	public static final int SIGNAL_ROUND = 30; 
-	
-	public static ScoutState myState = ScoutState.EXPLORING;
-	public static MapLocation myTarget;
+	public static Strategy myStrategy;
 	
 	public static void init() throws GameActionException
 	{
-		// first-spawn scout, send the message right away
-		if (rc.getRoundNum() < SIGNAL_ROUND)
-		{
-			if (myArchon != null)
-			{
-				Message.sendMessageSignal(Message.FULL_MAP_DIST_SQ, MessageType.SPAWN, myArchon.location);
-			}
-		}
+		// start off balling around closest archon
+		if (myBuilderLocation != null)
+			myStrategy = new BallMoveStrategy(myBuilderID, 14, 24);
+		else
+			myStrategy = new FreeUnitStrategy();
+//		 
+//		RobotInfo[] allies = rc.senseNearbyRobots(RobotType.SCOUT.sensorRadiusSquared, ourTeam);
+//		RobotInfo archon = null;
+//		if (allies != null && allies.length > 0)
+//		{
+//			for (RobotInfo ri : allies)
+//			{
+//				if (ri.type == RobotType.ARCHON)
+//				{
+//					archon = ri;
+//					continue;
+//				}
+//			}
+//			if (archon != null)
+//				myStrategy = new BlitzTeamStrat(RobotType.SCOUT, archon);
+//		}
 	}
 	
+
 	
 	public static void turn() throws GameActionException
 	{
-		// state machine update
-		updateState();
-			
-		if (rc.isCoreReady())
+		RobotInfo[] zombies = Micro.getNearbyZombies();
+		RobotInfo[] allies = Micro.getNearbyAllies();
+		RobotInfo[] enemies = Micro.getNearbyEnemies();
+		boolean sendUpdates = true;
+		
+		// Default is Ball (see init)
+		
+		// zombie herd if necessary
+		if (ZombieHerdingStrat.shouldHerd(allies, zombies))
 		{
-			// do turn according to state
-			switch (myState)
-			{
-			case EXPLORING:
-				doScoutExploring();
-				break;
-			case SHADOWING:
-				doScoutShadowing();
-				break;
-			case SIGHTING:
-				doScoutSighting();
-				break;
-			}
+			myStrategy = new ZombieHerdingStrat();
+			ZombieHerdingStrat.rushingStartLoc = here;
+			
+			Direction rushDir = here.directionTo(Micro.getClosestUnitTo(zombies, here).location).rotateRight().rotateRight();//go perp
+			ZombieHerdingStrat.herdingDestLoc = here.add(rushDir.dx*ZombieHerdingStrat.herdDist,rushDir.dy*ZombieHerdingStrat.herdDist);
+			
+			sendUpdates = false;
 		}
 		
-        // always send out info about sighted targets
+		// explore if you are free to do so
+		if (ExploreStrat.shouldExplore(allies, zombies))
+		{
+			myStrategy = new ExploreStrat();
+		}
+
+		// Free unit if everything else breaks
+		if (!myStrategy.tryTurn())
+			myStrategy = new FreeUnitStrategy();
+		//myStrategy.tryTurn();
+		
 		Sighting.doSendSightingMessage();
-		
-		// and use spare bytecodes to look for stuff
 		MapInfo.analyzeSurroundings();
-		// and send the updates
-		if (!Micro.isInDanger())
-			MapInfo.doScoutSendUpdates();
-	}
-	
-	private static void updateState() throws GameActionException
-	{
-//		// if i am close to a turret and no one else is, post up
-//		RobotInfo[] allies = Micro.getNearbyAllies();
-//		int numTurrets = 0;
-//		int numScouts = 0;
-//		for (RobotInfo ri : allies)
-//		{
-//			if (ri.type == RobotType.TURRET)
-//				numTurrets += 1;
-//			else if (ri.type == RobotType.SCOUT)
-//				numScouts += 1;
-//		}
-//		if (numTurrets > 0 && numScouts > 1)
-//			myState = ScoutState.SIGHTING;
-//		else
-//			myState = ScoutState.EXPLORING;
-		
-		// if i see 2 scouts, i am free to explore
-		RobotInfo[] allies = Micro.getNearbyAllies();
-		int numScouts = 0;
-		for (RobotInfo ri : allies)
-		{
-			if (ri.type == RobotType.SCOUT && ri.ID > rc.getID())
-				numScouts += 1;
-		}
-		if (numScouts > 1)
-			myState = ScoutState.EXPLORING;
-		else
-			myState = ScoutState.SIGHTING;
-		
-	}
-	
-	
-	private static void doScoutExploring() throws GameActionException
-	{
-		Debug.setStringTS("Exploring to " + myTarget);
-		// get a random waypoint and move towards it
-		if (myTarget == null || here.distanceSquaredTo(myTarget) < 24 || !MapInfo.isOnMap(myTarget))
-			myTarget = MapInfo.getExplorationWaypoint();
-		
-		DirectionSet goodDirs = Micro.getSafeMoveDirs();
-		goodDirs = goodDirs.and(Micro.getTurretSafeDirs());
-		
-		Behavior.tryGoToWithoutBeingShot(myTarget, goodDirs);
-	}
 
-	private static void doScoutSighting() throws GameActionException
-	{
-		// stay close to closest turret
-		// move away from nearby scouts
-//		Debug.setStringTS("Sighting for nobody ");
-//		RobotInfo[] allies = Micro.getNearbyAllies();
-//		for (RobotInfo ri : allies)
-//		{
-//			if (ri.type == RobotType.TURRET)
-//			{
-//				Behavior.tryGoToWithoutBeingShot(ri.location, Micro.getSafeMoveDirs());
-//				Debug.setStringTS("Sighting for " + ri.ID);
-//			}
-//		}
-		
-		RobotInfo[] allies = Micro.getNearbyAllies();
-		
-		MapLocation[] locs = BallMove.updateBallDests(allies); // updates archon and archon destination using messaging
-		MapLocation archonLoc = locs[0];
-		MapLocation destLoc = locs[1];
-		
-		if (rc.isCoreReady())	
+		if (sendUpdates) // zombie herding zombies don't have time to send updates
 		{
-			if (Micro.getRoundsUntilDanger() < 5 && Behavior.tryRetreat())
-				return;
-			
-			BallMove.ballMove(archonLoc, destLoc, allies);
-		}
-		
-	}
-
-	private static void doScoutShadowing() throws GameActionException
-	{
-		// stay close to the target we are shadowing
-		MapLocation archonLoc = Message.recentArchonDest;
-		if (archonLoc != null)
-		{
-			Behavior.tryGoToWithoutBeingShot(archonLoc, Micro.getSafeMoveDirs());
+		MapInfo.doScoutSendUpdates();
 		}
 	}
 }

@@ -4,24 +4,26 @@ import battlecode.common.*;
 
 public class RoboGuard extends RobotPlayer
 {
+	public static Strategy myStrategy;
+	public static double myHealth;
+	
 	public static void init() throws GameActionException
 	{
+		myStrategy = new MobFightStrat();
+		myHealth = rc.getType().maxHealth;
 	}
 	
 	public static void turn() throws GameActionException
 	{
-		if (!Behavior.tryShootWhileRetreatingFromZombies())
+		if (rc.senseParts(here)==0)
+			MapInfo.removeWaypoint(here);
+		
+		if (rc.getHealth() < myHealth)
 		{
-			RobotInfo[] allies = Micro.getNearbyAllies();
-			
-			MapLocation[] locs = BallMove.updateBallDests(allies); // updates archon and archon destination using messaging
-			MapLocation archonLoc = locs[0];
-			MapLocation destLoc = locs[1];
-			
-			if (rc.isCoreReady())	
-			{
-				BallMove.ballMove(archonLoc, destLoc, allies);
-			}
+			myHealth = rc.getHealth();
+			Message.sendSignal(RobotType.GUARD.sensorRadiusSquared*2);
 		}
+		
+		myStrategy.tryTurn();
 	}
 }

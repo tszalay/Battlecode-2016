@@ -22,6 +22,9 @@ public class Sighting extends RobotPlayer
 		if (rc.getRoundNum() < lastSightingBroadcastRound + BROADCAST_DELAY)
 			return;
 		
+		if (Micro.getRoundsUntilDanger() < 8)
+			return;
+		
 		RobotInfo bestTarget = null;
 		
 		// prioritize the target with the biggest attack radius
