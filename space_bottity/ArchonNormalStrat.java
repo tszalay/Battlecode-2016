@@ -59,23 +59,21 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 			dest = MapInfo.getClosestPartOrDen();
 		}
 		
-		// if we don't have a waypoint, explore
-		if (dest == null)
-			dest = MapInfo.getExplorationWaypoint();
-
 		if (dest != null)
 		{
 			// put indicator at waypoint
 			rc.setIndicatorDot(dest, rc.getID()%255, 255, 255);
 			Debug.setStringAK("Waypoint = " + dest);
 			// go where we should
+			
+			// try clear rubble if it's stopping you
+			if (Action.tryClearRubble(here.directionTo(dest)));
+			
 			Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs());
 			// send a bit of a "ping"
 			if (rc.getRoundNum() % 7 == 0)
 				Message.sendSignal(63);
 			
-			//try clear rubble if it's stopping you
-			if (Action.tryClearRubble(here.directionTo(dest)));
 		}
 	}
 	

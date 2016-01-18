@@ -72,7 +72,7 @@ public class ExploreStrat extends RobotPlayer implements Strategy
 		}
 		
 		// explore if there are too many scouts nearby and an Archon is nearby
-		if (nearbyUnits[ARCHON] > 0 && nearbyUnits[SCOUT] > 2 && rc.getID() == lowestScoutID) return true;
+		if (nearbyUnits[ARCHON] > 0 && nearbyUnits[SCOUT] > 4 && rc.getID() == lowestScoutID) return true;
 		
 		// explore if there are no zombies and I'm near an Archon
 		// probably I'm herding and the zombies got killed

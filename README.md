@@ -7,11 +7,11 @@
 
 ### For Seeding Submission
 
+- add rubble removal and decisions about when to dig vs go around.
 - scouts built in turret range should gtfo
 - strange error saying scout can't move there bc too much rubble?
 - archons get stuck in their balls
 - GTFO code for Archon that is screwed - running even without safe dirs or digging away, avoid small rubble
-- Scouts in Ball Move still get shot.
 - MapInfo.doScoutSendUpdates doesn't work - it's being hacked through at the moment. Otherwise, it keeps thinking the parts it just saw are new and messaging forever. Couldn't debug it - AK.
 
 
