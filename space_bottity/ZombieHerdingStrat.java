@@ -97,7 +97,7 @@ public class ZombieHerdingStrat extends RobotPlayer implements Strategy
 			break;
 		}		
 	}
-	public static boolean shouldRush(RobotInfo[] allies, RobotInfo[] zombies) throws GameActionException
+	public static boolean shouldHerd(RobotInfo[] allies, RobotInfo[] zombies) throws GameActionException
 	{
 		boolean canSeeArchon = false;
 

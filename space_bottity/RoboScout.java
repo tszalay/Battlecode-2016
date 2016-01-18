@@ -40,17 +40,20 @@ public class RoboScout extends RobotPlayer
 		RobotInfo[] zombies = Micro.getNearbyZombies();
 		RobotInfo[] allies = Micro.getNearbyAllies();
 		RobotInfo[] enemies = Micro.getNearbyEnemies();
+		boolean sendUpdates = true;
 		
 		// Default is Ball (see init)
 		
 		// zombie herd if necessary
-		if (ZombieHerdingStrat.shouldRush(allies, zombies))
+		if (ZombieHerdingStrat.shouldHerd(allies, zombies))
 		{
 			myStrategy = new ZombieHerdingStrat();
 			ZombieHerdingStrat.rushingStartLoc = here;
 			
 			Direction rushDir = here.directionTo(Micro.getClosestUnitTo(zombies, here).location).rotateRight().rotateRight();//go perp
 			ZombieHerdingStrat.herdingDestLoc = here.add(rushDir.dx*ZombieHerdingStrat.herdDist,rushDir.dy*ZombieHerdingStrat.herdDist);
+			
+			sendUpdates = false;
 		}
 		
 		// explore if you are free to do so
@@ -63,14 +66,13 @@ public class RoboScout extends RobotPlayer
 		if (!myStrategy.tryTurn())
 			myStrategy = new FreeUnitStrategy();
 		//myStrategy.tryTurn();
-			
-        // always send out info about sighted targets
-		Sighting.doSendSightingMessage();
 		
-		// and use spare bytecodes to look for stuff
-		 MapInfo.analyzeSurroundings();
-		// and send the updates AK don't do this automtically - herding one's can't do it
-		//MapInfo.doScoutSendUpdates();
-
+		Sighting.doSendSightingMessage();
+		MapInfo.analyzeSurroundings();
+		
+		if (sendUpdates) // zombie herding zombies don't have time to send updates
+		{
+		MapInfo.doScoutSendUpdates();
+		}
 	}
 }

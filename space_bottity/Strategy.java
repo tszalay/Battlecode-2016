@@ -9,7 +9,8 @@ public interface Strategy
 		TURTLE,
 		BALL_MOVE,
 		FREE_UNIT,
-		MOB_FIGHT
+		MOB_FIGHT,
+		HERDING
 	}
 	
 	// run the turn for this strategy

@@ -285,7 +285,8 @@ public class MicroBase extends RobotPlayer
 	public DirectionSet getSafeMoveDirs()
 	{
 		computeSafetyStats();
-		return safeMoveDirs;
+		// AK safe should always include turretSafe
+		return safeMoveDirs.and(getTurretSafeDirs());
 	}
 	
 	// get directions we can move in
