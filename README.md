@@ -7,7 +7,6 @@
 
 ### For Seeding Submission
 
-- can't have all archons blitz
 - archons get stuck in their balls
 - GTFO code for Archon that is screwed - running even without safe dirs or digging away, avoid small rubble
 - Scouts in Ball Move still get shot.

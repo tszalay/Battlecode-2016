@@ -124,6 +124,7 @@ public class MapInfo extends RobotPlayer
 	// called by local units when checking for map edge info
 	public static void updateMapEdge(Direction dir, int val, boolean sendUpdate)
 	{
+		
 		// update the correct direction
 		switch (dir)
 		{
@@ -183,6 +184,7 @@ public class MapInfo extends RobotPlayer
 	
 	public static void updateParts(MapLocation loc, boolean sendUpdate)
 	{
+		Debug.setStringAK("newParts = " + newParts + " already on partslist = " + goodPartsLocations.contains(loc));
 		if (goodPartsLocations.contains(loc) || newParts != null)
 			return;
 		
@@ -220,20 +222,29 @@ public class MapInfo extends RobotPlayer
 		if (Micro.isInDanger() || rc.getCoreDelay() > 5)
 			return false;
 		
+		// AK this function is not working - they don't recognize parts that are already on the list
+		// keep messaging forever. Hack for now limit the updates to every 10 rounds.
+		if (rc.getRoundNum()%10 != 0)
+			return false;
+		
 		// only send one at a time
 		if (newMapEdge)
 		{
-			//Message.sendMessageSignal(fullMapDistanceSq(), MessageType.MAP_EDGE, mapMin, mapMax);
+			Debug.setStringAK("sending new Map Edge Signal");
+			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.MAP_EDGE, mapMin, mapMax);
+			newMapEdge = false;
 			return true;
 		}
 		if (newZombieDen != null)
 		{
+			Debug.setStringAK("sending new Zombie Den signal");
 			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.ZOMBIE_DEN, newZombieDen);
 			newZombieDen = null;
 			return true;
 		}
 		if (newParts != null)
 		{
+			Debug.setStringAK("sending new Parts signal");
 			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.GOOD_PARTS, newParts);
 			newParts = null;
 			return true;
@@ -291,10 +302,13 @@ public class MapInfo extends RobotPlayer
 		
 		MapLocation[] partsLocs = rc.sensePartLocations(rc.getType().sensorRadiusSquared);
 		
-		for (MapLocation loc : partsLocs)
+		if (partsLocs.length > 0)
 		{
-			updateParts(loc, isScout);
-			visibleParts += rc.senseParts(loc);
+			for (MapLocation loc : partsLocs)
+			{
+				updateParts(loc, isScout);
+				visibleParts += rc.senseParts(loc);
+			}
 		}
 		//System.out.println("Scanned " + nchecked + "/" + MapUtil.allOffsX.length + " locations");
 	}

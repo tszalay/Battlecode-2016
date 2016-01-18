@@ -40,7 +40,7 @@ public class ExploreStrat extends RobotPlayer implements Strategy
 		Sighting.doSendSightingMessage();
 		
 		// and use spare bytecodes to look for stuff
-		 MapInfo.analyzeSurroundings();
+		MapInfo.analyzeSurroundings();
 		// and send the updates AK don't do this automtically - herding one's can't do it
 		MapInfo.doScoutSendUpdates();
 		
