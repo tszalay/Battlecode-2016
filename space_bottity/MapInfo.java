@@ -184,7 +184,6 @@ public class MapInfo extends RobotPlayer
 	
 	public static void updateParts(MapLocation loc, boolean sendUpdate)
 	{
-		Debug.setStringAK("newParts = " + newParts + " already on partslist = " + goodPartsLocations.contains(loc));
 		if (goodPartsLocations.contains(loc) || newParts != null)
 			return;
 		

@@ -31,9 +31,17 @@ public class ExploreStrat extends RobotPlayer implements Strategy
 		goodDirs = goodDirs.and(Micro.getTurretSafeDirs());
 		
 		if (Micro.getRoundsUntilDanger() < 5)
-			Action.tryRetreatTowards(Message.recentEnemySignal, goodDirs);
+		{
+			if (!Action.tryRetreatTowards(Message.recentEnemySignal, goodDirs))
+				Action.tryRetreatOrShootIfStuck();
+		}
 		else
-			Action.tryGoToWithoutBeingShot(myExploringTarget, goodDirs);
+		{
+			if (!Nav.tryGoTo(myExploringTarget, goodDirs))
+				myExploringTarget = MapInfo.getExplorationWaypoint(); // so you don't get stuck
+			//Action.tryGoToWithoutBeingShot(myExploringTarget, goodDirs);
+		}
+
 		
 		Debug.setStringAK("Exploring to " + myExploringTarget);		
         // always send out info about sighted targets
