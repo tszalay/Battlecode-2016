@@ -112,6 +112,21 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
 		// otherwise get a list of all valid directions that keep us in the ball and using those
 		DirectionSet ballDirs = Micro.getSafeMoveDirs().clone();
 		
+		 // avoid crowding other archons RR
+        RobotInfo[] nearbyAllies = rc.senseNearbyRobots(9, ourTeam);
+        for (Direction d : ballDirs.getDirections())
+        {
+            for (RobotInfo ri: nearbyAllies)
+            {
+                if ((ri.type == RobotType.ARCHON) && ri.ID!=ballTargetID && here.add(d).distanceSquaredTo(ri.location) < 2)
+                {
+                    ballDirs.remove(d);
+                    System.out.println("Avoiding a neighbor arhcon");
+                    break;
+                }    
+            }
+        }
+		
 		for (Direction d : ballDirs.getDirections())
 		{
 			int dSq = here.add(d).distanceSquaredTo(lastBallLocation);
