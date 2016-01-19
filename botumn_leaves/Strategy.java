@@ -10,7 +10,9 @@ public interface Strategy
 		BALL_MOVE,
 		FREE_UNIT,
 		MOB_FIGHT,
-		HERDING
+		HERDING,
+		MOB_MOVE,
+		SCOUT_SHADOW
 	}
 	
 	// run the turn for this strategy

@@ -6,10 +6,15 @@ import java.util.*;
 
 public class BlitzTeamStrat extends RobotPlayer implements Strategy
 {
+	private Strategy overrideStrategy = null;
+
 	private RobotInfo myArchon = null;
 
 	public String getName()
 	{
+		if (overrideStrategy != null)
+			return overrideStrategy.getName();
+
 		return "Blitzing";
 	}
 	
@@ -60,6 +65,15 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 	
 	public boolean tryTurn() throws GameActionException
 	{
+		// do we have a strategy that takes precedence over this one?
+		if (overrideStrategy != null)
+		{
+			if (overrideStrategy.tryTurn())
+				return true;
+			else
+				overrideStrategy = null;
+		}
+						
 		switch (rc.getType())
 		{
 		case ARCHON:

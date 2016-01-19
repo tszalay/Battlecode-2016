@@ -17,6 +17,9 @@ public class RoboArchon extends RobotPlayer
 	
 	public static void turn() throws GameActionException
 	{
+		// do local check
+		checkAdjacentScout();
+		
 		// always try this if we can, before moving
 		tryActivateNeutrals();
 		
@@ -58,7 +61,7 @@ public class RoboArchon extends RobotPlayer
 	
 	public static boolean tryRepair() throws GameActionException
 	{
-		RobotInfo[] nearbyFriends = rc.senseNearbyRobots(rc.getType().attackRadiusSquared,ourTeam);
+		RobotInfo[] nearbyFriends = rc.senseNearbyRobots(rc.getType().attackRadiusSquared, ourTeam);
 		RobotInfo minBot = null;
 
 		for (RobotInfo ri : nearbyFriends)

@@ -9,6 +9,11 @@ public class RoboScout extends RobotPlayer
 	public static void init() throws GameActionException
 	{
 		// start off balling around closest archon
+		if (Message.recentStrategySignal == Strategy.Type.SCOUT_SHADOW)
+		{
+			myStrategy = new ScoutShadowStrat(myBuilderID);
+			return;
+		}
 		if (myBuilderLocation != null)
 			myStrategy = new BallMoveStrat(myBuilderID, 14, 24);
 		else
@@ -24,6 +29,7 @@ public class RoboScout extends RobotPlayer
 		// Default is Ball (see init)
 		
 		// zombie herd if necessary
+		/*
 		if (ZombieHerdingStrat.shouldHerd())
 		{
 			myStrategy = new ZombieHerdingStrat();
@@ -39,7 +45,7 @@ public class RoboScout extends RobotPlayer
 		if (ExploreStrat.shouldExplore())
 		{
 			myStrategy = new ExploreStrat();
-		}
+		}*/
 
 		// Free unit if everything else breaks
 		if (!myStrategy.tryTurn())

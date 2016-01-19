@@ -61,6 +61,8 @@ public class RobotPlayer
 		MapInfo.calculateSymmetry();
 		// also initialize Micro
 		Micro = new MicroBase();
+		// and do this once, so init can see recent messages
+		Message.readSignalQueue();
 		
 		try
 		{
