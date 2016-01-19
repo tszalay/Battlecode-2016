@@ -121,6 +121,7 @@ public class DirectionSet
 		else if (leftDist < rightDist || leftDist < distSq)
 			return best.rotateLeft();
 		
+		/*
 		// still none. look to sides
 		int rightRightDist = distSq;
 		int leftLeftDist = distSq;
@@ -135,7 +136,7 @@ public class DirectionSet
 			return best.rotateRight().rotateRight();
 		else if (leftLeftDist < rightRightDist || leftLeftDist < distSq)
 			return best.rotateLeft().rotateLeft();
-		
+		*/
 		return null;
 	}
 	

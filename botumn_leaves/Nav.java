@@ -209,18 +209,18 @@ public class Nav extends RobotPlayer
             	// succeeded
             	return true;
             }
-            else if (isBlockedByObstacle())
+            else //if (isBlockedByObstacle())
             {
             	// failed, do bugging only if running into an actual wall
             	// (or a turret!)
                 bugState = BugState.BUG;
                 startBug();            	
             }
-            else
+            /*else
             {
             	// don't move at all
             	return false;
-            }
+            }*/
         }
 
         // If that failed, or if bugging, bug
