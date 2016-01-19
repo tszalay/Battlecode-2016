@@ -39,7 +39,7 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (Micro.getRoundsUntilDanger() < 20)
 		{
 			Message.sendSignal(120);
-			MapLocation retreatloc = MapInfo.getClosestDen();
+			MapLocation retreatloc = MapInfo.farthestArchonLoc;
 			if (retreatloc == null)
 				Action.tryRetreatOrShootIfStuck();
 			else

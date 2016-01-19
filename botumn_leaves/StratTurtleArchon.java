@@ -5,7 +5,7 @@ import battlecode.common.*;
 import java.util.*;
 
 // turtle move tries to allow units to move around close to or inside a turtle ball
-public class StratTurtleArchon extends RobotPlayer implements Strategy
+public class StratTurtleArchon extends RoboArchon implements Strategy
 {
 	private MapLocation turtleLocation = null;
 	private Strategy overrideStrategy = null;
@@ -83,25 +83,30 @@ public class StratTurtleArchon extends RobotPlayer implements Strategy
 		if (!rc.isCoreReady())
 			return false;
 		
-		if (rc.getTeamParts() < 1.5*RobotType.TURRET.partCost)
+		if (rc.getTeamParts() < 1.2*RobotType.TURRET.partCost)
 			return false;
 		
 		// figure out what robot to try and build
 		UnitCounts units = new UnitCounts(Micro.getNearbyAllies());
 		
 		RobotType robotToBuild = null;
+		Strategy.Type stratToBuild = null;
 		
-		if (units.Soldiers < 5)
+		/*if (units.Soldiers < 2)
 		{
 			robotToBuild = RobotType.SOLDIER;
+			stratToBuild = Strategy.Type.MOB_MOVE;
 		}
-		else if (units.Scouts < 2 || units.Scouts < units.Turrets/4)
+		else */
+		if (roundsSince(RoboArchon.lastAdjacentScoutRound) > 40)
 		{
 			robotToBuild = RobotType.SCOUT;
+			stratToBuild = Strategy.Type.SHADOW_ARCHON;
 		}
-		else if (units.Turrets < 15)
+		else if (units.Turrets < 15 || rc.getTeamParts() > 2*RobotType.TURRET.partCost)
 		{
 			robotToBuild = RobotType.TURRET;
+			stratToBuild = Strategy.Type.TURTLE;
 		}
 		else
 		{
@@ -114,7 +119,7 @@ public class StratTurtleArchon extends RobotPlayer implements Strategy
 		Direction buildDir = Micro.getCanBuildDirectionSet(robotToBuild).getRandomValid();
 		if (buildDir != null)
 		{
-			overrideStrategy = new StratBuilding(robotToBuild, buildDir, Strategy.Type.TURTLE);
+			overrideStrategy = new StratBuilding(robotToBuild, buildDir, stratToBuild);
 			return true;
 		}
 		

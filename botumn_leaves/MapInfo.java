@@ -53,12 +53,12 @@ public class MapInfo extends RobotPlayer
 	
 	public static MapLocation getClosestPart()
 	{
-		return Micro.getClosestLocationTo(goodPartsLocations.elements(), ourArchonCenter);
+		return Micro.getClosestLocationTo(goodPartsLocations.elements(), farthestArchonLoc);
 	}
 	
 	public static MapLocation getClosestDen()
 	{
-		return Micro.getClosestLocationTo(zombieDenLocations.elements(), here);
+		return Micro.getClosestLocationTo(zombieDenLocations.elements(), farthestArchonLoc);
 	}
 	
 	

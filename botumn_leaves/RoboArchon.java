@@ -12,6 +12,9 @@ public class RoboArchon extends RobotPlayer
 		/*if (StratBlitzTeam.shouldBlitz())
 			myStrategy = new StratBlitzTeam(null);
 		else*/
+		if (here.equals(MapInfo.farthestArchonLoc) && MapInfo.numInitialArchons > 1)
+			myStrategy = new StratTurtleArchon();
+		else
 			myStrategy = new StratArchonNormal();
 	}
 	
