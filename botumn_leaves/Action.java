@@ -151,6 +151,7 @@ public class Action extends RobotPlayer
 		{
 			rc.move(d);
 			here = rc.getLocation();
+			lastMovedRound = rc.getRoundNum();
 			return true;
 		}
 //			else

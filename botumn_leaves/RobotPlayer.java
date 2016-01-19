@@ -21,6 +21,7 @@ public class RobotPlayer
 	
 	public static double 	myHealth;
 	public static int		lastDamageRound = -100;
+	public static int		lastMovedRound = 0;
 	
     public static void run(RobotController robotc)
 	{
