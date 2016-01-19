@@ -148,7 +148,7 @@ public class Action extends RobotPlayer
 		}
 		
 		// double check!
-		if (d != null && rc.canMove(d) && rc.isCoreReady())
+		if (d != null && rc.canMove(d) && rc.isCoreReady() && !rc.isLocationOccupied(here.add(d)))
 		{
 			rc.move(d);
 			return true;

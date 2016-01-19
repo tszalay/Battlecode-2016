@@ -11,7 +11,7 @@ public class RoboSoldier extends RobotPlayer
 	public static void init() throws GameActionException
 	{
 //		if (rand.nextBoolean())
-		myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 4, 20);
+		myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 4, 10);
 //		else
 //			myStrategy = new MobFightStrat();
 		
