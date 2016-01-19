@@ -29,17 +29,9 @@ public class RoboViper extends RobotPlayer
         //Action.tryMove(here.directionTo(enemyLoc));
         
         RobotInfo[] enemies = Micro.getNearbyEnemies();
-        int count = 0;
-        if (enemies != null)
+        if (enemies != null && enemies.length > 0)
         {
-        	for (RobotInfo ri : enemies)
-        	{
-        		if (ri.type != RobotType.SCOUT)
-        		{
-        			enemyLoc = ri.location;
-        			count ++;
-        		}
-        	}
+        	Action.tryMove(here.directionTo(Micro.getEnemyCOM()));
         }
         
         else if (here.distanceSquaredTo(enemyLoc) < 10 && (enemies == null || enemies.length == 0))
@@ -52,7 +44,7 @@ public class RoboViper extends RobotPlayer
         	{
         		enemyLoc = Message.recentEnemySignal;
         		if (enemyLoc == null)
-        			enemyLoc = Message.getClosestAllyUnderAttack();
+        			enemyLoc = MapInfo.getExplorationWaypoint();
         	}
         	else
         	{
@@ -61,8 +53,9 @@ public class RoboViper extends RobotPlayer
         	Debug.setStringSJF("target = " + enemyLoc.toString() + ", enemies = " + enemies.length);
         }
         
-        if (!Action.tryGoToWithoutBeingShot(enemyLoc, Micro.getCanFastMoveDirs()))
-        	if (!Action.tryGoToWithoutBeingShot(enemyLoc, Micro.getCanMoveDirs()))
-        		Rubble.tryClearRubble(enemyLoc);
+        if (!Action.tryRetreatTowards(enemyLoc, Micro.getCanFastMoveDirs()))
+        	if (!Action.tryRetreatTowards(enemyLoc, Micro.getCanMoveDirs()))
+        		if (!Rubble.tryClearRubble(enemyLoc))
+        			Action.tryMove(Micro.getCanMoveDirs().getRandomValid());
 	}
 }

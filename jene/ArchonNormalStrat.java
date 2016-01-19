@@ -10,6 +10,8 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 	private static int scoutsBuilt = 0;
 	private static int soldiersBuilt = 0;
 	public static MapLocation dest = null;
+	public static MapLocation rallyLoc = null;
+	private static boolean reachedRally = false;
 	
 	static RobotType myNextBuildRobotType = RobotType.SCOUT;
 	
@@ -17,15 +19,49 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 	
 	public ArchonNormalStrat()
 	{
-		this.stratName = "ArchonNormalStrat";	
+		this.stratName = "ArchonNormalStrat";
+		
+		// first rally, farthest from their archons
+		MapLocation[] ourArchons = rc.getInitialArchonLocations(ourTeam);
+		if (ourArchons.length < 2)
+		{
+			rallyLoc = here;
+			reachedRally = true;
+		}
+		else // multiple archons
+		{
+			MapLocation[] theirArchons = rc.getInitialArchonLocations(theirTeam);
+			MapLocation theirCOM = Micro.getUnitCOM(theirArchons);
+			
+			int farthestArchonDist = 0;
+			MapLocation farthestArchonLoc = null;
+			for (MapLocation archon : ourArchons)
+			{
+				if (archon.distanceSquaredTo(theirCOM) > farthestArchonDist)
+				{
+					farthestArchonDist = archon.distanceSquaredTo(theirCOM);
+					farthestArchonLoc = archon;
+				}
+			}
+			rallyLoc = farthestArchonLoc;
+			if (rallyLoc == null)
+				rallyLoc = here;
+			if (here.distanceSquaredTo(rallyLoc) < RobotType.ARCHON.sensorRadiusSquared)
+			{
+				reachedRally = true;
+			}
+		}
+		
+
+		
 	}
 	
 	public boolean tryTurn() throws GameActionException
 	{
-		if (dest != null)
-			Debug.setStringAK("My Strategy: " + this.stratName + ", dest = " + dest.toString());
-		else
-			Debug.setStringAK("My Strategy: " + this.stratName);
+		//if (dest != null)
+			//Debug.setStringAK("My Strategy: " + this.stratName + ", dest = " + dest.toString());
+		//else
+			//Debug.setStringAK("My Strategy: " + this.stratName);
 		
 		// first priority, avoid stuff
 		if (Micro.isInDanger())
@@ -42,24 +78,35 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 	
 	public static boolean doWaypoint() throws GameActionException
 	{
-		// look for waypoint
-		if (dest == null || here.distanceSquaredTo(dest) < 1)
-			dest =  MapInfo.getClosestNeutralArchon();
-		if (dest == null || here.distanceSquaredTo(dest) < 1)
+		if (here.distanceSquaredTo(rallyLoc) < RobotType.ARCHON.sensorRadiusSquared)
 		{
-			MapLocation closestPart = senseClosestPart();
-			MapLocation closestNeutral = senseClosestNeutral();
-			if (closestNeutral != null)
-				dest = closestNeutral;
-			else
-				dest = closestPart;
-			if (closestNeutral != null && closestPart != null && here.distanceSquaredTo(closestPart) < here.distanceSquaredTo(closestNeutral))
-				dest = closestPart;
+			reachedRally = true;
 		}
-		if (dest == null || here.distanceSquaredTo(dest) < 1)
-			dest = MapInfo.getClosestPart();
-		if (dest == null)
-			return true;
+		if (!reachedRally)
+		{
+			dest = rallyLoc;
+		}
+		else
+		{
+			// look for waypoint
+			if (dest == null || here.distanceSquaredTo(dest) < 1)
+				dest =  MapInfo.getClosestNeutralArchon();
+			if (dest == null || here.distanceSquaredTo(dest) < 1)
+			{
+				MapLocation closestPart = senseClosestPart();
+				MapLocation closestNeutral = senseClosestNeutral();
+				if (closestNeutral != null)
+					dest = closestNeutral;
+				else
+					dest = closestPart;
+				if (closestNeutral != null && closestPart != null && here.distanceSquaredTo(closestPart) < here.distanceSquaredTo(closestNeutral))
+					dest = closestPart;
+			}
+			if (dest == null || here.distanceSquaredTo(dest) < 1)
+				dest = MapInfo.getClosestPart();
+			if (dest == null)
+				return true;
+		}
 		
 		// if we cannot go that way safely, stop trying
 //		Direction dir = Micro.getSafeMoveDirs().getDirectionTowards(here, dest);

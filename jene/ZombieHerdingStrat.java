@@ -1,6 +1,7 @@
 package jene;
 
 import battlecode.common.*;
+
 import java.util.*;
 
 public class ZombieHerdingStrat extends RobotPlayer implements Strategy
@@ -78,10 +79,12 @@ public class ZombieHerdingStrat extends RobotPlayer implements Strategy
 				if (closestAlly == null)
 				{
 					myState = ScoutState.HERDING;
+					herdingDestLoc = Micro.getUnitCOM(rc.getInitialArchonLocations(theirTeam));
 				}
 				else if (here.distanceSquaredTo(closestZombie.location) <= here.distanceSquaredTo(closestAlly.location))
 				{
 					myState = ScoutState.HERDING;
+					herdingDestLoc = Micro.getUnitCOM(rc.getInitialArchonLocations(theirTeam));
 				}
 			}
 			break;
@@ -195,6 +198,11 @@ public class ZombieHerdingStrat extends RobotPlayer implements Strategy
 			if (Nav.tryGoTo(herdingDestLoc, safeDirs)) return true;
 			if (Nav.tryGoTo(herdingDestLoc,Micro.getCanMoveDirs())); return true;
 		}
+		
+		// if we get there and there's nobody
+		if (here.distanceSquaredTo(herdingDestLoc) < RobotType.SCOUT.sensorRadiusSquared && (Micro.getNearbyEnemies() == null || Micro.getNearbyEnemies().length == 0))
+			herdingDestLoc = MapInfo.getExplorationWaypoint(); // get a random waypoint
+		
 		return false;
 	}
 

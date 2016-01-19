@@ -150,7 +150,11 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 			if (Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()).any())
 				Action.tryMove(Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()).getRandomValid());
 			else
-				Rubble.tryClearRubble(here.add(Rubble.getRandomAdjacentRubble()));
+			{
+				Direction rubDir = Rubble.getRandomAdjacentRubble();
+				if (rubDir != null)
+					Rubble.tryClearRubble(here.add(rubDir));
+			}
 		}
 		
 		// if we're really still doing nothing, move away from friends

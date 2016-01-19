@@ -47,7 +47,7 @@ public class RoboArchon extends RobotPlayer
 		UnitCounts count = new UnitCounts(allies);
 		int turretNum = count.Turrets;
 		int soldierNum = count.Soldiers;
-		if (soldierNum >= 7 && Micro.getNearbyHostiles().length == 0 && turretNum == 0)
+		if (soldierNum >= 5 && Micro.getNearbyHostiles().length == 0)
 			myStrategy = new TurtleArchonStrategy();
 		
 		// archons who stopped blitzing do normal

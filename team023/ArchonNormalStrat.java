@@ -43,6 +43,8 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 				}
 			}
 			rallyLoc = farthestArchonLoc;
+			if (rallyLoc == null)
+				rallyLoc = here;
 			if (here.distanceSquaredTo(rallyLoc) < RobotType.ARCHON.sensorRadiusSquared)
 			{
 				reachedRally = true;

@@ -484,6 +484,26 @@ public class MicroBase extends RobotPlayer
 		return new MapLocation(xtot,ytot);
 	}
 	
+	public MapLocation getUnitCOM(MapLocation[] locs)
+	{
+		int xtot = 0;
+		int ytot = 0;
+		
+		if (locs == null || locs.length == 0)
+			return null;
+		
+		for (MapLocation loc : locs)
+		{
+			xtot += loc.x;
+			ytot += loc.y;
+		}
+		
+		xtot /= locs.length;
+		ytot /= locs.length;
+		
+		return new MapLocation(xtot,ytot);
+	}
+	
 	public RobotInfo getClosestUnitTo(RobotInfo[] nearby, MapLocation loc)
 	{
 		if (nearby.length == 0)

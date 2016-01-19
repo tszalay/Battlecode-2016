@@ -67,7 +67,7 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
 
 	public boolean tryTurn() throws GameActionException
 	{
-		Debug.setStringAK("My Strategy: " + this.stratName);
+		//Debug.setStringAK("My Strategy: " + this.stratName);
 		
 		// first check if we can still ball
 		if (!tryUpdateTarget())

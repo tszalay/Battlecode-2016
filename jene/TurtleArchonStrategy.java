@@ -29,7 +29,7 @@ public class TurtleArchonStrategy extends RobotPlayer implements Strategy
 		corners[2] = new MapLocation(MapInfo.mapMax.x,MapInfo.mapMin.y);
 		corners[3] = new MapLocation(MapInfo.mapMax.x,MapInfo.mapMax.y);
 		
-		System.out.println("corners: " + corners[0].toString() + ", " + corners[1].toString());
+		//System.out.println("corners: " + corners[0].toString() + ", " + corners[1].toString());
 		
 		for (MapLocation corner : corners)
 		{

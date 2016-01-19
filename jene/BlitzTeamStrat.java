@@ -65,7 +65,7 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 	
 	public boolean tryTurn() throws GameActionException
 	{
-		Debug.setStringAK("My Strategy: " + this.stratName);
+		//Debug.setStringAK("My Strategy: " + this.stratName);
 		switch (rc.getType())
 		{
 		case ARCHON:

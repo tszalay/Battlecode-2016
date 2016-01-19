@@ -46,16 +46,14 @@ public class RoboScout extends RobotPlayer
 		// Default is Ball (see init)
 		
 		// zombie herd if necessary
-//		if (ZombieHerdingStrat.shouldHerd(allies, zombies))
-//		{
-//			myStrategy = new ZombieHerdingStrat();
-//			ZombieHerdingStrat.rushingStartLoc = here;
-//			
-//			Direction rushDir = here.directionTo(Micro.getClosestUnitTo(zombies, here).location).rotateRight().rotateRight();//go perp
-//			ZombieHerdingStrat.herdingDestLoc = here.add(rushDir.dx*ZombieHerdingStrat.herdDist,rushDir.dy*ZombieHerdingStrat.herdDist);
-//			
-//			sendUpdates = false;
-//		}
+		if (ZombieHerdingStrat.shouldHerd(allies, zombies))
+		{
+			myStrategy = new ZombieHerdingStrat();
+			ZombieHerdingStrat.rushingStartLoc = here;
+			
+			Direction rushDir = here.directionTo(Micro.getClosestUnitTo(zombies, here).location);			
+			sendUpdates = false;
+		}
 		
 		// explore if you are free to do so
 //		if (ExploreStrat.shouldExplore(allies, zombies))
