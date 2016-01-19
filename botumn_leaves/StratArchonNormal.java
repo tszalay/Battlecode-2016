@@ -95,15 +95,26 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		RobotType robotToBuild = null;
 		Strategy.Type buildStrat = null;
 		
+		// need to build a shadow scout, top priority
 		if (roundsSince(RoboArchon.lastAdjacentScoutRound) > 20)
 		{
 			robotToBuild = RobotType.SCOUT;
-			buildStrat = Strategy.Type.SCOUT_SHADOW;
+			buildStrat = Strategy.Type.SHADOW_ARCHON;
 		}
-		else
+		else if (rand.nextInt() % 8 < 6)
 		{
 			robotToBuild = RobotType.SOLDIER;
 			buildStrat = Strategy.Type.MOB_MOVE;
+		}
+		else if (rand.nextBoolean())
+		{
+			robotToBuild = RobotType.SCOUT;
+			buildStrat = Strategy.Type.SHADOW_SOLDIER;
+		}
+		else
+		{
+			robotToBuild = RobotType.SCOUT;
+			buildStrat = Strategy.Type.EXPLORE;
 		}
 
 		if (!rc.hasBuildRequirements(robotToBuild))

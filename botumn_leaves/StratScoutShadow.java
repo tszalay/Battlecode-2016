@@ -95,7 +95,10 @@ public class StratScoutShadow extends RobotPlayer implements Strategy
 			return true;
 		
 		// otherwise, go towards the target
-		Nav.tryGoTo(lastShadowLocation, Micro.getSafeMoveDirs());
+		if (Micro.getSafeMoveDirs().any())
+			Nav.tryGoTo(lastShadowLocation, Micro.getSafeMoveDirs());
+		else
+			Nav.tryGoTo(lastShadowLocation, Micro.getCanMoveDirs());
 
 		return true;
 	}

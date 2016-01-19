@@ -174,7 +174,7 @@ public class MapInfo extends RobotPlayer
 		// if we already reported it, or we already have one queued to send,
 		// don't do anything
 		if (!add_loc.equals(nullLocation))
-			zombieDenLocations.add(add_loc);
+			zombieDenLocations.add(add_loc, DEN_SENT);
 		if (!del_loc.equals(nullLocation))
 			zombieDenLocations.remove(del_loc);
 	}

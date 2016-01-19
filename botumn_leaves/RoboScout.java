@@ -8,18 +8,26 @@ public class RoboScout extends RobotPlayer
 {
 	public static void init() throws GameActionException
 	{
-		// start off balling around closest archon
-		if (Message.recentStrategySignal == Strategy.Type.SCOUT_SHADOW)
+		if (Message.recentStrategySignal == null)
 		{
-			myStrategy = new StratScoutShadow(myBuilderID);
+			myStrategy = new StratExplore();
 			return;
 		}
-		if (myBuilderLocation != null)
-			myStrategy = new StratBallMove(myBuilderID, 14, 24);
-		else
-			myStrategy = new StratFreeUnit();
+		// start off balling around closest archon
+		switch (Message.recentStrategySignal)
+		{
+		case SHADOW_ARCHON:
+			myStrategy = new StratScoutShadow(myBuilderID);
+			break;
+		case SHADOW_SOLDIER:
+			myStrategy = new StratScoutSighting();
+			break;
+		case EXPLORE:
+		default:
+			myStrategy = new StratExplore();
+			break;
+		}
 	}
-	
 
 	
 	public static void turn() throws GameActionException

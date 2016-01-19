@@ -12,7 +12,9 @@ public interface Strategy
 		MOB_FIGHT,
 		HERDING,
 		MOB_MOVE,
-		SCOUT_SHADOW
+		SHADOW_ARCHON,
+		SHADOW_SOLDIER,
+		EXPLORE
 	}
 	
 	// run the turn for this strategy
