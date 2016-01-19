@@ -214,9 +214,9 @@ public class Nav extends RobotPlayer
             	// failed, do bugging only if running into an actual wall
             	// (or a turret!)
                 bugState = BugState.BUG;
-                startBug();            	
-            }
-            /*else
+                startBug();
+            }/*
+            else
             {
             	// don't move at all
             	return false;
