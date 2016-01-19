@@ -12,7 +12,7 @@ public class StratExplore extends RobotPlayer implements Strategy
 	
 	public String getName()
 	{
-		return "Exploring " + Micro.getSafeMoveDirs().getDirections().size();
+		return "Exploring";
 	}
 	
 	public StratExplore() throws GameActionException
