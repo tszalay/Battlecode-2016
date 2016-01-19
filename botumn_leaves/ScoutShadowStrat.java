@@ -88,7 +88,7 @@ public class ScoutShadowStrat extends RobotPlayer implements Strategy
 				return true;
 			}
 		}
-		
+		/*
 		// if we're far, try moving closer using bugging nav probably
 		if (here.distanceSquaredTo(lastShadowLocation) > maxDistSq)
 		{
@@ -116,7 +116,7 @@ public class ScoutShadowStrat extends RobotPlayer implements Strategy
 				return true;
 			}
 		}
-				
+				*/
 		return true;
 	}
 	
