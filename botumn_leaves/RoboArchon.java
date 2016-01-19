@@ -37,8 +37,6 @@ public class RoboArchon extends RobotPlayer
 		{
 			// activate just the first one
 			rc.activate(adjNeutrals[0].location);
-			// remove it from parts list
-			//MapInfo.removeWaypoint(adjNeutrals[0].location);
 			return true;
 		}
 		

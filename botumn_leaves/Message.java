@@ -41,7 +41,7 @@ public class Message extends RobotPlayer
 	public static int MAP_OFF_X = 0;
 	public static int MAP_OFF_Y = 0;
 	
-	public static ArrayList<SignalLocation> underAttackLocs = new ArrayList<SignalLocation>();
+	public static ArrayList<Signal> underAttackLocs = new ArrayList<Signal>();
 	
 	// and for any transmitted enemy messages, only keep the latest received
 	public static MapLocation recentEnemySignal = null;
@@ -76,7 +76,7 @@ public class Message extends RobotPlayer
 			switch (type)
 			{
 			case UNDER_ATTACK:
-				underAttackLocs.add(new SignalLocation(sig,sig.getLocation()));
+				underAttackLocs.add(sig);
 				break;
 			case FREE_BEER:
 				break;
@@ -120,13 +120,13 @@ public class Message extends RobotPlayer
 		
 		int distToClosestAlly = 1000000;
 		MapLocation bestLoc = null;
-		for (SignalLocation sm : Message.underAttackLocs )
+		for (Signal sig : Message.underAttackLocs )
 		{
-			int distToThisSignalOrigin = here.distanceSquaredTo(sm.loc);
+			int distToThisSignalOrigin = here.distanceSquaredTo(sig.getLocation());
 			if (distToThisSignalOrigin < distToClosestAlly)
 			{
 				distToClosestAlly = distToThisSignalOrigin;
-				bestLoc = sm.loc;
+				bestLoc = sig.getLocation();
 			}
 		}
 		
