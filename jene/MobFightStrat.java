@@ -152,6 +152,11 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 			else
 				Rubble.tryClearRubble(here.add(Rubble.getRandomAdjacentRubble()));
 		}
+		
+		// if we're really still doing nothing, move away from friends
+		RobotInfo closestAlly = Micro.getClosestUnitTo(Micro.getNearbyAllies(), here);
+		if (closestAlly != null)
+			Action.tryMove(here.directionTo(closestAlly.location).opposite());
 
 		return false;
 	}
@@ -168,23 +173,15 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 		}
 		
 		// if you can't sense the target location, you're not close
+		if (target == null)
+			return;
+			
 		if (!rc.canSenseLocation(target))
 			return;
 		
 		// if you're close enough to see it, check if it's still there, if not, delete it
 		if (rc.senseRobotAtLocation(target) == null || rc.senseRobotAtLocation(target).team == ourTeam)
 			target = null;
-		
-		// if it was just deleted, try to get a new target
-		if (target == null)
-			target = Message.getClosestAllyUnderAttack();
-		
-		// check if this target is obsolete
-		RobotInfo[] hostiles = Micro.getNearbyHostiles();
-		if (target != null && rc.canSenseLocation(target) && (hostiles == null || hostiles.length == 0))
-		{
-			target = null;
-		}
 		
 		return;
 	}

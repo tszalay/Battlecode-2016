@@ -32,7 +32,7 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 			Action.tryRetreatOrShootIfStuck();
 		
 		myNextBuildRobotType = getNextBuildRobotType();
-		if (canBuildNow() && (rc.getRoundNum()+rc.getID())%5 == 0) //AK give them some time to move
+		if (canBuildNow() && (scoutsBuilt < 1 || senseClosestPart() == null || rand.nextBoolean())) //AK give them some time to move
 			doBuild();
 		else
 			doWaypoint();
@@ -46,13 +46,20 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 		if (dest == null || here.distanceSquaredTo(dest) < 1)
 			dest =  MapInfo.getClosestNeutralArchon();
 		if (dest == null || here.distanceSquaredTo(dest) < 1)
-			dest = senseClosestNeutral();
-		if (dest == null || here.distanceSquaredTo(dest) < 1)
-			dest = senseClosestPart();
+		{
+			MapLocation closestPart = senseClosestPart();
+			MapLocation closestNeutral = senseClosestNeutral();
+			if (closestNeutral != null)
+				dest = closestNeutral;
+			else
+				dest = closestPart;
+			if (closestNeutral != null && closestPart != null && here.distanceSquaredTo(closestPart) < here.distanceSquaredTo(closestNeutral))
+				dest = closestPart;
+		}
 		if (dest == null || here.distanceSquaredTo(dest) < 1)
 			dest = MapInfo.getClosestPart();
-		if (dest == null || here.distanceSquaredTo(dest) < 1)
-			dest = MapInfo.getExplorationWaypoint();
+		if (dest == null)
+			return true;
 		
 		// if we cannot go that way safely, stop trying
 //		Direction dir = Micro.getSafeMoveDirs().getDirectionTowards(here, dest);
@@ -61,17 +68,20 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 //			dest = MapInfo.getSymmetricLocation(dest);
 //		}
 		
-		if (Action.tryAdjacentSafeMoveToward(here.directionTo(dest)))
-			return true;
-		
-		if (Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs())))
+		if (here.distanceSquaredTo(dest) > 10 && Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs())))
 			return true;
 		
 		// not doing anything else, so look for parts and DIG
 		if (!Rubble.tryClearRubble(dest))
-			return Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
-		else
+		{
+			Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
 			return true;
+		}
+		else
+		{
+			Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
+			return true;
+		}
 		
 	}
 	
@@ -166,7 +176,7 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 //		if (nearbyUnits[TURRET] < 5)
 //			return RobotType.TURRET;
 		
-		return RobotType.GUARD;
+		return rand.nextBoolean() ? RobotType.GUARD : RobotType.VIPER;
 	}
 	
 	private static boolean canBuildNow() throws GameActionException

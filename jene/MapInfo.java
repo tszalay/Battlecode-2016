@@ -41,8 +41,9 @@ public class MapInfo extends RobotPlayer
 	public static MapLocation getExplorationWaypoint()
 	{
 		// this one should get transmitted to a scout
-		return new MapLocation(rand.nextInt(mapMax.x - mapMin.x) + mapMin.x,
-							   rand.nextInt(mapMax.y - mapMin.y) + mapMin.y);
+//		return new MapLocation(rand.nextInt(mapMax.x - mapMin.x) + mapMin.x,
+//							   rand.nextInt(mapMax.y - mapMin.y) + mapMin.y);
+		return here.add((rand.nextInt(3)-1)*100, (rand.nextInt(3)-1)*100);
 	}
 	
 	public static MapLocation getClosestPart()

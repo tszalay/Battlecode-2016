@@ -135,6 +135,15 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 				}
 				
 				Debug.setStringSJF("trying to book it to neutral archon at " + dest.toString());
+				
+				// if there's rubble in the way, clear it if it's reasonable
+				double rub = rc.senseRubble(here.add(here.directionTo(dest)));
+				double furtherRub = rc.senseRubble(here.add(here.directionTo(dest)).add(here.directionTo(dest)));
+				if (rub > GameConstants.RUBBLE_OBSTRUCTION_THRESH && rub < 3000 && furtherRub < GameConstants.RUBBLE_OBSTRUCTION_THRESH)
+				{
+					Rubble.tryClearRubble(dest);
+				}
+				
 				if (!Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs()))
 				{
 					Rubble.tryClearRubble(dest);

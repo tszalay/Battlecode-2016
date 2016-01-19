@@ -10,6 +10,7 @@ public class TurtleArchonStrategy extends RobotPlayer implements Strategy
 	private String stratName;
 	private MapLocation turtleLocation = null;
 	private Strategy overrideStrategy = null;
+	private MapLocation[] corners;
 	
 	public TurtleArchonStrategy()
 	{
@@ -21,24 +22,43 @@ public class TurtleArchonStrategy extends RobotPlayer implements Strategy
 //						rand.nextBoolean() ? MapInfo.mapMin.y : MapInfo.mapMax.y
 //					);
 		
-		// for now, turtle here
-		turtleLocation = here;
+		// turtle in the closest corner, if it's within 100 square dist
+		MapLocation[] corners = new MapLocation[4];
+		corners[0] = new MapLocation(MapInfo.mapMin.x,MapInfo.mapMin.y);
+		corners[1] = new MapLocation(MapInfo.mapMin.x,MapInfo.mapMax.y);
+		corners[2] = new MapLocation(MapInfo.mapMax.x,MapInfo.mapMin.y);
+		corners[3] = new MapLocation(MapInfo.mapMax.x,MapInfo.mapMax.y);
+		
+		System.out.println("corners: " + corners[0].toString() + ", " + corners[1].toString());
+		
+		for (MapLocation corner : corners)
+		{
+			if (turtleLocation == null || here.distanceSquaredTo(corner) < here.distanceSquaredTo(turtleLocation))
+			{
+				//System.out.println("turtling in a corner: " + corner.toString());
+				turtleLocation = corner;
+			}
+		}
+		
+		// last resort, turtle here
+		if (turtleLocation == null || here.distanceSquaredTo(turtleLocation) > 1000)
+			turtleLocation = here;
 	}
 	
 	public boolean tryTurn() throws GameActionException
 	{
 		Debug.setStringAK("My Strategy: " + this.stratName);
 		
-		// do we have a strategy that takes precedence over this one?
-		// (e.g. combat or building)
-		if (overrideStrategy != null)
-		{
-			if (overrideStrategy.tryTurn())
-				return true;
-			else
-				overrideStrategy = null;
-		}
-		
+//		// do we have a strategy that takes precedence over this one?
+//		// (e.g. combat or building)
+//		if (overrideStrategy != null)
+//		{
+//			if (overrideStrategy.tryTurn())
+//				return true;
+//			else
+//				overrideStrategy = null;
+//		}
+//		
 //		// are we close to a corner? good enough
 //		if (MapInfo.closestCornerDistanceSq() < 53 || rc.getRoundNum() > 400)
 //			turtleLocation = here;
@@ -56,18 +76,8 @@ public class TurtleArchonStrategy extends RobotPlayer implements Strategy
 //				if (new UnitCounts(Micro.getNearbyAllies()).Soldiers < 4)
 //					tryBuild();
 //				else
-//					Nav.tryGoTo(turtleLocation, Micro.getSafeMoveDirs());
+//					Action.tryGoToWithoutBeingShot(turtleLocation, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
 //			}
-//			return true;
-//		}
-//		
-//		// are we in any danger?
-//		if (Micro.getRoundsUntilDanger() < 10)
-//		{
-//			if (Micro.getRoundsUntilDanger() > 5)
-//				Action.tryRetreatTowards(Micro.getAllyCOM(), Micro.getSafeMoveDirs());
-//			else
-//				Action.tryRetreatOrShootIfStuck();
 //			return true;
 //		}
 		
@@ -77,12 +87,37 @@ public class TurtleArchonStrategy extends RobotPlayer implements Strategy
 		MapLocation part = ArchonNormalStrat.senseClosestPart();
 		if (neutral != null)
 		{
-			Action.tryGoToWithoutBeingShot(neutral, Micro.getSafeMoveDirs());
+			Action.tryGoToWithoutBeingShot(neutral, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
 			return true;
 		}
 		if (part != null)
 		{
 			Action.tryGoToWithoutBeingShot(part, Micro.getSafeMoveDirs());
+			return true;
+		}
+		
+		Debug.setStringSJF("turtle loc: " + turtleLocation.toString());
+		if (here.distanceSquaredTo(turtleLocation) > RobotType.ARCHON.sensorRadiusSquared)
+		{
+			// check again if we've been chased into a different corner
+			if (corners == null)
+			{
+				turtleLocation = here;
+			}
+			else
+			{
+				for (MapLocation corner : corners)
+				{
+					if (corner != null && (turtleLocation == null || here.distanceSquaredTo(corner) < here.distanceSquaredTo(turtleLocation)))
+					{
+						turtleLocation = corner;
+					}
+				}
+				// if we're too far, just plant
+				if (here.distanceSquaredTo(turtleLocation) > 500)
+					turtleLocation = here;
+			}
+			Action.tryGoToWithoutBeingShot(turtleLocation, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
 			return true;
 		}
 		
@@ -108,11 +143,11 @@ public class TurtleArchonStrategy extends RobotPlayer implements Strategy
 		Action.tryAdjacentSafeMoveToward(Micro.getAllyCOM());
 		
 		UnitCounts count = new UnitCounts(friends);
-//		if (count.Turrets > 11 && count.Archons > 0)
-//		{
-//			return false;
-//		}
-			
+		if (count.Turrets < 3 && Micro.getNearbyEnemies().length > 2)
+		{
+			return false;
+		}
+		
 		return true;
 	}
 	

@@ -33,9 +33,10 @@ public class RoboSoldier extends RobotPlayer
 		MapLocation closestDen = MapInfo.getClosestDen();
 		MapLocation visibleDen = visibleDen();
 		MapLocation closestAllyUnderAttack = Message.getClosestAllyUnderAttack(); // soldier reported
-		if (visibleDen != null && !visibleDen.equals(closestAllyUnderAttack) && !visibleDen.equals(closestDen) && Micro.getNearbyZombies().length < 2)
+		if (visibleDen != null && !visibleDen.equals(closestAllyUnderAttack) && !visibleDen.equals(closestDen) && Micro.getNearbyZombies().length < 1)
 		{
-			Message.sendSignal(RobotType.SOLDIER.sensorRadiusSquared*100);
+			Action.tryAttackSomeone();
+			Message.sendSignal(RobotType.SOLDIER.sensorRadiusSquared*5);
 			closestDen = visibleDen;
 		}
 		

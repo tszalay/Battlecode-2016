@@ -13,23 +13,22 @@ public class ExploreStrat extends RobotPlayer implements Strategy
 	public ExploreStrat() throws GameActionException
 	{
 		int id = rc.getID();
-		if (id % 4 == 0)
-			myExploringTarget = new MapLocation(-1000,-1000);
-		else if (id % 4 == 1)
-			myExploringTarget = new MapLocation(1000,-1000);
-		else if (id % 4 == 2)
-			myExploringTarget = new MapLocation(-1000,1000);
-		else if (id % 4 == 3)
-			myExploringTarget = new MapLocation(1000,1000);
+		int rando = rand.nextInt(4);
+		if (rando == 0)
+			myExploringTarget = here.add(-100,-100);
+		else if (rando == 1)
+			myExploringTarget = here.add(100,-100);
+		else if (rando == 2)
+			myExploringTarget = here.add(-100,100);
+		else
+			myExploringTarget = here.add(100,100);
 		this.stratName = "ExploreStrat";
 	}
 	
 	public boolean tryTurn() throws GameActionException
 	{
-		Debug.setStringAK("My Strategy: " + this.stratName);
-
 		// get a random waypoint and move towards it
-		if (myExploringTarget == null || !MapInfo.isOnMap(myExploringTarget) || here.distanceSquaredTo(myExploringTarget) < 9)
+		if (myExploringTarget == null || here.distanceSquaredTo(myExploringTarget) < 9 || !MapInfo.isOnMap(myExploringTarget))
 		{
 			myExploringTarget = MapInfo.getExplorationWaypoint();
 		}
@@ -50,7 +49,7 @@ public class ExploreStrat extends RobotPlayer implements Strategy
 //		}
 
 		Action.tryGoToWithoutBeingShot(myExploringTarget, goodDirs);
-		Debug.setStringAK("Exploring to " + myExploringTarget);		
+		Debug.setStringAK("My Strategy: " + this.stratName + ", Exploring to " + myExploringTarget);		
         // always send out info about sighted targets
 		Sighting.doSendSightingMessage();
 		

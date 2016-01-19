@@ -10,11 +10,12 @@ public class RoboScout extends RobotPlayer
 	
 	public static void init() throws GameActionException
 	{
+		myStrategy = new ExploreStrat();
 		// start off balling around closest archon
-		if (myBuilderLocation != null)
-			myStrategy = new ExploreStrat();
-		else
-			myStrategy = new FreeUnitStrategy();
+//		if (myBuilderLocation != null)
+//			myStrategy = new ExploreStrat();
+//		else
+//			myStrategy = new FreeUnitStrategy();
 //		 
 //		RobotInfo[] allies = rc.senseNearbyRobots(RobotType.SCOUT.sensorRadiusSquared, ourTeam);
 //		RobotInfo archon = null;
