@@ -203,7 +203,7 @@ public class MicroBase extends RobotPlayer
 				break;
 				
 			case TURRET:
-				if (rc.getType() != RobotType.SCOUT)
+				if (here.distanceSquaredTo(ri.location) <= ri.type.attackRadiusSquared)
 					dangerTime = (int)Math.floor(ri.weaponDelay);
 				break;
 			}
