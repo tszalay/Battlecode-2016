@@ -7,37 +7,33 @@ import java.util.*;
 
 public class ExploreStrat extends RobotPlayer implements Strategy
 {	
-	private MapLocation myTarget = null;
 	private String stratName;
 	public static MapLocation myExploringTarget;
 	
 	public ExploreStrat() throws GameActionException
 	{
-		myTarget = MapInfo.getExplorationWaypoint();
+		int id = rc.getID();
+		if (id % 5 == 0)
+			myExploringTarget = new MapLocation(-1000,-1000);
+		else if (id % 5 == 1)
+			myExploringTarget = new MapLocation(1000,-1000);
+		else if (id % 5 == 2)
+			myExploringTarget = new MapLocation(-1000,1000);
+		else if (id % 5 == 3)
+			myExploringTarget = new MapLocation(1000,1000);
+		else
+			myExploringTarget = MapInfo.getExplorationWaypoint();
 		this.stratName = "ExploreStrat";
 	}
 	
 	public boolean tryTurn() throws GameActionException
 	{
-		
 		Debug.setStringAK("My Strategy: " + this.stratName);
-		
 
 		// get a random waypoint and move towards it
-		if (myExploringTarget == null || here.distanceSquaredTo(myExploringTarget) < 24 || !MapInfo.isOnMap(myExploringTarget))
+		if (myExploringTarget == null || !MapInfo.isOnMap(myExploringTarget))
 		{
-			// myExploringTarget = MapInfo.getExplorationWaypoint();
-			int id = rc.getID();
-			if (id % 5 == 0)
-				myExploringTarget = new MapLocation(-10000,-10000);
-			else if (id % 5 == 1)
-				myExploringTarget = new MapLocation(10000,-10000);
-			else if (id % 5 == 2)
-				myExploringTarget = new MapLocation(-10000,10000);
-			else if (id % 5 == 3)
-				myExploringTarget = new MapLocation(10000,10000);
-			else
-				myExploringTarget = MapInfo.getExplorationWaypoint();
+			myExploringTarget = MapInfo.getExplorationWaypoint();
 		}
 		
 		DirectionSet goodDirs = Micro.getSafeMoveDirs();
@@ -48,14 +44,14 @@ public class ExploreStrat extends RobotPlayer implements Strategy
 			if (!Action.tryRetreatTowards(Message.recentEnemySignal, goodDirs))
 				Action.tryRetreatOrShootIfStuck();
 		}
-		else
-		{
-			if (!Nav.tryGoTo(myExploringTarget, goodDirs))
-				myExploringTarget = MapInfo.getExplorationWaypoint(); // so you don't get stuck
-			//Action.tryGoToWithoutBeingShot(myExploringTarget, goodDirs);
-		}
+//		else
+//		{
+//			if (!Nav.tryGoTo(myExploringTarget, goodDirs))
+//				myExploringTarget = MapInfo.getExplorationWaypoint(); // so you don't get stuck
+//			//Action.tryGoToWithoutBeingShot(myExploringTarget, goodDirs);
+//		}
 
-		
+		Action.tryGoToWithoutBeingShot(myExploringTarget, goodDirs);
 		Debug.setStringAK("Exploring to " + myExploringTarget);		
         // always send out info about sighted targets
 		Sighting.doSendSightingMessage();

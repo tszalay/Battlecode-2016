@@ -135,7 +135,7 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 				}
 				
 				Debug.setStringSJF("trying to book it to neutral archon at " + dest.toString());
-				if (!Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs())))
+				if (!Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs()))
 				{
 					Rubble.tryClearRubble(dest);
 					System.out.println("I'm clearing rubble to get to the neutral archon");

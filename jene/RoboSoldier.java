@@ -10,8 +10,10 @@ public class RoboSoldier extends RobotPlayer
 	
 	public static void init() throws GameActionException
 	{
-		myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 8, 20);
-//		myStrategy = new MobFightStrat();
+		if (rand.nextBoolean())
+			myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 4, 20);
+		else
+			myStrategy = new MobFightStrat();
 		
 //		myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 2, 10);
 		
@@ -27,9 +29,6 @@ public class RoboSoldier extends RobotPlayer
 			myHealth = rc.getHealth();
 			Message.sendSignal(RobotType.SOLDIER.sensorRadiusSquared*2);
 		}
-		
-		if (Micro.getNearbyAllies().length > 8)
-			myStrategy = new MobFightStrat();
 		
 		MapLocation closestDen = MapInfo.getClosestDen();
 		MapLocation visibleDen = visibleDen();
@@ -47,28 +46,29 @@ public class RoboSoldier extends RobotPlayer
 		}
 		else if (closestAllyUnderAttack != null)
 		{
-			lastBallLocation = here;
 			myStrategy = new MobFightStrat(closestAllyUnderAttack);
 		}
 		
 		if (!myStrategy.tryTurn())
 		{
-			myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 8, 16);
-			
-			// if i see an archon, ball around it
-			RobotInfo[] allies = Micro.getNearbyAllies();
-			for (RobotInfo bot : allies)
-			{
-				if (bot.type == RobotType.ARCHON)
-					myStrategy = new BallMoveStrategy(bot.ID, 8, 16);
-			}
-			
-			// if i don't, go back to last ball location
-			if (lastBallLocation != null && here.distanceSquaredTo(lastBallLocation) > RobotType.SOLDIER.sensorRadiusSquared)
-				Action.tryGoToWithoutBeingShot(lastBallLocation, Micro.getSafeMoveDirs());
-			else
-				myStrategy = new FreeUnitStrategy();
+			myStrategy = new MobFightStrat();
 		}
+//			myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 8, 16);
+//			
+//			// if i see an archon, ball around it
+//			RobotInfo[] allies = Micro.getNearbyAllies();
+//			for (RobotInfo bot : allies)
+//			{
+//				if (bot.type == RobotType.ARCHON)
+//					myStrategy = new BallMoveStrategy(bot.ID, 8, 16);
+//			}
+//			
+//			// if i don't, go back to last ball location
+//			if (lastBallLocation != null && here.distanceSquaredTo(lastBallLocation) > RobotType.SOLDIER.sensorRadiusSquared)
+//				Action.tryGoToWithoutBeingShot(lastBallLocation, Micro.getSafeMoveDirs());
+//			else
+//				myStrategy = new MobFightStrat();
+//		}
 	}
 	
 	public static MapLocation visibleDen() throws GameActionException

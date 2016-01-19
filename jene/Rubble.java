@@ -81,8 +81,10 @@ public class Rubble extends RobotPlayer
 		for (MapLocation loc : parts)
 		{
 			// don't try to go to a part we can't get
-			if ( (closestPartLoc == null && rc.senseRobotAtLocation(loc) == null && rc.senseRubble(loc) < GameConstants.RUBBLE_OBSTRUCTION_THRESH) || (closestPartLoc != null && here.distanceSquaredTo(loc) < here.distanceSquaredTo(closestPartLoc) && rc.senseRobotAtLocation(loc) == null && rc.senseRubble(loc) < GameConstants.RUBBLE_OBSTRUCTION_THRESH))
-				closestPartLoc = loc;
+			if (rc.senseRobotAtLocation(loc) == null)
+				if (rc.senseRubble(loc) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH)
+					if (closestPartLoc == null || here.distanceSquaredTo(loc) < here.distanceSquaredTo(closestPartLoc))
+						closestPartLoc = loc;
 		}
 		
 		return closestPartLoc;

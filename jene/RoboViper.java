@@ -29,9 +29,18 @@ public class RoboViper extends RobotPlayer
         //Action.tryMove(here.directionTo(enemyLoc));
         
         RobotInfo[] enemies = Micro.getNearbyEnemies();
-        
-        if (enemies != null && enemies.length > 0)
-        	enemyLoc = Micro.getClosestUnitTo(enemies, here).location;
+        int count = 0;
+        if (enemies != null)
+        {
+        	for (RobotInfo ri : enemies)
+        	{
+        		if (ri.type != RobotType.SCOUT)
+        		{
+        			enemyLoc = ri.location;
+        			count ++;
+        		}
+        	}
+        }
         
         else if (here.distanceSquaredTo(enemyLoc) < 10 && (enemies == null || enemies.length == 0))
         {

@@ -12,7 +12,6 @@ public class RoboScout extends RobotPlayer
 	{
 		// start off balling around closest archon
 		if (myBuilderLocation != null)
-			// myStrategy = new BallMoveStrategy(myBuilderID, 14, 24);
 			myStrategy = new ExploreStrat();
 		else
 			myStrategy = new FreeUnitStrategy();

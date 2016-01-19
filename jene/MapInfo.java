@@ -206,8 +206,8 @@ public class MapInfo extends RobotPlayer
 		
 		neutralArchonLocations.add(loc);
 		
-		if (!neutralArchonLocations.contains(getSymmetricLocation(loc)))
-			neutralArchonLocations.add(getSymmetricLocation(loc));
+//		if (!neutralArchonLocations.contains(getSymmetricLocation(loc)))
+//			neutralArchonLocations.add(getSymmetricLocation(loc));
 		
 		if (sendUpdate)
 			newNeutralArchon = loc;

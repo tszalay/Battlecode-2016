@@ -8,17 +8,20 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 {
 	private static String stratName;
 	private static MapLocation target;
+	private static MapLocation startingLoc;
 	
 	public MobFightStrat()
 	{
 		this.stratName = "MobFightStrat";
 		this.target = null;
+		this.startingLoc = here;
 	}
 	
 	public MobFightStrat(MapLocation target)
 	{
 		this.stratName = "MobFightStrat";
 		this.target = target;
+		this.startingLoc = here;
 	}
 	
 	public boolean tryTurn() throws GameActionException
@@ -73,33 +76,8 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 				Action.tryRetreatOrShootIfStuck();
 				return true;
 			}
-			
-			// if you are out-ranged, move in
-//			RobotInfo rangedHostile = null;
-//			for (RobotInfo ri : Micro.getNearbyHostiles())
-//			{
-//				if (ri.type == RobotType.RANGEDZOMBIE || ri.type == RobotType.VIPER)
-//				{
-//					rangedHostile = ri;
-//					continue;
-//				}
-//			}
-//			if (rangedHostile != null)
-//			{
-//				Direction dir = Micro.getCanFastMoveDirs().getDirectionTowards(here.directionTo(rangedHostile.location));
-//				if (!Action.tryMove(dir))
-//				{
-//					dir = Micro.getCanMoveDirs().getDirectionTowards(here.directionTo(rangedHostile.location));
-//					return Action.tryMove(dir);
-//				}
-//				else
-//				{
-//					return true;
-//				}
-//			}
-			
-			
-			return false;
+
+			return Action.tryGoToWithoutBeingShot(startingLoc, Micro.getSafeMoveDirs());
 		
 		default:
 			// if i am overpowered, kite retreat taking pot-shots
@@ -132,16 +110,18 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 				if (enemyAttackingAlly == null)
 				{
 					// check if this target is obsolete
-					if (rc.canSense(target) && (rc.senseRobotAtLocation(target) == null || rc.senseRobotAtLocation(target).team == ourTeam))
+					if (rc.canSenseLocation(target) && (rc.senseRobotAtLocation(target) == null || rc.senseRobotAtLocation(target).team == ourTeam))
 					{
 						target = null;
-						return false;
 					}
-					Nav.tryGoTo(target, Micro.getCanMoveDirs());
-					return true;
+					else
+					{
+						Nav.tryGoTo(target, Micro.getCanMoveDirs());
+						return true;
+					}
 				}
 				
-				if (!Action.tryAdjacentSafeMoveToward(enemyAttackingAlly.location))
+				if (enemyAttackingAlly != null && !Action.tryAdjacentSafeMoveToward(enemyAttackingAlly.location))
 				{
 					Direction dir = Micro.getCanFastMoveDirs().getDirectionTowards(here.directionTo(enemyAttackingAlly.location));
 					if (!Action.tryMove(dir))
@@ -151,14 +131,28 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 							Nav.tryGoTo(enemyAttackingAlly.location, Micro.getCanMoveDirs()); // don't just sit there, FULL SURROUND
 					}
 				}
-				Debug.setStringSJF("target = " + target.toString());
 				return true;
 			}
-			
-			// not doing anything else, so look for parts and DIG
-			MapLocation closestPart = Rubble.senseClosestPart();
-			return Rubble.tryClearRubble(closestPart);
 		}
+
+		// not doing anything else, so look for parts and DIG
+		MapLocation closestPart = Rubble.senseClosestPart();
+		if (closestPart == null)
+			closestPart = MapInfo.getClosestPart();
+		if (closestPart != null)
+		{
+			if (Action.tryMove(here.directionTo(closestPart)))
+				return true;
+
+			if (Rubble.tryClearRubble(closestPart))
+				return true;
+		}
+
+		Debug.setStringSJF("going back to = " + startingLoc.toString());
+		if (here.distanceSquaredTo(startingLoc) > 10 && Action.tryGoToWithoutBeingShot(startingLoc, Micro.getSafeMoveDirs()))
+			return true;
+
+		return false;
 	}
 	
 	public void updateTarget() throws GameActionException
