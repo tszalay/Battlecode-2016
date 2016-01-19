@@ -1,4 +1,4 @@
-package i_bot_the_sheriff;
+package botumn_leaves;
 
 import battlecode.common.*;
 
@@ -11,6 +11,12 @@ public class TurtleTurretStrategy extends RobotPlayer implements Strategy
 	static final int PACK_DELAY = 50;
 	
 	public double myHealth = RobotType.TURRET.maxHealth;
+	
+	
+	public String getName()
+	{
+		return "Turtle turret";
+	}
 	
 	public boolean tryTurn() throws GameActionException
 	{

@@ -1,4 +1,4 @@
-package i_bot_the_sheriff;
+package botumn_leaves;
 
 import battlecode.common.*;
 
@@ -9,7 +9,7 @@ public class RoboGuard extends RobotPlayer
 	
 	public static void init() throws GameActionException
 	{
-		myStrategy = new MobFightStrat(RobotType.GUARD);
+		myStrategy = new MobFightStrat();
 		myHealth = rc.getType().maxHealth;
 	}
 	

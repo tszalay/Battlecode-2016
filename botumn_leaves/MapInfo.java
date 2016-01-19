@@ -1,4 +1,4 @@
-package i_bot_the_sheriff;
+package botumn_leaves;
 
 import battlecode.common.*;
 
@@ -11,12 +11,15 @@ public class MapInfo extends RobotPlayer
 	
 	public static MapLocation mapMin = new MapLocation(-18000,-18000);
 	public static MapLocation mapMax = new MapLocation(18001,18001);
+	private static MapLocation nullLocation = new MapLocation(123,123);
 	
 	// update the boundary on one of the map min/maxes
 	public static boolean newMapEdge = false;
 	
-	public static MapLocation newZombieDen = null;
-	public static MapLocation newParts = null;
+	// other stuff
+	private static final int DEN_ADD = 1;
+	private static final int DEN_SENT = 2;
+	private static final int DEN_DEL = 3;
 	
 	public static int numInitialArchons = 0;
 
@@ -33,6 +36,8 @@ public class MapInfo extends RobotPlayer
 	public static MapLocation mapCenter = null;
 	private static MapLocation dblCenter = null;
 
+	
+	
 	// the following functions are to be called mainly by Archons to set destinations
 	
 	// just do something random for now
@@ -122,8 +127,9 @@ public class MapInfo extends RobotPlayer
 	}
 	
 	// called by local units when checking for map edge info
-	public static void updateMapEdge(Direction dir, int val, boolean sendUpdate)
+	public static void updateMapEdge(Direction dir, int val)
 	{
+		
 		// update the correct direction
 		switch (dir)
 		{
@@ -131,32 +137,28 @@ public class MapInfo extends RobotPlayer
 			if (val > mapMin.y)
 			{
 				mapMin = new MapLocation(mapMin.x,val);
-				if (sendUpdate)
-					newMapEdge = true;
+				newMapEdge = true;
 			}
 			break;
 		case EAST:
 			if (val < mapMax.x)
 			{
 				mapMax = new MapLocation(val,mapMax.y);
-				if (sendUpdate)
-					newMapEdge = true;
+				newMapEdge = true;
 			}
 			break;
 		case WEST:
 			if (val > mapMin.x)
 			{
 				mapMin = new MapLocation(val,mapMin.y);
-				if (sendUpdate)
-					newMapEdge = true;
+				newMapEdge = true;
 			}
 			break;
 		case SOUTH:
 			if (val < mapMax.y)
 			{
 				mapMax = new MapLocation(mapMax.x,val);
-				if (sendUpdate)
-					newMapEdge = true;
+				newMapEdge = true;
 			}
 			break;
 		default:
@@ -166,21 +168,15 @@ public class MapInfo extends RobotPlayer
 	}
 
 	
-	// these are to be called by scouts/message to add a zombie den/part if it isn't in there already
-	public static void updateZombieDens(MapLocation loc, boolean sendUpdate)
+	// these are to be called by message to add a zombie den/part if it isn't in there already
+	public static void updateZombieDens(MapLocation add_loc, MapLocation del_loc)
 	{
 		// if we already reported it, or we already have one queued to send,
 		// don't do anything
-		if (zombieDenLocations.contains(loc) || newZombieDen != null)
-			return;
-		
-		zombieDenLocations.add(loc);
-		
-		// flag that we want to send this location
-		if (sendUpdate)
-			newZombieDen = loc;
+		zombieDenLocations.add(add_loc);
+		zombieDenLocations.remove(del_loc);
 	}
-	
+	/*
 	public static void updateParts(MapLocation loc, boolean sendUpdate)
 	{
 		if (goodPartsLocations.contains(loc) || newParts != null)
@@ -191,7 +187,7 @@ public class MapInfo extends RobotPlayer
 		if (sendUpdate)
 			newParts = loc;
 	}
-	
+	*/
 	public static void removeWaypoint(MapLocation loc)
 	{
 		// remove the part, and send that it got removed
@@ -205,13 +201,6 @@ public class MapInfo extends RobotPlayer
 		if (loc != null && rc.senseParts(loc) <= 0)
 			goodPartsLocations.remove(loc);
 		
-		loc = getClosestDen();
-		if (loc != null && rc.canSense(loc))
-		{
-			RobotInfo ri = rc.senseRobotAtLocation(loc);
-			if (ri == null || ri.type != RobotType.ZOMBIEDEN)
-				zombieDenLocations.remove(loc);
-		}
 	}
 	
 	// function to send updated info as a scout
@@ -224,46 +213,79 @@ public class MapInfo extends RobotPlayer
 		if (newMapEdge)
 		{
 			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.MAP_EDGE, mapMin, mapMax);
+			newMapEdge = false;
 			return true;
 		}
-		if (newZombieDen != null)
+		
+		// quickly loop through zombie dens, see if any need sendin'
+		for (MapLocation loc : zombieDenLocations.elements())
 		{
-			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.ZOMBIE_DEN, newZombieDen);
-			newZombieDen = null;
-			return true;
-		}
-		if (newParts != null)
-		{
-			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.GOOD_PARTS, newParts);
-			newParts = null;
-			return true;
+			int val = zombieDenLocations.get(loc);
+			if (val == DEN_ADD)
+			{
+				// send that we have seen a new zombie den
+				Message.sendMessageSignal(fullMapDistanceSq(), MessageType.ZOMBIE_DEN, loc, nullLocation);
+				// and flag it as sent in the loc set
+				zombieDenLocations.set(loc, DEN_SENT);
+				// and don't do any more this round
+				return true;
+			}
+			else if (val == DEN_DEL)
+			{
+				// send that we have unseen a zombie den
+				Message.sendMessageSignal(fullMapDistanceSq(), MessageType.ZOMBIE_DEN, nullLocation, loc);
+				// and actually remove it from the array
+				zombieDenLocations.remove(loc);
+				// and don't do any more this round
+				return true;
+			}
 		}
 		
 		return false;
 	}
 	
-	// function to look for nearby parts, neutrals, etc, can be used by scouts or archons
-	public static void analyzeSurroundings() throws GameActionException
+	// function to quickly look around us and see what's new or what's changed
+	public static void doAnalyzeSurroundings() throws GameActionException
 	{
 		double visibleParts = 0;
 		
-		boolean isScout = (rc.getType() == RobotType.SCOUT);
-		
 		// neutral robot check
-		RobotInfo[] neutralRobots = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.NEUTRAL);
+		/*RobotInfo[] neutralRobots = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.NEUTRAL);
 		for (RobotInfo ri : neutralRobots)
 		{
 			updateParts(ri.location, isScout);
 			visibleParts += ri.type.partCost;
-		}
+		}*/
 		
 		// zombie den check
 		for (RobotInfo ri : Micro.getNearbyHostiles())
+		{
 			if (ri.type == RobotType.ZOMBIEDEN)
-				updateZombieDens(ri.location, isScout);
+			{
+				// if it's already in there, screw it
+				if (zombieDenLocations.contains(ri.location))
+					continue;
+				
+				// otherwise, let's add stuff
+				zombieDenLocations.add(ri.location, DEN_ADD);
+			}
+		}
 		
-		// monkeypatch for now
-		here = rc.getLocation();
+		// now check if we need to remove any
+		MapLocation closestDen = getClosestDen();
+		if (closestDen != null && rc.canSense(closestDen))
+		{
+			RobotInfo ri = rc.senseRobotAtLocation(closestDen);
+			if (ri == null || ri.type != RobotType.ZOMBIEDEN)
+			{
+				// if we're a scout, flag it so we send the removal message
+				// otherwise just straight up remove it
+				if (rc.getType() == RobotType.SCOUT)
+					zombieDenLocations.set(closestDen, DEN_DEL);
+				else
+					zombieDenLocations.remove(closestDen);
+			}
+		}
 		
 		// loop through and see if we need to update anyone
 		Direction d = Direction.NORTH;
@@ -271,7 +293,13 @@ public class MapInfo extends RobotPlayer
 		{
 			int newval = 0;
 			// loop until we hit a location on the map
-			int i = isScout ? 7 : 5;
+			// sight range start point gets set by our class
+			int i = 4;
+			if (rc.getType() == RobotType.SCOUT)
+				i = 7;
+			else if (rc.getType() == RobotType.ARCHON)
+				i = 5;
+			
 			for (; i>=1; i--)
 			{
 				MapLocation loc = here.add(d,i);
@@ -282,20 +310,24 @@ public class MapInfo extends RobotPlayer
 			}
 			if (newval > 0)
 			{
-				updateMapEdge(d, newval, true);
+				updateMapEdge(d, newval);
 				break;
 			}
 			
 			d = d.rotateRight().rotateRight();
 		}
 		
+		/*
 		MapLocation[] partsLocs = rc.sensePartLocations(rc.getType().sensorRadiusSquared);
 		
-		for (MapLocation loc : partsLocs)
+		if (partsLocs.length > 0)
 		{
-			updateParts(loc, isScout);
-			visibleParts += rc.senseParts(loc);
-		}
+			for (MapLocation loc : partsLocs)
+			{
+				updateParts(loc, isScout);
+				visibleParts += rc.senseParts(loc);
+			}
+		}*/
 		//System.out.println("Scanned " + nchecked + "/" + MapUtil.allOffsX.length + " locations");
 	}
 	

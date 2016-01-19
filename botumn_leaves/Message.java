@@ -1,6 +1,7 @@
-package i_bot_the_sheriff;
+package botumn_leaves;
 
 import battlecode.common.*;
+
 import java.util.*;
 
 // enum for encoding the type of a message in the contents
@@ -13,7 +14,6 @@ enum MessageType
 	FREE_BEER,
 	GOOD_PARTS,
 	MAP_EDGE,
-	REMOVE_WAYPOINT,
 	NEW_STRATEGY
 }
 
@@ -88,18 +88,16 @@ public class Message extends RobotPlayer
 						rc.getRoundNum()-1);
 				break;
 			case ZOMBIE_DEN:
-				MapInfo.updateZombieDens(readLocation(vals[0]),false);
+				MapInfo.updateZombieDens(readLocation(vals[0]),readLocation(vals[1]));
 				break;
 			case MAP_EDGE:
 				MapInfo.updateMapEdges(readLocation(vals[0]), readLocation(vals[1]));
 				break;
 			case GOOD_PARTS:
-				MapInfo.updateParts(readLocation(vals[0]),false);				
+				//MapInfo.updateParts(readLocation(vals[0]),false);				
 				break;
 			case NEW_STRATEGY:
 				recentStrategySignal = Strategy.Type.values()[vals[1]];
-				break;
-			case REMOVE_WAYPOINT:
 				break;
 			}
 		}
@@ -115,7 +113,7 @@ public class Message extends RobotPlayer
 	}
 	
 	//Basic signals always only done when under attack
-	public static MapLocation getClosestAllyUnderAttack()
+	public static MapLocation getClosestAllyUnderAttack() throws GameActionException
 	{
 		if (closestAllyUnderAttackLocation != null)
 			return closestAllyUnderAttackLocation;
@@ -132,7 +130,12 @@ public class Message extends RobotPlayer
 			}
 		}
 		
+		if (bestLoc == null) return null;
+		
 		closestAllyUnderAttackLocation = bestLoc;
+		
+		if (rc.canSenseLocation(closestAllyUnderAttackLocation) && (rc.senseRobotAtLocation(closestAllyUnderAttackLocation)==null || rc.senseRobotAtLocation(closestAllyUnderAttackLocation).team == ourTeam))
+				closestAllyUnderAttackLocation = null;
 		
 		// clear the buffer
 		underAttackLocs.clear();

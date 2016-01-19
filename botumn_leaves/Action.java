@@ -1,4 +1,4 @@
-package i_bot_the_sheriff;
+package botumn_leaves;
 
 import battlecode.common.*;
 
@@ -13,10 +13,10 @@ public class Action extends RobotPlayer
 		if (!rc.isWeaponReady())
 			return false;
 		
-		RobotInfo zombieTarget = Micro.getLowestHealthInMyRange(Micro.getNearbyZombies());
-		RobotInfo enemyTarget = Micro.getLowestHealthInMyRange(Micro.getNearbyEnemies());
-		//RobotInfo zombieTarget = Micro.getHighestPriorityTarget(Micro.getNearbyZombies());
-		//RobotInfo enemyTarget = Micro.getHighestPriorityTarget(Micro.getNearbyEnemies());
+		//RobotInfo zombieTarget = Micro.getLowestHealthInMyRange(Micro.getNearbyZombies());
+		//RobotInfo enemyTarget = Micro.getLowestHealthInMyRange(Micro.getNearbyEnemies());
+		RobotInfo zombieTarget = Micro.getHighestPriorityTarget(Micro.getNearbyZombies());
+		RobotInfo enemyTarget = Micro.getHighestPriorityTarget(Micro.getNearbyEnemies());
 		
 		if (zombieTarget != null && rc.canAttackLocation(zombieTarget.location))
 		{
@@ -151,6 +151,7 @@ public class Action extends RobotPlayer
 		if (d != null && rc.canMove(d) && rc.isCoreReady())
 		{
 			rc.move(d);
+			here = rc.getLocation();
 			return true;
 		}
 //			else

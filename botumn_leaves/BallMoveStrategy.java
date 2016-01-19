@@ -1,4 +1,4 @@
-package i_bot_the_sheriff;
+package botumn_leaves;
 
 import battlecode.common.*;
 import java.util.*;
@@ -18,6 +18,12 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
 	public Direction  	lastBallMoveDir = null;
 
 	public static final int BALL_LOST_TIMEOUT = 20;
+	
+	
+	public String getName()
+	{
+		return "Ball Move";
+	}
 	
 	public BallMoveStrategy(int targetID, int minDSq, int maxDSq) throws GameActionException
 	{
@@ -107,6 +113,21 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
 		// otherwise get a list of all valid directions that keep us in the ball and using those
 		DirectionSet ballDirs = Micro.getSafeMoveDirs().clone();
 		
+		 // avoid crowding other archons RR
+        RobotInfo[] nearbyAllies = rc.senseNearbyRobots(9, ourTeam);
+        for (Direction d : ballDirs.getDirections())
+        {
+            for (RobotInfo ri: nearbyAllies)
+            {
+                if ((ri.type == RobotType.ARCHON) && ri.ID!=ballTargetID && here.add(d).distanceSquaredTo(ri.location) < 2)
+                {
+                    ballDirs.remove(d);
+                    System.out.println("Avoiding a neighbor arhcon");
+                    break;
+                }    
+            }
+        }
+		
 		for (Direction d : ballDirs.getDirections())
 		{
 			int dSq = here.add(d).distanceSquaredTo(lastBallLocation);
@@ -121,6 +142,9 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
 			Direction d = ballDirs.getDirectionTowards(lastBallMoveDir);
 			if (d != null)
 			{
+				//first try clear rubble if it's stopping you
+				if (Action.tryClearRubble(d)) return true;
+				
 				Action.tryMove(d);
 				lastBallMoveDir = null;
 				return true;
@@ -141,4 +165,6 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
 		
 		return true;
 	}
+	
+
 }

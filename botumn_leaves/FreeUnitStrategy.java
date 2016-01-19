@@ -1,4 +1,4 @@
-package i_bot_the_sheriff;
+package botumn_leaves;
 
 import battlecode.common.*;
 import java.util.*;
@@ -6,6 +6,11 @@ import java.util.*;
 public class FreeUnitStrategy extends RobotPlayer implements Strategy
 {	
 	private MapLocation myTarget = null;
+	
+	public String getName()
+	{
+		return "Free unit";
+	}
 	
 	public FreeUnitStrategy() throws GameActionException
 	{

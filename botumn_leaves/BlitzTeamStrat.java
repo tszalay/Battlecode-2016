@@ -1,4 +1,4 @@
-package i_bot_the_sheriff;
+package botumn_leaves;
 
 import battlecode.common.*;
 
@@ -6,18 +6,61 @@ import java.util.*;
 
 public class BlitzTeamStrat extends RobotPlayer implements Strategy
 {
-	private RobotType type;
 	private RobotInfo myArchon = null;
-	
-	public BlitzTeamStrat(RobotType type, RobotInfo myArchon)
+
+	public String getName()
 	{
-		this.type = type;
-		this.myArchon = myArchon;
+		return "Blitz strategy";
 	}
+	
+	public static boolean shouldBlitz()
+	{
+		MapLocation[] theirArchons = rc.getInitialArchonLocations(theirTeam);
+		MapLocation[] ourArchons = rc.getInitialArchonLocations(ourTeam);
+		
+		if (ourArchons.length < 2)
+			return false;
+		
+		int x = 0;
+		int y = 0;
+		for (MapLocation them : theirArchons)
+		{
+			x += them.x;
+			y += them.y;
+		}
+		x = x/theirArchons.length;
+		y = y/theirArchons.length;
+		MapLocation theirCOM = new MapLocation(x,y);
+		int myDist = here.distanceSquaredTo(theirCOM);
+		
+		int shortestDist = myDist;
+		for (MapLocation us : ourArchons)
+		{
+			if (us.distanceSquaredTo(theirCOM) < shortestDist)
+				shortestDist = us.distanceSquaredTo(theirCOM);
+		}
+		
+		MapLocation[] parts = rc.sensePartLocations(RobotType.ARCHON.sensorRadiusSquared);
+//		if (parts != null && parts.length > 0)
+//			return true;
+		if (myDist == shortestDist)
+			return true;
+		
+		return false;
+	}
+	
+	
+	public BlitzTeamStrat(RobotInfo myArchon) throws GameActionException
+	{
+		this.myArchon = myArchon;
+		
+		tryBuild(RobotType.SCOUT);
+	}
+	
 	
 	public boolean tryTurn() throws GameActionException
 	{
-		switch (type)
+		switch (rc.getType())
 		{
 		case ARCHON:
 			MapLocation partLoc = senseClosestPart();
@@ -38,18 +81,15 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 			// run around and grab stuff as fast as possible
 			if (neutralLoc != null)
 				Action.tryGoToWithoutBeingShot(neutralLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
-			
+				
 			else if (partLoc != null)
 				Action.tryGoToWithoutBeingShot(partLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
 			
 			else if (mapPartLoc != null)
 				Action.tryGoToWithoutBeingShot(mapPartLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
 			
-			else if (MapInfo.getExplorationWaypoint() != null)
-				Action.tryGoToWithoutBeingShot(MapInfo.getExplorationWaypoint(), Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
-			
 			else
-				return false;
+				Action.tryGoToWithoutBeingShot(MapInfo.getExplorationWaypoint(), Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
 			
 			return true;
 			
@@ -85,7 +125,7 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 	
 	public MapLocation senseClosestPart() throws GameActionException
 	{
-		MapLocation[] parts = rc.sensePartLocations(type.sensorRadiusSquared);
+		MapLocation[] parts = rc.sensePartLocations(rc.getType().sensorRadiusSquared);
 		
 		if (parts == null || parts.length == 0)
 			return null;
@@ -93,7 +133,8 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 		MapLocation closestPartLoc = null;
 		for (MapLocation loc : parts)
 		{
-			if (closestPartLoc == null || here.distanceSquaredTo(loc) < here.distanceSquaredTo(closestPartLoc))
+			// don't try to go to a part we can't get
+			if ( (closestPartLoc == null && rc.senseRobotAtLocation(loc) == null && rc.senseRubble(loc) < GameConstants.RUBBLE_OBSTRUCTION_THRESH) || (closestPartLoc != null && here.distanceSquaredTo(loc) < here.distanceSquaredTo(closestPartLoc) && rc.senseRobotAtLocation(loc) == null && rc.senseRubble(loc) < GameConstants.RUBBLE_OBSTRUCTION_THRESH))
 				closestPartLoc = loc;
 		}
 		
@@ -102,7 +143,7 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 	
 	public MapLocation senseClosestNeutral() throws GameActionException
 	{
-		RobotInfo[] neutrals = rc.senseNearbyRobots(type.sensorRadiusSquared,Team.NEUTRAL);
+		RobotInfo[] neutrals = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared,Team.NEUTRAL);
 		
 		if (neutrals == null || neutrals.length == 0)
 			return null;
@@ -115,5 +156,22 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 		}
 		
 		return closestNeutralLoc; // will return an archon location even if it's not really the closest
+	}
+	
+	public static boolean tryBuild(RobotType robotToBuild) throws GameActionException
+	{
+		if (!rc.isCoreReady())
+			return false;
+		if (!rc.hasBuildRequirements(robotToBuild))
+			return false;
+
+		Direction buildDir = Micro.getCanBuildDirectionSet(robotToBuild).getRandomValid();
+		if (buildDir != null)
+		{
+			rc.build(buildDir, robotToBuild);
+			return true;
+		}
+		
+		return false;
 	}
 }

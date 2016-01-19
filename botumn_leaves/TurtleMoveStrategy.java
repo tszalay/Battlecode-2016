@@ -1,4 +1,4 @@
-package i_bot_the_sheriff;
+package botumn_leaves;
 
 import battlecode.common.*;
 
@@ -7,6 +7,11 @@ import java.util.*;
 // turtle move tries to allow units to move around close to or inside a turtle ball
 public class TurtleMoveStrategy extends RobotPlayer implements Strategy
 {
+	public String getName()
+	{
+		return "Turtle movement";
+	}	
+
 	public TurtleMoveStrategy()
 	{
 	}

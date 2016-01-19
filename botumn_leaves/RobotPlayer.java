@@ -1,4 +1,4 @@
-package i_bot_the_sheriff;
+package botumn_leaves;
 
 import battlecode.common.*;
 
@@ -19,7 +19,7 @@ public class RobotPlayer
 	public static MicroBase Micro = null;
 	
 	@SuppressWarnings("unused")
-	// BC Engine -> RobotPlayer.run
+	// BC Engine -> RobotPlayer.run -> RoboXXX.run
     public static void run(RobotController robotc)
 	{
 		// globals in our class
@@ -34,9 +34,7 @@ public class RobotPlayer
 		Debug.setStringAK("A-aron");
 		Debug.setStringSJF("Stephen J. Fry");
 		Debug.setStringRR("Ryan");
-		
-		for (RobotType t : RobotType.values())
-			System.out.println(t.ordinal() + ": " + t);
+				
 		// look for an archon close by, if we aren't an Archon
 		if (rc.getType() != RobotType.ARCHON)
 		{
@@ -57,6 +55,8 @@ public class RobotPlayer
 		
 		// and try go get the map symmetry. everyone can do this
 		MapInfo.calculateSymmetry();
+		// also initialize Micro
+		Micro = new MicroBase();
 		
 		try
 		{

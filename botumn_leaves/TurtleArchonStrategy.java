@@ -1,4 +1,4 @@
-package i_bot_the_sheriff;
+package botumn_leaves;
 
 import battlecode.common.*;
 
@@ -9,6 +9,11 @@ public class TurtleArchonStrategy extends RobotPlayer implements Strategy
 {
 	private MapLocation turtleLocation = null;
 	private Strategy overrideStrategy = null;
+	
+	public String getName()
+	{
+		return "Turtling archon";
+	}
 	
 	public TurtleArchonStrategy()
 	{

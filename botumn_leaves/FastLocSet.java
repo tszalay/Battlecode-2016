@@ -1,4 +1,4 @@
-package i_bot_the_sheriff;
+package botumn_leaves;
 
 import battlecode.common.*;
 import java.util.*;
@@ -45,6 +45,11 @@ public class FastLocSet
             if (isUsingList)
             	locations.add(loc);
         }
+    }
+    
+    public void set(MapLocation loc, int val)
+    {
+        value[loc.x % HASH][loc.y % HASH] = val;
     }
 
     public void remove(MapLocation loc)

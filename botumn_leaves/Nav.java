@@ -1,4 +1,4 @@
-package i_bot_the_sheriff;
+package botumn_leaves;
 
 import java.util.ArrayList;
 
@@ -232,45 +232,6 @@ public class Nav extends RobotPlayer
         // shouldn't be here, w/e
         return false;
     }
-
-    /*public static boolean tryAdjacentSafeMove(Direction dir, DirectionSet safeDirs) throws GameActionException
-    {
-    	if (!rc.isCoreReady() || dir == null || !safeDirs.any())
-    		return false;
-    	
-    	// get direction set that is all moves not away from dir
-    	DirectionSet towardDir = new DirectionSet();
-    	towardDir.add(dir);
-    	towardDir.add(dir.rotateLeft());
-    	towardDir.add(dir.rotateRight());
-    	towardDir.add(dir.rotateLeft().rotateLeft());
-    	towardDir.add(dir.rotateRight().rotateRight());
-    	
-    	// get safe dirs not away from dir
-    	ArrayList<Direction> goodDirs = towardDir.and(safeDirs).getDirections();
-    	
-    	if (goodDirs == null || goodDirs.size() == 0)
-    		return false;
-    	
-    	// best safe dir not away from dir
-    	Direction bestDir = null;
-    	MapLocation tempHere = new MapLocation(0,0);
-    	MapLocation tempTarget = tempHere.add(dir);
-    	for (Direction d : goodDirs)
-    	{
-    		if ( bestDir == null || tempHere.add(d).distanceSquaredTo(tempTarget) < tempHere.add(bestDir).distanceSquaredTo(tempTarget) )
-    			bestDir = d;
-    	}
-    	
-    	if (bestDir != null && rc.canMove(bestDir))
-    	{
-    		rc.move(bestDir);
-    		return true;
-    	}
-    	
-        return false;
-    }
-    */
     
     public static boolean tryGoTo(MapLocation dest, DirectionSet dirs) throws GameActionException
     {

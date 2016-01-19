@@ -1,4 +1,4 @@
-package i_bot_the_sheriff;
+package botumn_leaves;
 
 import battlecode.common.*;
 
@@ -8,6 +8,11 @@ public class BuildingStrategy extends RobotPlayer implements Strategy
 {
 	// which strategy to use
 	Strategy.Type myStrat = null;
+	
+	public String getName()
+	{
+		return "Building";
+	}
 	
 	// creating the strategy actually forces us to build, so it better be valid
 	public BuildingStrategy(RobotType robot, Direction dir, Strategy.Type strat) throws GameActionException
