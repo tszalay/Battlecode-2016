@@ -83,8 +83,6 @@ public class StratTurtleArchon extends RoboArchon implements Strategy
 		if (!rc.isCoreReady())
 			return false;
 		
-		if (rc.getTeamParts() < 1.2*RobotType.TURRET.partCost)
-			return false;
 		
 		// figure out what robot to try and build
 		UnitCounts units = new UnitCounts(Micro.getNearbyAllies());
@@ -98,13 +96,18 @@ public class StratTurtleArchon extends RoboArchon implements Strategy
 			stratToBuild = Strategy.Type.MOB_MOVE;
 		}
 		else */
+		
+		int buildPriority = RobotType.TURRET.partCost;
+		
 		if (roundsSince(RoboArchon.lastAdjacentScoutRound) > 40)
 		{
+			buildPriority += 0;
 			robotToBuild = RobotType.SCOUT;
 			stratToBuild = Strategy.Type.SHADOW_ARCHON;
 		}
 		else if (units.Turrets < 15 || rc.getTeamParts() > 2*RobotType.TURRET.partCost)
 		{
+			buildPriority += units.Turrets;
 			robotToBuild = RobotType.TURRET;
 			stratToBuild = Strategy.Type.TURTLE;
 		}
@@ -112,6 +115,9 @@ public class StratTurtleArchon extends RoboArchon implements Strategy
 		{
 			return false;
 		}
+
+		if (rc.getTeamParts() < buildPriority)
+			return false;
 		
 		if (!rc.hasBuildRequirements(robotToBuild))
 			return false;

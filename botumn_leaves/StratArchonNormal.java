@@ -84,9 +84,6 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (!rc.isCoreReady())
 			return false;
 		
-		if (rc.getTeamParts() < 1*RobotType.TURRET.partCost)
-			return false;
-		
 		// AK wait a few rounds so we can move
 		if ((rc.getRoundNum()+rc.getID())%3 != 0)
 			return false;
@@ -97,27 +94,36 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		RobotType robotToBuild = null;
 		Strategy.Type buildStrat = null;
 		
+		int buildPriority = RobotType.TURRET.partCost;
+		
 		// need to build a shadow scout, top priority
 		if (roundsSince(RoboArchon.lastAdjacentScoutRound) > 20)
 		{
+			buildPriority += 0;
 			robotToBuild = RobotType.SCOUT;
 			buildStrat = Strategy.Type.SHADOW_ARCHON;
 		}
 		else if (rand.nextInt() % 8 < 6)
 		{
+			buildPriority += Math.min(0,50-roundsSince(lastBuiltRound));
 			robotToBuild = RobotType.SOLDIER;
 			buildStrat = Strategy.Type.MOB_MOVE;
 		}
 		else if (rand.nextBoolean())
 		{
+			buildPriority += Math.min(0,50-roundsSince(lastBuiltRound));
 			robotToBuild = RobotType.SCOUT;
 			buildStrat = Strategy.Type.SHADOW_SOLDIER;
 		}
 		else
 		{
+			Math.min(0,50-roundsSince(lastBuiltRound));
 			robotToBuild = RobotType.SCOUT;
 			buildStrat = Strategy.Type.EXPLORE;
 		}
+		
+		if (rc.getTeamParts() < buildPriority)
+			return false;
 
 		if (!rc.hasBuildRequirements(robotToBuild))
 			return false;
@@ -126,6 +132,7 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (buildDir != null)
 		{
 			overrideStrategy = new StratBuilding(robotToBuild, buildDir, buildStrat);
+			lastBuiltRound = rc.getRoundNum();
 			return true;
 		}
 		
