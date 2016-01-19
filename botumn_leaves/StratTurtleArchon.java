@@ -5,7 +5,7 @@ import battlecode.common.*;
 import java.util.*;
 
 // turtle move tries to allow units to move around close to or inside a turtle ball
-public class TurtleArchonStrat extends RobotPlayer implements Strategy
+public class StratTurtleArchon extends RobotPlayer implements Strategy
 {
 	private MapLocation turtleLocation = null;
 	private Strategy overrideStrategy = null;
@@ -15,7 +15,7 @@ public class TurtleArchonStrat extends RobotPlayer implements Strategy
 		return "Turtling archon";
 	}
 	
-	public TurtleArchonStrat()
+	public StratTurtleArchon()
 	{
 		// find a good turtle location
 		// for now, pick a random corner of the map
@@ -114,7 +114,7 @@ public class TurtleArchonStrat extends RobotPlayer implements Strategy
 		Direction buildDir = Micro.getCanBuildDirectionSet(robotToBuild).getRandomValid();
 		if (buildDir != null)
 		{
-			overrideStrategy = new BuildingStrat(robotToBuild, buildDir, Strategy.Type.TURTLE);
+			overrideStrategy = new StratBuilding(robotToBuild, buildDir, Strategy.Type.TURTLE);
 			return true;
 		}
 		

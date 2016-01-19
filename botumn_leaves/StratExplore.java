@@ -5,7 +5,7 @@ import battlecode.common.*;
 
 import java.util.*;
 
-public class ExploreStrat extends RobotPlayer implements Strategy
+public class StratExplore extends RobotPlayer implements Strategy
 {	
 	private MapLocation myTarget = null;
 	public static MapLocation myExploringTarget;
@@ -15,7 +15,7 @@ public class ExploreStrat extends RobotPlayer implements Strategy
 		return "Exploring";
 	}
 	
-	public ExploreStrat() throws GameActionException
+	public StratExplore() throws GameActionException
 	{
 		myTarget = MapInfo.getExplorationWaypoint();
 	}

@@ -4,7 +4,7 @@ import battlecode.common.*;
 
 import java.util.*;
 
-public class MobFightStrat extends RobotPlayer implements Strategy
+public class StratMobFight extends RobotPlayer implements Strategy
 {
 	private MapLocation target;
 	
@@ -13,12 +13,12 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 		return "Mob fightin'";
 	}
 	
-	public MobFightStrat()
+	public StratMobFight()
 	{
 		this(null);
 	}
 	
-	public MobFightStrat(MapLocation target)
+	public StratMobFight(MapLocation target)
 	{
 		this.target = target;
 	}

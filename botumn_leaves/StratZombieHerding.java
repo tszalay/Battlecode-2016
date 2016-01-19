@@ -3,7 +3,7 @@ package botumn_leaves;
 import battlecode.common.*;
 import java.util.*;
 
-public class ZombieHerdingStrat extends RobotPlayer implements Strategy
+public class StratZombieHerding extends RobotPlayer implements Strategy
 {	
 	private MapLocation myTarget = null;
 	private enum ScoutState

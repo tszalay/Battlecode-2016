@@ -11,13 +11,13 @@ public class RoboScout extends RobotPlayer
 		// start off balling around closest archon
 		if (Message.recentStrategySignal == Strategy.Type.SCOUT_SHADOW)
 		{
-			myStrategy = new ScoutShadowStrat(myBuilderID);
+			myStrategy = new StratScoutShadow(myBuilderID);
 			return;
 		}
 		if (myBuilderLocation != null)
-			myStrategy = new BallMoveStrat(myBuilderID, 14, 24);
+			myStrategy = new StratBallMove(myBuilderID, 14, 24);
 		else
-			myStrategy = new FreeUnitStrat();
+			myStrategy = new StratFreeUnit();
 	}
 	
 
@@ -49,7 +49,7 @@ public class RoboScout extends RobotPlayer
 
 		// Free unit if everything else breaks
 		if (!myStrategy.tryTurn())
-			myStrategy = new FreeUnitStrat();
+			myStrategy = new StratFreeUnit();
 		//myStrategy.tryTurn();
 		
 		Sighting.doSendSightingMessage();

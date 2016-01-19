@@ -4,7 +4,7 @@ import battlecode.common.*;
 
 import java.util.*;
 
-public class BlitzTeamStrat extends RobotPlayer implements Strategy
+public class StratBlitzTeam extends RobotPlayer implements Strategy
 {
 	private Strategy overrideStrategy = null;
 
@@ -55,7 +55,7 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 	}
 	
 	
-	public BlitzTeamStrat(RobotInfo myArchon) throws GameActionException
+	public StratBlitzTeam(RobotInfo myArchon) throws GameActionException
 	{
 		this.myArchon = myArchon;
 		

@@ -8,7 +8,7 @@ public class RoboSoldier extends RobotPlayer
 	
 	public static void init() throws GameActionException
 	{
-		myStrategy = new MobMoveStrat();
+		myStrategy = new StratWaypoint();
 	}
 	
 	public static void turn() throws GameActionException

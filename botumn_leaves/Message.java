@@ -12,9 +12,9 @@ enum MessageType
 	SIGHT_TARGET,
 	SPAM,
 	FREE_BEER,
-	GOOD_PARTS,
 	MAP_EDGE,
-	NEW_STRATEGY
+	NEW_STRATEGY,
+	NEW_WAYPOINT
 }
 
 class SignalLocation extends RobotPlayer
@@ -93,9 +93,6 @@ public class Message extends RobotPlayer
 				break;
 			case MAP_EDGE:
 				MapInfo.updateMapEdges(readLocation(vals[0]), readLocation(vals[1]));
-				break;
-			case GOOD_PARTS:
-				//MapInfo.updateParts(readLocation(vals[0]),false);				
 				break;
 			case NEW_STRATEGY:
 				recentStrategySignal = Strategy.Type.values()[vals[1]];

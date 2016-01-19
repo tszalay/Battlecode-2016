@@ -4,7 +4,7 @@ import battlecode.common.*;
 
 import java.util.*;
 
-public class ArchonNormalStrat extends RoboArchon implements Strategy
+public class StratArchonNormal extends RoboArchon implements Strategy
 {
 	private Strategy overrideStrategy = null;
 
@@ -112,7 +112,7 @@ public class ArchonNormalStrat extends RoboArchon implements Strategy
 		Direction buildDir = Micro.getCanBuildDirectionSet(robotToBuild).getRandomValid();
 		if (buildDir != null)
 		{
-			overrideStrategy = new BuildingStrat(robotToBuild, buildDir, buildStrat);
+			overrideStrategy = new StratBuilding(robotToBuild, buildDir, buildStrat);
 			return true;
 		}
 		

@@ -3,7 +3,7 @@ package botumn_leaves;
 import battlecode.common.*;
 import java.util.*;
 
-public class BallMoveStrat extends RobotPlayer implements Strategy
+public class StratBallMove extends RobotPlayer implements Strategy
 {	
 	// minimum and maximum radii that we wish to use for the ball
 	// set on initialization
@@ -25,7 +25,7 @@ public class BallMoveStrat extends RobotPlayer implements Strategy
 		return "Ball Move";
 	}
 	
-	public BallMoveStrat(int targetID, int minDSq, int maxDSq) throws GameActionException
+	public StratBallMove(int targetID, int minDSq, int maxDSq) throws GameActionException
 	{
 		minDistSq = minDSq;
 		maxDistSq = maxDSq;

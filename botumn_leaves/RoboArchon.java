@@ -9,10 +9,10 @@ public class RoboArchon extends RobotPlayer
 	
 	public static void init() throws GameActionException
 	{
-		if (BlitzTeamStrat.shouldBlitz())
-			myStrategy = new BlitzTeamStrat(null);
+		if (StratBlitzTeam.shouldBlitz())
+			myStrategy = new StratBlitzTeam(null);
 		else
-			myStrategy = new ArchonNormalStrat();
+			myStrategy = new StratArchonNormal();
 	}
 	
 	public static void turn() throws GameActionException

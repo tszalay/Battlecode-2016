@@ -4,7 +4,7 @@ import battlecode.common.*;
 
 import java.util.*;
 
-public class BuildingStrat extends RoboArchon implements Strategy
+public class StratBuilding extends RoboArchon implements Strategy
 {
 	// which strategy to use
 	private Strategy.Type myStrat = null;
@@ -16,7 +16,7 @@ public class BuildingStrat extends RoboArchon implements Strategy
 	}
 	
 	// creating the strategy actually forces us to build, so it better be valid
-	public BuildingStrat(RobotType robot, Direction dir, Strategy.Type strat) throws GameActionException
+	public StratBuilding(RobotType robot, Direction dir, Strategy.Type strat) throws GameActionException
 	{
 		myStrat = strat;
 		buildType = robot;

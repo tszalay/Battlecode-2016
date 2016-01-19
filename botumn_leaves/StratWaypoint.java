@@ -4,7 +4,7 @@ import battlecode.common.*;
 
 import java.util.*;
 
-public class MobMoveStrat extends RobotPlayer implements Strategy
+public class StratWaypoint extends RobotPlayer implements Strategy
 {
 	private Strategy overrideStrategy = null;
 	
@@ -32,13 +32,13 @@ public class MobMoveStrat extends RobotPlayer implements Strategy
 		// we switch to mob fighing
 		if (Micro.getRoundsUntilDanger() < 20)
 		{
-			overrideStrategy = new MobFightStrat();
+			overrideStrategy = new StratMobFight();
 			overrideStrategy.tryTurn();
 			return true;
 		}
 		if (Message.getClosestAllyUnderAttack() != null)
 		{
-			overrideStrategy = new MobFightStrat(Message.getClosestAllyUnderAttack());
+			overrideStrategy = new StratMobFight(Message.getClosestAllyUnderAttack());
 			overrideStrategy.tryTurn();
 			return true;
 		}
@@ -47,20 +47,23 @@ public class MobMoveStrat extends RobotPlayer implements Strategy
 		MapLocation closestDen = MapInfo.getClosestDen();
 		
 		if (closestDen == null)
+		{
+			Action.tryMove(Micro.getCanMoveDirs().getRandomValid());
 			return true;
+		}
 		
-		if (closestDen != null && here.distanceSquaredTo(closestDen) < 400)
+		/*if (closestDen != null && here.distanceSquaredTo(closestDen) < 400)
 		{
 			overrideStrategy = new MobFightStrat(closestDen);
 			overrideStrategy.tryTurn();
 			return true;
-		}
+		}*/
 		
 		// otherwise, we mosey on to the closest zombie den if we have many units around us
-		int numfriendlies = Micro.getNearbyAllies().length;//rc.senseNearbyRobots(15, ourTeam).length;
+		//int numfriendlies = Micro.getNearbyAllies().length;//rc.senseNearbyRobots(15, ourTeam).length;
 		
-		if (numfriendlies > 3)
-			Action.tryGoToWithoutBeingShot(closestDen, Micro.getSafeMoveDirs());
+		//if (numfriendlies > 3)
+		Action.tryGoToWithoutBeingShot(closestDen, Micro.getSafeMoveDirs());
 		
 		return true;
 	}

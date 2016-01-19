@@ -3,7 +3,7 @@ package botumn_leaves;
 import battlecode.common.*;
 import java.util.*;
 
-public class ScoutShadowStrat extends RobotPlayer implements Strategy
+public class StratScoutShadow extends RobotPlayer implements Strategy
 {	
 	private Strategy overrideStrategy = null;
 
@@ -24,7 +24,7 @@ public class ScoutShadowStrat extends RobotPlayer implements Strategy
 		return "Shadowing unit " + shadowTargetID;
 	}
 	
-	public ScoutShadowStrat(int targetID) throws GameActionException
+	public StratScoutShadow(int targetID) throws GameActionException
 	{
 		if (!rc.canSenseRobot(targetID))
 			return;
@@ -77,7 +77,7 @@ public class ScoutShadowStrat extends RobotPlayer implements Strategy
 		// if we're getting beat up, let's try to draw the zombies away
 		if (rc.getHealth() < 15)
 		{
-			overrideStrategy = new ZombieHerdingStrat();
+			overrideStrategy = new StratZombieHerding();
 			overrideStrategy.tryTurn();
 			return true;
 		}
