@@ -118,8 +118,10 @@ public class DirectionSet
 		// pew pew pew
 		if (rightDist < leftDist)
 			return best.rotateRight();
-		else if (leftDist < rightDist || leftDist < distSq)
+		else if (leftDist < rightDist)
 			return best.rotateLeft();
+		else if (leftDist < distSq)
+			return rand.nextBoolean() ? best.rotateRight() : best.rotateLeft();
 		
 		/*
 		// still none. look to sides

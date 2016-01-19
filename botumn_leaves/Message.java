@@ -41,8 +41,16 @@ public class Message extends RobotPlayer
 	public static int MAP_OFF_X = 0;
 	public static int MAP_OFF_Y = 0;
 	
-	private static Signal recentUnderAttackSignal = null;
-	private static int recentUnderAttackRound = -100; 
+	private static Signal 	recentAllyAttackSignal = null;
+	private static int 		recentAllyAttackRound = -200;
+	
+	private static Signal 	recentArchonAttackSignal = null;
+	private static int 		recentArchonAttackRound = -200;
+	
+	// timeouts
+	private static final int ATTACK_ARCHON_ROUNDS = 100;
+	private static final int ATTACK_ALLY_ROUNDS = 100;
+	
 	
 	// and for any transmitted enemy messages, only keep the latest received
 	public static MapLocation recentEnemySignal = null;
@@ -71,9 +79,6 @@ public class Message extends RobotPlayer
 			else
 				type = readType(vals[0]);
 			
-//			if (sig.getID() == BallMove.ballTargetID)
-				//BallMove.updateBallLocation(sig.getLocation());
-
 			switch (type)
 			{
 			case UNDER_ATTACK:
@@ -112,19 +117,30 @@ public class Message extends RobotPlayer
 	
 	private static void updateUnderAttack(Signal sig)
 	{
-		if (rc.getRoundNum() - recentUnderAttackRound > 20)
+		// did we get a recent Archon message?
+		if (sig.getMessage() != null)
 		{
-			recentUnderAttackSignal = sig;
-			recentUnderAttackRound = rc.getRoundNum();
-			return;
+			// if it timed out, auto-set it
+			// or if it's closer
+			if (roundsSince(recentArchonAttackRound) > ATTACK_ARCHON_ROUNDS || sig.getLocation().distanceSquaredTo(here) < 
+					recentArchonAttackSignal.getLocation().distanceSquaredTo(here))
+			{
+				recentArchonAttackSignal = sig;
+				recentArchonAttackRound = rc.getRoundNum();
+				return;
+			}
 		}
-		
-		if (sig.getLocation().distanceSquaredTo(here) < 
-				recentUnderAttackSignal.getLocation().distanceSquaredTo(here))
+		else
 		{
-			recentUnderAttackSignal = sig;
-			recentUnderAttackRound = rc.getRoundNum();
-			return;
+			// if it timed out, auto-set it
+			// or if it's closer
+			if (roundsSince(recentAllyAttackRound) > ATTACK_ALLY_ROUNDS || sig.getLocation().distanceSquaredTo(here) < 
+					recentAllyAttackSignal.getLocation().distanceSquaredTo(here))
+			{
+				recentAllyAttackSignal = sig;
+				recentAllyAttackRound = rc.getRoundNum();
+				return;
+			}
 		}
 	}
 	
@@ -132,11 +148,13 @@ public class Message extends RobotPlayer
 	public static MapLocation getClosestAllyUnderAttack() throws GameActionException
 	{
 		// timeout for old signals
-		if (rc.getRoundNum() - recentUnderAttackRound > 20)
-			return null;
+		if (roundsSince(recentArchonAttackRound) < ATTACK_ARCHON_ROUNDS)
+			return recentArchonAttackSignal.getLocation();
 		
-		// otherwise just return the location; automatically keeps the closest
-		return recentUnderAttackSignal.getLocation();
+		if (roundsSince(recentAllyAttackRound) < ATTACK_ALLY_ROUNDS)
+			return recentAllyAttackSignal.getLocation();
+		
+		return null;
 	}
 	
 	public static void sendSightingSignal(int sq_distance, MapLocation loc)

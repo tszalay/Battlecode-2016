@@ -29,23 +29,28 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 				overrideStrategy = null;
 		}
 		
+		// first priority, avoid stuff
+		if (Micro.getRoundsUntilDanger() < 5 && (rc.getRoundNum()%5) == 0)
+		{
+			Message.sendMessageSignal(400,MessageType.UNDER_ATTACK,0);
+			Action.tryRetreatOrShootIfStuck();
+			return true;
+		}
+		if (Micro.getRoundsUntilDanger() < 20)
+		{
+			Message.sendSignal(120);
+			MapLocation retreatloc = MapInfo.getClosestDen();
+			if (retreatloc == null)
+				Action.tryRetreatOrShootIfStuck();
+			else
+				Action.tryGoToWithoutBeingShot(retreatloc, Micro.getSafeMoveDirs());
+			return true;
+		}
+
+		// next, try doing some building
 		if (tryBuild())
 			return true;
-		
-		doWaypoint();
-		
-		return true;
-	}
-	
-	public static void doWaypoint() throws GameActionException
-	{
-		// first priority, avoid stuff
-		if (Micro.isInDanger())
-		{
-			Action.tryRetreatOrShootIfStuck();
-			return;
-		}
-		
+
 		// look for waypoint
 		MapLocation dest = senseClosestNeutral();
 		if (dest == null)
@@ -53,9 +58,6 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (dest == null)
 			dest = MapInfo.getClosestDen();
 		
-		
-//		if (dest != null && here.distanceSquaredTo(dest) < 15)
-//			return;
 		
 		// check if it should be deleted
 		if (dest != null && rc.canSenseLocation(dest) && rc.senseParts(dest) == 0 && rc.senseRobotAtLocation(dest) == null)
@@ -65,16 +67,14 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		
 		if (dest != null)
 		{
-			// put indicator at waypoint
-			rc.setIndicatorDot(dest, rc.getID()%255, 255, 255);
 			// go where we should
-			
 			Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs());
 			// send a bit of a "ping"
 			if (rc.getRoundNum() % 7 == 0)
 				Message.sendSignal(63);
-			
 		}
+		
+		return true;
 	}
 
 	private boolean tryBuild() throws GameActionException

@@ -217,6 +217,9 @@ public class MicroBase extends RobotPlayer
 		
 		if (roundsUntilDanger < 0)
 			roundsUntilDanger = 0;
+		
+		if (!Micro.getTurretSafeDirs().isValid(Direction.NONE))
+			roundsUntilDanger = 0;
 
 		return roundsUntilDanger;
 	}

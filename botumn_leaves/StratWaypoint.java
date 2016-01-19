@@ -36,8 +36,14 @@ public class StratWaypoint extends RobotPlayer implements Strategy
 			overrideStrategy.tryTurn();
 			return true;
 		}
-		if (Message.getClosestAllyUnderAttack() != null)
+		MapLocation allyAttacked = Message.getClosestAllyUnderAttack();
+		if (allyAttacked != null)
 		{
+			if (here.distanceSquaredTo(allyAttacked) > 200)
+			{
+				Nav.tryGoTo(allyAttacked, Micro.getSafeMoveDirs());
+				return true;
+			}
 			overrideStrategy = new StratMobFight(Message.getClosestAllyUnderAttack());
 			overrideStrategy.tryTurn();
 			return true;

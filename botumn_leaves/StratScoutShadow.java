@@ -77,7 +77,7 @@ public class StratScoutShadow extends RobotPlayer implements Strategy
 		// if we're getting beat up, let's try to draw the zombies away
 		if (rc.getHealth() < 15)
 		{
-			overrideStrategy = new StratZombieHerding();
+			overrideStrategy = new StratExplore();//StratZombieHerding();
 			overrideStrategy.tryTurn();
 			return true;
 		}
@@ -93,7 +93,7 @@ public class StratScoutShadow extends RobotPlayer implements Strategy
 		// if we're close to the target, we shuffle around randomly
 		if (here.distanceSquaredTo(lastShadowLocation) <= 2)
 		{
-			Action.tryAdjacentSafeMoveToward(here.directionTo(lastShadowLocation));
+			Action.tryAdjacentSafeMoveToward(lastShadowLocation);
 			return true;
 		}
 		
