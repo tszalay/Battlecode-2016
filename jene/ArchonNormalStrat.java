@@ -55,13 +55,16 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 			return false;
 		
 		// if we cannot go that way safely, stop trying
-		Direction dir = Micro.getSafeMoveDirs().getDirectionTowards(here, dest);
-		if (dir == null || dir == Direction.NONE)
-		{
-			dest = MapInfo.getSymmetricLocation(dest);
-		}
+//		Direction dir = Micro.getSafeMoveDirs().getDirectionTowards(here, dest);
+//		if (dir == null || dir == Direction.NONE)
+//		{
+//			dest = MapInfo.getSymmetricLocation(dest);
+//		}
 		
 		if (Action.tryAdjacentSafeMoveToward(here.directionTo(dest)))
+			return true;
+		
+		if (Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs())))
 			return true;
 		
 		// not doing anything else, so look for parts and DIG

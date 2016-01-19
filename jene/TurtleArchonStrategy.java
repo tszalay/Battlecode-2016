@@ -104,6 +104,8 @@ public class TurtleArchonStrategy extends RobotPlayer implements Strategy
 			Rubble.doClearRubble(rubbleDirection);
 			Debug.setStringSJF("clearing rubble.");
 		}
+		
+		Action.tryAdjacentSafeMoveToward(Micro.getAllyCOM());
 			
 		return true;
 	}

@@ -57,15 +57,15 @@ public class RoboScout extends RobotPlayer
 //		}
 		
 		// explore if you are free to do so
-		if (ExploreStrat.shouldExplore(allies, zombies))
-		{
-			myStrategy = new ExploreStrat();
-		}
+//		if (ExploreStrat.shouldExplore(allies, zombies))
+//		{
+//			myStrategy = new ExploreStrat();
+//		}
 
 		// Free unit if everything else breaks
-		if (!myStrategy.tryTurn())
-			myStrategy = new FreeUnitStrategy();
-		//myStrategy.tryTurn();
+//		if (!myStrategy.tryTurn())
+//			myStrategy = new FreeUnitStrategy();
+		myStrategy.tryTurn();
 		
 		Sighting.doSendSightingMessage();
 		MapInfo.analyzeSurroundings();

@@ -13,16 +13,14 @@ public class ExploreStrat extends RobotPlayer implements Strategy
 	public ExploreStrat() throws GameActionException
 	{
 		int id = rc.getID();
-		if (id % 5 == 0)
+		if (id % 4 == 0)
 			myExploringTarget = new MapLocation(-1000,-1000);
-		else if (id % 5 == 1)
+		else if (id % 4 == 1)
 			myExploringTarget = new MapLocation(1000,-1000);
-		else if (id % 5 == 2)
+		else if (id % 4 == 2)
 			myExploringTarget = new MapLocation(-1000,1000);
-		else if (id % 5 == 3)
+		else if (id % 4 == 3)
 			myExploringTarget = new MapLocation(1000,1000);
-		else
-			myExploringTarget = MapInfo.getExplorationWaypoint();
 		this.stratName = "ExploreStrat";
 	}
 	
@@ -31,7 +29,7 @@ public class ExploreStrat extends RobotPlayer implements Strategy
 		Debug.setStringAK("My Strategy: " + this.stratName);
 
 		// get a random waypoint and move towards it
-		if (myExploringTarget == null || !MapInfo.isOnMap(myExploringTarget))
+		if (myExploringTarget == null || !MapInfo.isOnMap(myExploringTarget) || here.distanceSquaredTo(myExploringTarget) < 9)
 		{
 			myExploringTarget = MapInfo.getExplorationWaypoint();
 		}
