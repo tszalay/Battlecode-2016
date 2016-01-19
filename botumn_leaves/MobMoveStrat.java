@@ -8,10 +8,11 @@ public class MobMoveStrat extends RobotPlayer implements Strategy
 {
 	private Strategy overrideStrategy = null;
 	
-	private MapLocation target = null;
-	
 	public String getName()
 	{
+		if (overrideStrategy != null)
+			return overrideStrategy.getName();
+
 		return "Mob movin'";
 	}
 	
