@@ -91,9 +91,9 @@ public class TurtleArchonStrategy extends RobotPlayer implements Strategy
 			return true;
 		}
 		
+		RobotInfo[] friends = Micro.getNearbyAllies();
 		if (!Micro.getCanMoveDirs().any()) // walled in
 		{
-			RobotInfo[] friends = Micro.getNearbyAllies();
 			DirectionSet invalids = new DirectionSet();
 			invalids.makeAll().remove(Direction.NONE);
 			for (RobotInfo ri : friends)
@@ -106,6 +106,12 @@ public class TurtleArchonStrategy extends RobotPlayer implements Strategy
 		}
 		
 		Action.tryAdjacentSafeMoveToward(Micro.getAllyCOM());
+		
+		UnitCounts count = new UnitCounts(friends);
+//		if (count.Turrets > 11 && count.Archons > 0)
+//		{
+//			return false;
+//		}
 			
 		return true;
 	}

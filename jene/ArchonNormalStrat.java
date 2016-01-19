@@ -43,16 +43,16 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 	public static boolean doWaypoint() throws GameActionException
 	{
 		// look for waypoint
-		if (dest == null)
+		if (dest == null || here.distanceSquaredTo(dest) < 1)
 			dest =  MapInfo.getClosestNeutralArchon();
-		if (dest == null)
+		if (dest == null || here.distanceSquaredTo(dest) < 1)
 			dest = senseClosestNeutral();
-		if (dest == null)
+		if (dest == null || here.distanceSquaredTo(dest) < 1)
 			dest = senseClosestPart();
-		if (dest == null)
+		if (dest == null || here.distanceSquaredTo(dest) < 1)
 			dest = MapInfo.getClosestPart();
-		if (dest == null)
-			return false;
+		if (dest == null || here.distanceSquaredTo(dest) < 1)
+			dest = MapInfo.getExplorationWaypoint();
 		
 		// if we cannot go that way safely, stop trying
 //		Direction dir = Micro.getSafeMoveDirs().getDirectionTowards(here, dest);

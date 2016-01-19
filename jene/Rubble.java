@@ -55,7 +55,7 @@ public class Rubble extends RobotPlayer
 		dirs.makeAll().remove(Direction.NONE);
 		for(Direction dir : dirs.getDirections())
 		{
-			if (rc.senseRubble(here.add(dir)) > GameConstants.RUBBLE_OBSTRUCTION_THRESH)
+			if (rc.senseRubble(here.add(dir)) > GameConstants.RUBBLE_OBSTRUCTION_THRESH && rc.senseRubble(here.add(dir)) < 5000)
 			{
 				return dir;
 			}
@@ -82,9 +82,8 @@ public class Rubble extends RobotPlayer
 		{
 			// don't try to go to a part we can't get
 			if (rc.senseRobotAtLocation(loc) == null)
-				if (rc.senseRubble(loc) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH)
-					if (closestPartLoc == null || here.distanceSquaredTo(loc) < here.distanceSquaredTo(closestPartLoc))
-						closestPartLoc = loc;
+				if (closestPartLoc == null || here.distanceSquaredTo(loc) < here.distanceSquaredTo(closestPartLoc))
+					closestPartLoc = loc;
 		}
 		
 		return closestPartLoc;

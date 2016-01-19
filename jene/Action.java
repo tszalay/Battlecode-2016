@@ -123,7 +123,7 @@ public class Action extends RobotPlayer
     		return false;
     	
     	// check safe moves
-    	DirectionSet safeMoveDirs = Micro.getSafeMoveDirs();
+    	DirectionSet safeMoveDirs = Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs());
     	if(!safeMoveDirs.any())
     		return false;
     	

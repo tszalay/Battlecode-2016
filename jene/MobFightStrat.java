@@ -55,7 +55,7 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 					{
 						dir = Micro.getCanMoveDirs().getDirectionTowards(here.directionTo(enemyAttackingAlly.location));
 						if (!Action.tryMove(dir))
-							return Nav.tryGoTo(enemyAttackingAlly.location, Micro.getCanMoveDirs()); // don't just sit there, FULL SURROUND
+							return Action.tryGoToWithoutBeingShot(enemyAttackingAlly.location, Micro.getCanMoveDirs().and(Micro.getTurretSafeDirs())); // don't just sit there, FULL SURROUND
 						else
 							return true;
 					}
@@ -109,16 +109,8 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 				RobotInfo enemyAttackingAlly = Micro.getClosestUnitTo(Micro.getNearbyHostiles(), target);
 				if (enemyAttackingAlly == null)
 				{
-					// check if this target is obsolete
-					if (rc.canSenseLocation(target) && (rc.senseRobotAtLocation(target) == null || rc.senseRobotAtLocation(target).team == ourTeam))
-					{
-						target = null;
-					}
-					else
-					{
-						Nav.tryGoTo(target, Micro.getCanMoveDirs());
-						return true;
-					}
+					Nav.tryGoTo(target, Micro.getCanMoveDirs());
+					return true;
 				}
 				
 				if (enemyAttackingAlly != null && !Action.tryAdjacentSafeMoveToward(enemyAttackingAlly.location))
@@ -148,9 +140,18 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 				return true;
 		}
 
-		Debug.setStringSJF("going back to = " + startingLoc.toString());
+		//Debug.setStringSJF("going back to = " + startingLoc.toString());
 		if (here.distanceSquaredTo(startingLoc) > 10 && Action.tryGoToWithoutBeingShot(startingLoc, Micro.getSafeMoveDirs()))
 			return true;
+		
+		// don't stand on parts, that's not cool
+		if (rc.senseParts(here) > 0)
+		{
+			if (Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()).any())
+				Action.tryMove(Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()).getRandomValid());
+			else
+				Rubble.tryClearRubble(here.add(Rubble.getRandomAdjacentRubble()));
+		}
 
 		return false;
 	}
@@ -177,6 +178,13 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 		// if it was just deleted, try to get a new target
 		if (target == null)
 			target = Message.getClosestAllyUnderAttack();
+		
+		// check if this target is obsolete
+		RobotInfo[] hostiles = Micro.getNearbyHostiles();
+		if (target != null && rc.canSenseLocation(target) && (hostiles == null || hostiles.length == 0))
+		{
+			target = null;
+		}
 		
 		return;
 	}
