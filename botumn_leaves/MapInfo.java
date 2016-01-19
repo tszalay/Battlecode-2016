@@ -173,8 +173,10 @@ public class MapInfo extends RobotPlayer
 	{
 		// if we already reported it, or we already have one queued to send,
 		// don't do anything
-		zombieDenLocations.add(add_loc);
-		zombieDenLocations.remove(del_loc);
+		if (!add_loc.equals(nullLocation))
+			zombieDenLocations.add(add_loc);
+		if (!del_loc.equals(nullLocation))
+			zombieDenLocations.remove(del_loc);
 	}
 	/*
 	public static void updateParts(MapLocation loc, boolean sendUpdate)
