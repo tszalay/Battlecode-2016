@@ -484,6 +484,26 @@ public class MicroBase extends RobotPlayer
 		return new MapLocation(xtot,ytot);
 	}
 	
+	public MapLocation getUnitCOM(MapLocation[] locs)
+	{
+		int xtot = 0;
+		int ytot = 0;
+		
+		if (locs == null || locs.length == 0)
+			return null;
+		
+		for (MapLocation loc : locs)
+		{
+			xtot += loc.x;
+			ytot += loc.y;
+		}
+		
+		xtot /= locs.length;
+		ytot /= locs.length;
+		
+		return new MapLocation(xtot,ytot);
+	}
+	
 	public RobotInfo getClosestUnitTo(RobotInfo[] nearby, MapLocation loc)
 	{
 		if (nearby.length == 0)
@@ -583,7 +603,7 @@ public class MicroBase extends RobotPlayer
 			if (ri.type == RobotType.ARCHON)
 			{
 				target = ri;
-				break;
+				return target;
 			}
 			
 			double power = ri.attackPower/ri.type.attackDelay;
@@ -606,6 +626,39 @@ public class MicroBase extends RobotPlayer
 		
 		return target;
 	}
+	
+	public RobotInfo getViperTarget(RobotInfo[] bots)
+	{
+		RobotInfo target = null;
+		
+		for (RobotInfo ri : bots)
+		{
+			// can't attack this dude
+			if (here.distanceSquaredTo(ri.location) > rc.getType().attackRadiusSquared)
+				continue;
+			
+			// no target yet
+			if (target == null)
+			{
+				target = ri;
+				continue;
+			}
+			
+			// archon targets take priority over ALL
+			if (ri.type == RobotType.ARCHON)
+			{
+				target = ri;
+				return target;
+			}
+			
+			if (ri.viperInfectedTurns < target.viperInfectedTurns)
+				target = ri;
+				
+		}
+		
+		return target;
+	}
+	
 	public boolean tryMove(Direction d) throws GameActionException
 	{
 		// don't do anything, but don't throw error, this is ok

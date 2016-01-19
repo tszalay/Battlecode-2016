@@ -7,25 +7,31 @@ import java.util.*;
 
 public class ExploreStrat extends RobotPlayer implements Strategy
 {	
-	private MapLocation myTarget = null;
 	private String stratName;
 	public static MapLocation myExploringTarget;
 	
 	public ExploreStrat() throws GameActionException
 	{
-		myTarget = MapInfo.getExplorationWaypoint();
+		int id = rc.getID();
+		int rando = rand.nextInt(4);
+		if (rando == 0)
+			myExploringTarget = here.add(-100,-100);
+		else if (rando == 1)
+			myExploringTarget = here.add(100,-100);
+		else if (rando == 2)
+			myExploringTarget = here.add(-100,100);
+		else
+			myExploringTarget = here.add(100,100);
 		this.stratName = "ExploreStrat";
 	}
 	
 	public boolean tryTurn() throws GameActionException
 	{
-		
-		Debug.setStringAK("My Strategy: " + this.stratName);
-		
-
 		// get a random waypoint and move towards it
-		if (myExploringTarget == null || here.distanceSquaredTo(myExploringTarget) < 24 || !MapInfo.isOnMap(myExploringTarget))
+		if (myExploringTarget == null || here.distanceSquaredTo(myExploringTarget) < 9 || !MapInfo.isOnMap(myExploringTarget))
+		{
 			myExploringTarget = MapInfo.getExplorationWaypoint();
+		}
 		
 		DirectionSet goodDirs = Micro.getSafeMoveDirs();
 		goodDirs = goodDirs.and(Micro.getTurretSafeDirs());
@@ -35,15 +41,15 @@ public class ExploreStrat extends RobotPlayer implements Strategy
 			if (!Action.tryRetreatTowards(Message.recentEnemySignal, goodDirs))
 				Action.tryRetreatOrShootIfStuck();
 		}
-		else
-		{
-			if (!Nav.tryGoTo(myExploringTarget, goodDirs))
-				myExploringTarget = MapInfo.getExplorationWaypoint(); // so you don't get stuck
-			//Action.tryGoToWithoutBeingShot(myExploringTarget, goodDirs);
-		}
+//		else
+//		{
+//			if (!Nav.tryGoTo(myExploringTarget, goodDirs))
+//				myExploringTarget = MapInfo.getExplorationWaypoint(); // so you don't get stuck
+//			//Action.tryGoToWithoutBeingShot(myExploringTarget, goodDirs);
+//		}
 
-		
-		Debug.setStringAK("Exploring to " + myExploringTarget);		
+		Action.tryGoToWithoutBeingShot(myExploringTarget, goodDirs);
+		Debug.setStringAK("My Strategy: " + this.stratName + ", Exploring to " + myExploringTarget);		
         // always send out info about sighted targets
 		Sighting.doSendSightingMessage();
 		
@@ -72,7 +78,7 @@ public class ExploreStrat extends RobotPlayer implements Strategy
 		}
 		
 		// explore if there are too many scouts nearby and an Archon is nearby
-		if (nearbyUnits[ARCHON] > 0 && nearbyUnits[SCOUT] > 4 && rc.getID() == lowestScoutID) return true;
+		if (nearbyUnits[ARCHON] > 0 && nearbyUnits[SCOUT] > 1 && rc.getID() == lowestScoutID) return true;
 		
 		// explore if there are no zombies and I'm near an Archon
 		// probably I'm herding and the zombies got killed

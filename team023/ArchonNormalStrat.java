@@ -7,6 +7,11 @@ import java.util.*;
 public class ArchonNormalStrat extends RobotPlayer implements Strategy
 {
 	private String stratName;
+	private static int scoutsBuilt = 0;
+	private static int soldiersBuilt = 0;
+	public static MapLocation dest = null;
+	public static MapLocation rallyLoc = null;
+	private static boolean reachedRally = false;
 	
 	static RobotType myNextBuildRobotType = RobotType.SCOUT;
 	
@@ -14,64 +19,114 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 	
 	public ArchonNormalStrat()
 	{
-		this.stratName = "ArchonNormalStrat";	
+		this.stratName = "ArchonNormalStrat";
+		
+		// first rally, farthest from their archons
+		MapLocation[] ourArchons = rc.getInitialArchonLocations(ourTeam);
+		if (ourArchons.length < 2)
+		{
+			reachedRally = true;
+		}
+		else // multiple archons
+		{
+			MapLocation[] theirArchons = rc.getInitialArchonLocations(theirTeam);
+			MapLocation theirCOM = Micro.getUnitCOM(theirArchons);
+			
+			int farthestArchonDist = 0;
+			MapLocation farthestArchonLoc = null;
+			for (MapLocation archon : ourArchons)
+			{
+				if (archon.distanceSquaredTo(theirCOM) > farthestArchonDist)
+				{
+					farthestArchonDist = archon.distanceSquaredTo(theirCOM);
+					farthestArchonLoc = archon;
+				}
+			}
+			rallyLoc = farthestArchonLoc;
+			if (here.distanceSquaredTo(rallyLoc) < RobotType.ARCHON.sensorRadiusSquared)
+			{
+				reachedRally = true;
+			}
+		}
+		
+
+		
 	}
 	
 	public boolean tryTurn() throws GameActionException
 	{
-		Debug.setStringAK("My Strategy: " + this.stratName);
+		//if (dest != null)
+			//Debug.setStringAK("My Strategy: " + this.stratName + ", dest = " + dest.toString());
+		//else
+			//Debug.setStringAK("My Strategy: " + this.stratName);
+		
+		// first priority, avoid stuff
+		if (Micro.isInDanger())
+			Action.tryRetreatOrShootIfStuck();
 		
 		myNextBuildRobotType = getNextBuildRobotType();
-		if (canBuildNow() && (rc.getRoundNum()+rc.getID())%3 == 0) //AK give them some time to move
-		{
+		if (canBuildNow() && (scoutsBuilt < 1 || senseClosestPart() == null || rand.nextBoolean())) //AK give them some time to move
 			doBuild();
-		}
 		else
 			doWaypoint();
 		
 		return true;
 	}
 	
-	public static void doWaypoint() throws GameActionException
+	public static boolean doWaypoint() throws GameActionException
 	{
-		// first priority, avoid stuff
-		if (Micro.isInDanger())
+		if (here.distanceSquaredTo(rallyLoc) < RobotType.ARCHON.sensorRadiusSquared)
 		{
-			Action.tryRetreatOrShootIfStuck();
-			return;
+			reachedRally = true;
+		}
+		if (!reachedRally)
+		{
+			dest = rallyLoc;
+		}
+		else
+		{
+			// look for waypoint
+			if (dest == null || here.distanceSquaredTo(dest) < 1)
+				dest =  MapInfo.getClosestNeutralArchon();
+			if (dest == null || here.distanceSquaredTo(dest) < 1)
+			{
+				MapLocation closestPart = senseClosestPart();
+				MapLocation closestNeutral = senseClosestNeutral();
+				if (closestNeutral != null)
+					dest = closestNeutral;
+				else
+					dest = closestPart;
+				if (closestNeutral != null && closestPart != null && here.distanceSquaredTo(closestPart) < here.distanceSquaredTo(closestNeutral))
+					dest = closestPart;
+			}
+			if (dest == null || here.distanceSquaredTo(dest) < 1)
+				dest = MapInfo.getClosestPart();
+			if (dest == null)
+				return true;
 		}
 		
-		// look for waypoint
-		MapLocation dest = senseClosestNeutral();
-		if (dest == null)
-			dest = senseClosestPart();
-		if (dest == null)
-			dest = MapInfo.getClosestDen();
+		// if we cannot go that way safely, stop trying
+//		Direction dir = Micro.getSafeMoveDirs().getDirectionTowards(here, dest);
+//		if (dir == null || dir == Direction.NONE)
+//		{
+//			dest = MapInfo.getSymmetricLocation(dest);
+//		}
 		
+		if (here.distanceSquaredTo(dest) > 10 && Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs())))
+			return true;
 		
-//		if (dest != null && here.distanceSquaredTo(dest) < 15)
-//			return;
-		
-		// check if it should be deleted
-		if (dest != null && rc.canSenseLocation(dest) && rc.senseParts(dest) == 0 && rc.senseRobotAtLocation(dest) == null)
+		// not doing anything else, so look for parts and DIG
+		if (!Rubble.tryClearRubble(dest))
 		{
-			MapInfo.removeWaypoint(dest);
-			dest = MapInfo.getClosestPartOrDen();
+			Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
+			return true;
+		}
+		else
+		{
+			Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
+			return true;
 		}
 		
-		if (dest != null)
-		{
-			// put indicator at waypoint
-			rc.setIndicatorDot(dest, rc.getID()%255, 255, 255);
-			Debug.setStringAK("Waypoint = " + dest);
-			// go where we should
-			
-			Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs());
-			// send a bit of a "ping"
-			if (rc.getRoundNum() % 7 == 0)
-				Message.sendSignal(63);
-			
-		}
 	}
 	
 	private static void doBuild() throws GameActionException
@@ -94,11 +149,17 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 			return false;
 		if (!rc.hasBuildRequirements(robotToBuild))
 			return false;
+		if (scoutsBuilt >= 1 && soldiersBuilt >= 5 && rc.getTeamParts() < 1.5*RobotType.TURRET.partCost)
+			return false;
 
 		Direction buildDir = getCanBuildDirectionSet(robotToBuild).getRandomValid();
 		if (buildDir != null)
 		{
 			rc.build(buildDir, robotToBuild);
+			if (robotToBuild == RobotType.SCOUT)
+				scoutsBuilt ++;
+			else if (robotToBuild == RobotType.SOLDIER)
+				soldiersBuilt ++;
 			return true;
 		}
 		
@@ -149,15 +210,17 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 						  + nearbyUnits[GUARD]
 						  + nearbyUnits[TURRET];
 		
-		if (nearbyUnits[SCOUT] < 2 || nearbyUnits[SCOUT] < combatUnits/4)
+		//if (nearbyUnits[SCOUT] < 1 || nearbyUnits[SCOUT] < combatUnits/8)
+		if (scoutsBuilt <= 2 && nearbyUnits[SCOUT] <= combatUnits/8)
 			return RobotType.SCOUT;
 		
 		if (nearbyUnits[SOLDIER] < 10)
 			return RobotType.SOLDIER;
-		//if (nearbyUnits[TURRET] < 5)
-		//	return RobotType.TURRET;
 		
-		return RobotType.SOLDIER;
+//		if (nearbyUnits[TURRET] < 5)
+//			return RobotType.TURRET;
+		
+		return rand.nextBoolean() ? RobotType.GUARD : RobotType.VIPER;
 	}
 	
 	private static boolean canBuildNow() throws GameActionException

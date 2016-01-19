@@ -1,6 +1,7 @@
 package team023;
 
 import battlecode.common.*;
+
 import java.util.*;
 
 public class BallMoveStrategy extends RobotPlayer implements Strategy
@@ -66,7 +67,7 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
 
 	public boolean tryTurn() throws GameActionException
 	{
-		Debug.setStringAK("My Strategy: " + this.stratName);
+		//Debug.setStringAK("My Strategy: " + this.stratName);
 		
 		// first check if we can still ball
 		if (!tryUpdateTarget())
@@ -121,7 +122,7 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
                 if ((ri.type == RobotType.ARCHON) && ri.ID!=ballTargetID && here.add(d).distanceSquaredTo(ri.location) < 2)
                 {
                     ballDirs.remove(d);
-                    System.out.println("Avoiding a neighbor arhcon");
+                    //System.out.println("Avoiding a neighbor arhcon");
                     break;
                 }    
             }
@@ -162,8 +163,9 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
 		if (moveDir != null)
 			Action.tryMove(moveDir);
 		
-		return true;
+		// not doing anything else, so look for parts and DIG
+		MapLocation closestPart = Rubble.senseClosestPart();
+		return Rubble.tryClearRubble(closestPart);
+		
 	}
-	
-
 }

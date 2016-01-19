@@ -10,11 +10,12 @@ public class RoboScout extends RobotPlayer
 	
 	public static void init() throws GameActionException
 	{
+		myStrategy = new ExploreStrat();
 		// start off balling around closest archon
-		if (myBuilderLocation != null)
-			myStrategy = new BallMoveStrategy(myBuilderID, 14, 24);
-		else
-			myStrategy = new FreeUnitStrategy();
+//		if (myBuilderLocation != null)
+//			myStrategy = new ExploreStrat();
+//		else
+//			myStrategy = new FreeUnitStrategy();
 //		 
 //		RobotInfo[] allies = rc.senseNearbyRobots(RobotType.SCOUT.sensorRadiusSquared, ourTeam);
 //		RobotInfo archon = null;
@@ -50,29 +51,27 @@ public class RoboScout extends RobotPlayer
 			myStrategy = new ZombieHerdingStrat();
 			ZombieHerdingStrat.rushingStartLoc = here;
 			
-			Direction rushDir = here.directionTo(Micro.getClosestUnitTo(zombies, here).location).rotateRight().rotateRight();//go perp
-			ZombieHerdingStrat.herdingDestLoc = here.add(rushDir.dx*ZombieHerdingStrat.herdDist,rushDir.dy*ZombieHerdingStrat.herdDist);
-			
+			Direction rushDir = here.directionTo(Micro.getClosestUnitTo(zombies, here).location);			
 			sendUpdates = false;
 		}
 		
 		// explore if you are free to do so
-		if (ExploreStrat.shouldExplore(allies, zombies))
-		{
-			myStrategy = new ExploreStrat();
-		}
+//		if (ExploreStrat.shouldExplore(allies, zombies))
+//		{
+//			myStrategy = new ExploreStrat();
+//		}
 
 		// Free unit if everything else breaks
-		if (!myStrategy.tryTurn())
-			myStrategy = new FreeUnitStrategy();
-		//myStrategy.tryTurn();
+//		if (!myStrategy.tryTurn())
+//			myStrategy = new FreeUnitStrategy();
+		myStrategy.tryTurn();
 		
 		Sighting.doSendSightingMessage();
 		MapInfo.analyzeSurroundings();
 
 		if (sendUpdates) // zombie herding zombies don't have time to send updates
 		{
-		MapInfo.doScoutSendUpdates();
+			MapInfo.doScoutSendUpdates();
 		}
 	}
 }

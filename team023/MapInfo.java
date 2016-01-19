@@ -8,6 +8,7 @@ public class MapInfo extends RobotPlayer
 {
 	public static FastLocSet zombieDenLocations = new FastLocSet();
 	public static FastLocSet goodPartsLocations = new FastLocSet();
+	public static FastLocSet neutralArchonLocations = new FastLocSet();
 	
 	public static MapLocation mapMin = new MapLocation(-18000,-18000);
 	public static MapLocation mapMax = new MapLocation(18001,18001);
@@ -17,6 +18,7 @@ public class MapInfo extends RobotPlayer
 	
 	public static MapLocation newZombieDen = null;
 	public static MapLocation newParts = null;
+	public static MapLocation newNeutralArchon = null;
 	
 	public static int numInitialArchons = 0;
 
@@ -39,8 +41,9 @@ public class MapInfo extends RobotPlayer
 	public static MapLocation getExplorationWaypoint()
 	{
 		// this one should get transmitted to a scout
-		return new MapLocation(rand.nextInt(mapMax.x - mapMin.x) + mapMin.x,
-							   rand.nextInt(mapMax.y - mapMin.y) + mapMin.y);
+//		return new MapLocation(rand.nextInt(mapMax.x - mapMin.x) + mapMin.x,
+//							   rand.nextInt(mapMax.y - mapMin.y) + mapMin.y);
+		return here.add((rand.nextInt(3)-1)*100, (rand.nextInt(3)-1)*100);
 	}
 	
 	public static MapLocation getClosestPart()
@@ -53,6 +56,10 @@ public class MapInfo extends RobotPlayer
 		return Micro.getClosestLocationTo(zombieDenLocations.elements(), here);
 	}
 	
+	public static MapLocation getClosestNeutralArchon()
+	{
+		return Micro.getClosestLocationTo(neutralArchonLocations.elements(), here);
+	}
 	
 	public static MapLocation getClosestDenThenPart()
 	{
@@ -193,11 +200,26 @@ public class MapInfo extends RobotPlayer
 			newParts = loc;
 	}
 	
+	public static void updateNeutralArchon(MapLocation loc, boolean sendUpdate)
+	{
+		if (neutralArchonLocations.contains(loc) || newNeutralArchon != null)
+			return;
+		
+		neutralArchonLocations.add(loc);
+		
+//		if (!neutralArchonLocations.contains(getSymmetricLocation(loc)))
+//			neutralArchonLocations.add(getSymmetricLocation(loc));
+		
+		if (sendUpdate)
+			newNeutralArchon = loc;
+	}
+	
 	public static void removeWaypoint(MapLocation loc)
 	{
 		// remove the part, and send that it got removed
 		goodPartsLocations.remove(loc);
 		zombieDenLocations.remove(loc);
+		neutralArchonLocations.remove(loc);
 	}
 	
 	public static void updateLocalWaypoints() throws GameActionException
@@ -227,6 +249,13 @@ public class MapInfo extends RobotPlayer
 			return false;
 		
 		// only send one at a time
+		if (newNeutralArchon != null)
+		{
+			Debug.setStringAK("sending new neutral archon signal");
+			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.NEUTRAL_ARCHON, newNeutralArchon);
+			newNeutralArchon = null;
+			return true;
+		}
 		if (newMapEdge)
 		{
 			Debug.setStringAK("sending new Map Edge Signal");
@@ -265,6 +294,10 @@ public class MapInfo extends RobotPlayer
 		{
 			updateParts(ri.location, isScout);
 			visibleParts += ri.type.partCost;
+			if (ri.type == RobotType.ARCHON)
+			{
+				updateNeutralArchon(ri.location, isScout);
+			}
 		}
 		
 		// zombie den check

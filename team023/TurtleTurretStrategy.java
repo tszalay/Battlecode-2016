@@ -8,7 +8,7 @@ public class TurtleTurretStrategy extends RobotPlayer implements Strategy
 	// (unpacking or firing)
 	private int lastTurretRound = 0;
 
-	static final int PACK_DELAY = 50;
+	static final int PACK_DELAY = 100;
 	
 	public double myHealth = RobotType.TURRET.maxHealth;
 	

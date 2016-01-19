@@ -15,7 +15,8 @@ enum MessageType
 	GOOD_PARTS,
 	MAP_EDGE,
 	REMOVE_WAYPOINT,
-	NEW_STRATEGY
+	NEW_STRATEGY,
+	NEUTRAL_ARCHON
 }
 
 class SignalLocation extends RobotPlayer
@@ -43,12 +44,14 @@ public class Message extends RobotPlayer
 	public static int MAP_OFF_Y = 0;
 	
 	public static ArrayList<SignalLocation> underAttackLocs = new ArrayList<SignalLocation>();
+	public static ArrayList<SignalLocation> neutralArchonLocs = new ArrayList<SignalLocation>();
 	
 	// and for any transmitted enemy messages, only keep the latest received
 	public static MapLocation recentEnemySignal = null;
 	
 	// and other things
 	public static MapLocation closestAllyUnderAttackLocation = null;
+	public static MapLocation closestNeutralArchonLocation = null;
 	public static Strategy.Type recentStrategySignal = null;
 	
 	public static void readSignalQueue()
@@ -71,9 +74,6 @@ public class Message extends RobotPlayer
 			else
 				type = readType(vals[0]);
 			
-//			if (sig.getID() == BallMove.ballTargetID)
-				//BallMove.updateBallLocation(sig.getLocation());
-
 			switch (type)
 			{
 			case UNDER_ATTACK:
@@ -91,6 +91,9 @@ public class Message extends RobotPlayer
 			case ZOMBIE_DEN:
 				MapInfo.updateZombieDens(readLocation(vals[0]),false);
 				break;
+			case NEUTRAL_ARCHON:
+				MapInfo.updateNeutralArchon(readLocation(vals[0]),false);
+				break;
 			case MAP_EDGE:
 				MapInfo.updateMapEdges(readLocation(vals[0]), readLocation(vals[1]));
 				break;
@@ -101,6 +104,7 @@ public class Message extends RobotPlayer
 				recentStrategySignal = Strategy.Type.values()[vals[1]];
 				break;
 			case REMOVE_WAYPOINT:
+				MapInfo.removeWaypoint(readLocation(vals[0]));
 				break;
 			}
 		}
@@ -144,6 +148,36 @@ public class Message extends RobotPlayer
 		underAttackLocs.clear();
 		
 		return closestAllyUnderAttackLocation;
+	}
+	
+	public static MapLocation getClosestNeutralArchonLoc() throws GameActionException
+	{
+		if (closestNeutralArchonLocation != null)
+			return closestNeutralArchonLocation;
+		
+		int distToClosest = 1000000;
+		MapLocation bestLoc = null;
+		for (SignalLocation sm : Message.neutralArchonLocs )
+		{
+			int distToThisSignalOrigin = here.distanceSquaredTo(sm.loc);
+			if (distToThisSignalOrigin < distToClosest)
+			{
+				distToClosest = distToThisSignalOrigin;
+				bestLoc = sm.loc;
+			}
+		}
+		
+		if (bestLoc == null) return null;
+		
+		closestNeutralArchonLocation = bestLoc;
+		
+		if (rc.canSenseLocation(closestNeutralArchonLocation) && (rc.senseRobotAtLocation(closestNeutralArchonLocation)==null || rc.senseRobotAtLocation(closestNeutralArchonLocation).team == ourTeam))
+			closestNeutralArchonLocation = null;
+		
+		// clear the buffer
+		//neutralArchonLocs.clear();
+		
+		return closestNeutralArchonLocation;
 	}
 	
 	public static void sendSightingSignal(int sq_distance, MapLocation loc)

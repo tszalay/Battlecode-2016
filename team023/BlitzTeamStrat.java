@@ -8,7 +8,8 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 {
 	private RobotInfo myArchon = null;
 	private String stratName;
-	
+	private MapLocation dest = null;
+	private MapLocation symLoc = null;
 	
 	public static boolean shouldBlitz()
 	{
@@ -52,45 +53,106 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 		this.myArchon = myArchon;
 		this.stratName = "BlitzTeamStrat";	
 		
-		tryBuild(RobotType.SCOUT);
+		tryBuild(RobotType.VIPER);
 	}
 	
+	public BlitzTeamStrat(MapLocation dest) throws GameActionException
+	{
+		this.myArchon = myArchon;
+		this.stratName = "BlitzTeamStrat";	
+		this.dest = dest;
+	}
 	
 	public boolean tryTurn() throws GameActionException
 	{
-		Debug.setStringAK("My Strategy: " + this.stratName);
+		//Debug.setStringAK("My Strategy: " + this.stratName);
 		switch (rc.getType())
 		{
 		case ARCHON:
-			MapLocation partLoc = senseClosestPart();
-			MapLocation neutralLoc = senseClosestNeutral();
-			MapLocation mapPartLoc = MapInfo.getClosestPart();
-			RobotInfo[] hostiles = Micro.getNearbyHostiles();
+			dest = MapInfo.getClosestNeutralArchon();
 			
-			// avoid all hostiles
-			if (hostiles != null && hostiles.length > 0)
+			if (dest == null)
 			{
-				if (!Action.tryRetreatTowards(neutralLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs())))
-					if (!Action.tryRetreatTowards(partLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs())))
-						if (!Action.tryRetreatTowards(mapPartLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs())))
-							Action.tryRetreatOrShootIfStuck();
+				MapLocation partLoc = senseClosestPart();
+				MapLocation neutralLoc = senseClosestNeutral();
+				MapLocation mapPartLoc = MapInfo.getClosestPart();
+				RobotInfo[] hostiles = Micro.getNearbyHostiles();
+				
+				// avoid all hostiles
+				if (hostiles != null && hostiles.length > 0)
+				{
+					if (!Action.tryRetreatTowards(neutralLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs())))
+					{
+						if (!Action.tryRetreatTowards(partLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs())))
+						{
+							if (!Action.tryRetreatTowards(mapPartLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs())))
+								Action.tryRetreatOrShootIfStuck();
+						}
+					}
+					return false;
+				}
+				
+				// run around and grab stuff as fast as possible
+				if (neutralLoc != null)
+				{
+					if (here.distanceSquaredTo(neutralLoc) < 9 && rc.senseRubble(here.add(here.directionTo(neutralLoc))) > GameConstants.RUBBLE_OBSTRUCTION_THRESH)
+						Rubble.doClearRubble(here.directionTo(neutralLoc));
+					Action.tryGoToWithoutBeingShot(neutralLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
+					Debug.setStringRR("going to neutral at " + neutralLoc.toString());
+				}
+					
+				else if (partLoc != null)
+				{
+					Action.tryGoToWithoutBeingShot(partLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
+					Debug.setStringRR("going to partLoc at " + partLoc.toString());
+				}
+				
+				else if (mapPartLoc != null)
+				{
+					Action.tryGoToWithoutBeingShot(mapPartLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
+					Debug.setStringRR("going to partLoc at " + mapPartLoc.toString());
+				}
+				
+				else if (here.distanceSquaredTo(MapInfo.getSymmetricLocation(here)) > 100)
+				{
+					if (symLoc == null)
+						symLoc = MapInfo.getSymmetricLocation(here);
+					Action.tryGoToWithoutBeingShot(symLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
+					Debug.setStringRR("going to mapsymmetry loc at " + MapInfo.getSymmetricLocation(here).toString());
+				}
+				
+				else
+					return false;
+				
+				return true;
+			}
+			else // we have a priority destination, a neutral archon, go fast
+			{
+				if (here.distanceSquaredTo(dest) == 1)
+				{
+					dest = null;
+					return false;
+				}
+				
+				Debug.setStringSJF("trying to book it to neutral archon at " + dest.toString());
+				
+				// if there's rubble in the way, clear it if it's reasonable
+				double rub = rc.senseRubble(here.add(here.directionTo(dest)));
+				double furtherRub = rc.senseRubble(here.add(here.directionTo(dest)).add(here.directionTo(dest)));
+				if (rub > GameConstants.RUBBLE_OBSTRUCTION_THRESH && rub < 3000 && furtherRub < GameConstants.RUBBLE_OBSTRUCTION_THRESH)
+				{
+					Rubble.tryClearRubble(dest);
+				}
+				
+				if (!Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs()))
+				{
+					Rubble.tryClearRubble(dest);
+					System.out.println("I'm clearing rubble to get to the neutral archon");
+				}
+				
 				return true;
 			}
 			
-			// run around and grab stuff as fast as possible
-			if (neutralLoc != null)
-				Action.tryGoToWithoutBeingShot(neutralLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
-				
-			else if (partLoc != null)
-				Action.tryGoToWithoutBeingShot(partLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
-			
-			else if (mapPartLoc != null)
-				Action.tryGoToWithoutBeingShot(mapPartLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
-			
-			else
-				Action.tryGoToWithoutBeingShot(MapInfo.getExplorationWaypoint(), Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
-			
-			return true;
 			
 		case SCOUT:
 			// scout for the archon
