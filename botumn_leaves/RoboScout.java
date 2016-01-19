@@ -10,9 +10,9 @@ public class RoboScout extends RobotPlayer
 	{
 		// start off balling around closest archon
 		if (myBuilderLocation != null)
-			myStrategy = new BallMoveStrategy(myBuilderID, 14, 24);
+			myStrategy = new BallMoveStrat(myBuilderID, 14, 24);
 		else
-			myStrategy = new FreeUnitStrategy();
+			myStrategy = new FreeUnitStrat();
 	}
 	
 
@@ -43,7 +43,7 @@ public class RoboScout extends RobotPlayer
 
 		// Free unit if everything else breaks
 		if (!myStrategy.tryTurn())
-			myStrategy = new FreeUnitStrategy();
+			myStrategy = new FreeUnitStrat();
 		//myStrategy.tryTurn();
 		
 		Sighting.doSendSightingMessage();

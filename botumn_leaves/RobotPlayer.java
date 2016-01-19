@@ -149,7 +149,7 @@ public class RobotPlayer
 				
 				// let's see what we're doing
 				if (myStrategy != null)
-					Debug.setStringAK("Doing " + myStrategy.getName());
+					Debug.setStringAK(myStrategy.getName());
 				Debug.setStringTS("Dens known: " + MapInfo.zombieDenLocations.elements().size());
 				
 				Clock.yield();

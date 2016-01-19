@@ -3,7 +3,7 @@ package botumn_leaves;
 import battlecode.common.*;
 import java.util.*;
 
-public class FreeUnitStrategy extends RobotPlayer implements Strategy
+public class FreeUnitStrat extends RobotPlayer implements Strategy
 {	
 	private MapLocation myTarget = null;
 	
@@ -12,7 +12,7 @@ public class FreeUnitStrategy extends RobotPlayer implements Strategy
 		return "Free unit";
 	}
 	
-	public FreeUnitStrategy() throws GameActionException
+	public FreeUnitStrat() throws GameActionException
 	{
 		myTarget = MapInfo.getExplorationWaypoint();
 	}

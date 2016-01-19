@@ -2,7 +2,7 @@ package botumn_leaves;
 
 import battlecode.common.*;
 
-public class TurtleTurretStrategy extends RobotPlayer implements Strategy
+public class TurtleTurretStrat extends RobotPlayer implements Strategy
 {
 	// last round that a turret performed an action
 	// (unpacking or firing)
