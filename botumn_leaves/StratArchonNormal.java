@@ -56,10 +56,12 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (dest == null)
 			dest = senseClosestPart();
 		if (dest == null)
-			dest = MapInfo.getClosestDen();
+			dest = MapInfo.farthestArchonLoc;
 		
+		Nav.tryGoTo(dest, Micro.getSafeMoveDirs());
 		
 		// check if it should be deleted
+		/*
 		if (dest != null && rc.canSenseLocation(dest) && rc.senseParts(dest) == 0 && rc.senseRobotAtLocation(dest) == null)
 		{
 			dest = MapInfo.getClosestPartOrDen();
@@ -70,9 +72,9 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 			// go where we should
 			Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs());
 			// send a bit of a "ping"
-			if (rc.getRoundNum() % 7 == 0)
-				Message.sendSignal(63);
-		}
+//			if (rc.getRoundNum() % 7 == 0)
+//				Message.sendSignal(63);
+		}*/
 		
 		return true;
 	}

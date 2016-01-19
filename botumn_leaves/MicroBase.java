@@ -526,6 +526,42 @@ public class MicroBase extends RobotPlayer
 		return closest;
 	}
 	
+	public MapLocation getFarthestLocationFrom(List<MapLocation> locs, MapLocation center)
+	{
+		int maxDistSq = 0;
+		MapLocation farthest = null;
+		
+		for (MapLocation ml : locs)
+		{
+			int dsq = ml.distanceSquaredTo(center);
+			if (dsq > maxDistSq)
+			{
+				maxDistSq = dsq;
+				farthest = ml;
+			}
+		}
+		
+		return farthest;
+	}
+	
+	public MapLocation getFarthestLocationFrom(MapLocation[] locs, MapLocation center)
+	{
+		int maxDistSq = 0;
+		MapLocation farthest = null;
+		
+		for (MapLocation ml : locs)
+		{
+			int dsq = ml.distanceSquaredTo(center);
+			if (dsq > maxDistSq)
+			{
+				maxDistSq = dsq;
+				farthest = ml;
+			}
+		}
+		
+		return farthest;
+	}
+	
 	public RobotInfo getLowestHealth(RobotInfo[] bots)
 	{
 		RobotInfo target = null;

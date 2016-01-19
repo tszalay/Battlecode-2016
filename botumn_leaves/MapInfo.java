@@ -35,6 +35,9 @@ public class MapInfo extends RobotPlayer
 	
 	public static MapLocation mapCenter = null;
 	private static MapLocation dblCenter = null;
+	
+	public static MapLocation ourArchonCenter = null;
+	public static MapLocation farthestArchonLoc = null;
 
 	
 	
@@ -50,7 +53,7 @@ public class MapInfo extends RobotPlayer
 	
 	public static MapLocation getClosestPart()
 	{
-		return Micro.getClosestLocationTo(goodPartsLocations.elements(), here);
+		return Micro.getClosestLocationTo(goodPartsLocations.elements(), ourArchonCenter);
 	}
 	
 	public static MapLocation getClosestDen()
@@ -332,22 +335,29 @@ public class MapInfo extends RobotPlayer
 		if (numInitialArchons == 0)
 			return;
 		
-		int xtot = 0;
-		int ytot = 0;
+		int ourx = 0;
+		int oury = 0;
+		int theirx = 0;
+		int theiry = 0;
 		
 		// first compute the center of the map
 		// which is just the average of all of the archon locations
 		for (int i=0; i<ourArchons.length; i++)
 		{
-			xtot += ourArchons[i].x;
-			ytot += ourArchons[i].y;
-			xtot += theirArchons[i].x;
-			ytot += theirArchons[i].y;
+			theirx += theirArchons[i].x;
+			theiry += theirArchons[i].y;
+			ourx += ourArchons[i].x;
+			oury += ourArchons[i].y;
 			archonLocs.add(ourArchons[i]);
 		}
 		
+		int xtot = ourx+theirx;
+		int ytot = oury+theiry;
+		
 		// this _might_ be like half a unit away from the actual center
 		mapCenter = new MapLocation(xtot/(2*numInitialArchons),ytot/(2*numInitialArchons));
+		ourArchonCenter = new MapLocation(ourx/numInitialArchons,oury/numInitialArchons);
+		farthestArchonLoc = Micro.getFarthestLocationFrom(ourArchons, mapCenter);
 		// and set Message's map offsets
 		Message.MAP_OFF_X = mapCenter.x - 128;
 		Message.MAP_OFF_Y = mapCenter.y - 128;

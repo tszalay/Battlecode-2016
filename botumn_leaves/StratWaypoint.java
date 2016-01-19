@@ -54,7 +54,7 @@ public class StratWaypoint extends RobotPlayer implements Strategy
 		
 		if (closestDen == null)
 		{
-			Action.tryMove(Micro.getCanMoveDirs().getRandomValid());
+			Nav.tryGoTo(MapInfo.ourArchonCenter, Micro.getSafeMoveDirs());
 			return true;
 		}
 		

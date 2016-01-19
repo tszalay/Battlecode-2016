@@ -58,10 +58,10 @@ public class RobotPlayer
 		
 		myHealth = rc.getHealth();
 		
-		// and try go get the map symmetry. everyone can do this
-		MapInfo.calculateSymmetry();
 		// also initialize Micro
 		Micro = new MicroBase();
+		// and try go get the map symmetry. everyone can do this
+		MapInfo.calculateSymmetry();
 		// and do this once, so init can see recent messages
 		Message.readSignalQueue();
 		
