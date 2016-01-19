@@ -11,7 +11,7 @@ public class MapInfo extends RobotPlayer
 	
 	public static MapLocation mapMin = new MapLocation(-18000,-18000);
 	public static MapLocation mapMax = new MapLocation(18001,18001);
-	private static MapLocation nullLocation = new MapLocation(123,123);
+	private static MapLocation nullLocation = null;
 	
 	// update the boundary on one of the map min/maxes
 	public static boolean newMapEdge = false;
@@ -354,6 +354,9 @@ public class MapInfo extends RobotPlayer
 		// and the map edge min and max
 		mapMin = mapCenter.add(-GameConstants.MAP_MAX_WIDTH/2-1,-GameConstants.MAP_MAX_HEIGHT/2-1);
 		mapMax = mapCenter.add(GameConstants.MAP_MAX_WIDTH/2+1,GameConstants.MAP_MAX_HEIGHT/2+1);
+		
+		// add a few to the max location to signify "invalid location"
+		nullLocation = mapMax.add(5,5);
 		
 		// this, on the other hand, is exactly twice the center
 		dblCenter = new MapLocation(xtot/numInitialArchons,ytot/numInitialArchons);

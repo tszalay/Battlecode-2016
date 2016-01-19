@@ -6,7 +6,7 @@ import java.util.*;
 
 public class MobFightStrat extends RobotPlayer implements Strategy
 {
-	private static MapLocation target;
+	private MapLocation target;
 	
 	public String getName()
 	{
@@ -15,7 +15,7 @@ public class MobFightStrat extends RobotPlayer implements Strategy
 	
 	public MobFightStrat()
 	{
-		this.target = null;
+		this(null);
 	}
 	
 	public MobFightStrat(MapLocation target)

@@ -41,7 +41,8 @@ public class Message extends RobotPlayer
 	public static int MAP_OFF_X = 0;
 	public static int MAP_OFF_Y = 0;
 	
-	public static ArrayList<Signal> underAttackLocs = new ArrayList<Signal>();
+	private static Signal recentUnderAttackSignal = null;
+	private static int recentUnderAttackRound = -100; 
 	
 	// and for any transmitted enemy messages, only keep the latest received
 	public static MapLocation recentEnemySignal = null;
@@ -76,7 +77,7 @@ public class Message extends RobotPlayer
 			switch (type)
 			{
 			case UNDER_ATTACK:
-				underAttackLocs.add(sig);
+				updateUnderAttack(sig);
 				break;
 			case FREE_BEER:
 				break;
@@ -112,35 +113,33 @@ public class Message extends RobotPlayer
 		Message.sendMessageSignal(9, MessageType.NEW_STRATEGY, strat.ordinal());
 	}
 	
+	private static void updateUnderAttack(Signal sig)
+	{
+		if (rc.getRoundNum() - recentUnderAttackRound > 20)
+		{
+			recentUnderAttackSignal = sig;
+			recentUnderAttackRound = rc.getRoundNum();
+			return;
+		}
+		
+		if (sig.getLocation().distanceSquaredTo(here) < 
+				recentUnderAttackSignal.getLocation().distanceSquaredTo(here))
+		{
+			recentUnderAttackSignal = sig;
+			recentUnderAttackRound = rc.getRoundNum();
+			return;
+		}
+	}
+	
 	//Basic signals always only done when under attack
 	public static MapLocation getClosestAllyUnderAttack() throws GameActionException
 	{
-		if (closestAllyUnderAttackLocation != null)
-			return closestAllyUnderAttackLocation;
+		// timeout for old signals
+		if (rc.getRoundNum() - recentUnderAttackRound > 20)
+			return null;
 		
-		int distToClosestAlly = 1000000;
-		MapLocation bestLoc = null;
-		for (Signal sig : Message.underAttackLocs )
-		{
-			int distToThisSignalOrigin = here.distanceSquaredTo(sig.getLocation());
-			if (distToThisSignalOrigin < distToClosestAlly)
-			{
-				distToClosestAlly = distToThisSignalOrigin;
-				bestLoc = sig.getLocation();
-			}
-		}
-		
-		if (bestLoc == null) return null;
-		
-		closestAllyUnderAttackLocation = bestLoc;
-		
-		if (rc.canSenseLocation(closestAllyUnderAttackLocation) && (rc.senseRobotAtLocation(closestAllyUnderAttackLocation)==null || rc.senseRobotAtLocation(closestAllyUnderAttackLocation).team == ourTeam))
-				closestAllyUnderAttackLocation = null;
-		
-		// clear the buffer
-		underAttackLocs.clear();
-		
-		return closestAllyUnderAttackLocation;
+		// otherwise just return the location; automatically keeps the closest
+		return recentUnderAttackSignal.getLocation();
 	}
 	
 	public static void sendSightingSignal(int sq_distance, MapLocation loc)

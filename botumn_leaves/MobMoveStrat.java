@@ -35,6 +35,12 @@ public class MobMoveStrat extends RobotPlayer implements Strategy
 			overrideStrategy.tryTurn();
 			return true;
 		}
+		if (Message.getClosestAllyUnderAttack() != null)
+		{
+			overrideStrategy = new MobFightStrat(Message.getClosestAllyUnderAttack());
+			overrideStrategy.tryTurn();
+			return true;
+		}
 		
 		// or if we're close to a zombie den we also do
 		MapLocation closestDen = MapInfo.getClosestDen();
