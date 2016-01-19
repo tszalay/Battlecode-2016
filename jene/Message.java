@@ -74,9 +74,6 @@ public class Message extends RobotPlayer
 			else
 				type = readType(vals[0]);
 			
-//			if (sig.getID() == BallMove.ballTargetID)
-				//BallMove.updateBallLocation(sig.getLocation());
-
 			switch (type)
 			{
 			case UNDER_ATTACK:

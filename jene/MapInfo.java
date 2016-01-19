@@ -200,7 +200,7 @@ public class MapInfo extends RobotPlayer
 			newParts = loc;
 	}
 	
-	public static void updateNeutralArchon(MapLocation loc, boolean sendUpdate) throws GameActionException
+	public static void updateNeutralArchon(MapLocation loc, boolean sendUpdate)
 	{
 		if (neutralArchonLocations.contains(loc) || newNeutralArchon != null)
 			return;
