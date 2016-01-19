@@ -44,8 +44,10 @@ public class RoboArchon extends RobotPlayer
 		
 		// turtle if in good position and no other turtlers
 		RobotInfo[] allies = Micro.getNearbyAllies();
-		int turretNum = new UnitCounts(allies).Turrets;
-		if (allies.length >= 6 && Micro.getNearbyHostiles().length == 0 && turretNum == 0)
+		UnitCounts count = new UnitCounts(allies);
+		int turretNum = count.Turrets;
+		int soldierNum = count.Soldiers;
+		if (soldierNum >= 5 && Micro.getNearbyHostiles().length == 0 && turretNum == 0)
 			myStrategy = new TurtleArchonStrategy();
 		
 		// archons who stopped blitzing do normal
