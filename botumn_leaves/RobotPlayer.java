@@ -18,6 +18,8 @@ public class RobotPlayer
 	
 	public static MicroBase Micro = null;
 	
+	public static Strategy myStrategy = null;
+	
 	@SuppressWarnings("unused")
 	// BC Engine -> RobotPlayer.run -> RoboXXX.run
     public static void run(RobotController robotc)
@@ -110,7 +112,7 @@ public class RobotPlayer
 				// process incoming messages
 				Message.readSignalQueue();
 				// update stuff with sensing
-				MapInfo.updateLocalWaypoints();
+				MapInfo.doAnalyzeSurroundings();
 				
 				switch (robotc.getType())
 				{
@@ -144,6 +146,10 @@ public class RobotPlayer
 					rc.disintegrate();
 					break;
 				}
+				
+				// let's see what we're doing
+				if (myStrategy != null)
+					Debug.setStringAK("Doing " + myStrategy.getName());
 				
 				Clock.yield();
 			}

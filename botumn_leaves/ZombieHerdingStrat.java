@@ -31,7 +31,6 @@ public class ZombieHerdingStrat extends RobotPlayer implements Strategy
 	{
 		// state machine update
 		updateState();
-		Debug.setStringAK(myState.toString());
 
 		// do turn according to state
 		switch (myState)
@@ -51,12 +50,9 @@ public class ZombieHerdingStrat extends RobotPlayer implements Strategy
 
 		//Sighting.doSendSightingMessage();
 
-		// and use spare bytecodes to look for stuff
-		MapInfo.doAnalyzeSurroundings();
 		// and send the updates
 		MapInfo.doScoutSendUpdates();
 
-		Debug.setStringTS("Scout: " + myState);
 		return true;
 	}
 
@@ -97,9 +93,11 @@ public class ZombieHerdingStrat extends RobotPlayer implements Strategy
 			break;
 		}		
 	}
-	public static boolean shouldHerd(RobotInfo[] allies, RobotInfo[] zombies) throws GameActionException
+	public static boolean shouldHerd() throws GameActionException
 	{
 		boolean canSeeArchon = false;
+		RobotInfo[] zombies = Micro.getNearbyZombies();
+		RobotInfo[] allies = Micro.getNearbyAllies();
 
 		// don't rush if no zombies
 		if (zombies.length == 0) return false;
@@ -178,7 +176,6 @@ public class ZombieHerdingStrat extends RobotPlayer implements Strategy
 		if (!rc.onTheMap(lookAhead.add(herdingDir)))
 		{
 			Direction newDir = getMapEdgeDir(lookAhead,herdingDir);
-			Debug.setStringAK("going off the map need to rotate!");
 			if (newDir !=null)
 			{
 				herdingDestLoc = here.add(newDir.dx*herdDist, newDir.dy*herdDist);	

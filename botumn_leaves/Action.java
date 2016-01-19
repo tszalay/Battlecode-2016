@@ -75,7 +75,6 @@ public class Action extends RobotPlayer
 		int roundsUntilDanger = Micro.getRoundsUntilDanger();
 		int dangerThreshold = 2;
 		int roundsUntilShootAndMove = Micro.getRoundsUntilShootAndMove();
-		Debug.setStringTS("DR: " + roundsUntilDanger + " SR: " + roundsUntilShootAndMove);
 		
 		// if we're in danger, try to retreat before we try to shoot
 		if (roundsUntilDanger <= dangerThreshold)

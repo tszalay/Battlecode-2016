@@ -41,13 +41,9 @@ public class ExploreStrat extends RobotPlayer implements Strategy
 			//Action.tryGoToWithoutBeingShot(myExploringTarget, goodDirs);
 		}
 
-		
-		Debug.setStringAK("Exploring to " + myExploringTarget);		
         // always send out info about sighted targets
 		Sighting.doSendSightingMessage();
 		
-		// and use spare bytecodes to look for stuff
-		MapInfo.doAnalyzeSurroundings();
 		// and send the updates AK don't do this automtically - herding one's can't do it
 		MapInfo.doScoutSendUpdates();
 		
@@ -57,8 +53,9 @@ public class ExploreStrat extends RobotPlayer implements Strategy
 	
 	static final int SCOUT = RobotType.SCOUT.ordinal();
 	static final int ARCHON = RobotType.ARCHON.ordinal();
-	public static boolean shouldExplore(RobotInfo[] allies, RobotInfo[] zombies) throws GameActionException
+	public static boolean shouldExplore() throws GameActionException
 	{
+		RobotInfo[] zombies = Micro.getNearbyZombies();
 
 		int lowestScoutID = rc.getID();
 		RobotInfo[] nearby = Micro.getNearbyAllies();

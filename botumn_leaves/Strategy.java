@@ -16,11 +16,6 @@ public interface Strategy
 	// run the turn for this strategy
 	// returns false if we can't do this strategy no more, no more, no more
 	boolean tryTurn() throws GameActionException;
-	default boolean fooTurn() throws GameActionException
-	{
-		Debug.setStringAK("Strategy: " + getName());
-		return tryTurn();
-	}
 	
 	// return the name of this strategys
 	String getName();

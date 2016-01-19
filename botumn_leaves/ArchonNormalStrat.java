@@ -51,7 +51,6 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 		// check if it should be deleted
 		if (dest != null && rc.canSenseLocation(dest) && rc.senseParts(dest) == 0 && rc.senseRobotAtLocation(dest) == null)
 		{
-			MapInfo.removeWaypoint(dest);
 			dest = MapInfo.getClosestPartOrDen();
 		}
 		
@@ -59,7 +58,6 @@ public class ArchonNormalStrat extends RobotPlayer implements Strategy
 		{
 			// put indicator at waypoint
 			rc.setIndicatorDot(dest, rc.getID()%255, 255, 255);
-			Debug.setStringAK("Waypoint = " + dest);
 			// go where we should
 			
 			Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs());

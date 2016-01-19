@@ -5,8 +5,6 @@ import battlecode.common.*;
 
 public class RoboArchon extends RobotPlayer
 {
-	public static Strategy myStrategy;
-
 	public static void init() throws GameActionException
 	{
 		if (BlitzTeamStrat.shouldBlitz())
@@ -25,12 +23,6 @@ public class RoboArchon extends RobotPlayer
 		
 		// always do this, no reason not to
 		tryRepair();
-
-		// and this - look for & update nearby cool stuff
-		MapInfo.doAnalyzeSurroundings();
-		
-		Debug.setStringTS("D:" + MapInfo.zombieDenLocations.elements().size()
-				+ ",P:" + MapInfo.goodPartsLocations.elements().size());
 	}
 	
 	public static boolean tryActivateNeutrals() throws GameActionException

@@ -188,20 +188,6 @@ public class MapInfo extends RobotPlayer
 			newParts = loc;
 	}
 	*/
-	public static void removeWaypoint(MapLocation loc)
-	{
-		// remove the part, and send that it got removed
-		goodPartsLocations.remove(loc);
-		zombieDenLocations.remove(loc);
-	}
-	
-	public static void updateLocalWaypoints() throws GameActionException
-	{
-		MapLocation loc = getClosestPart();
-		if (loc != null && rc.senseParts(loc) <= 0)
-			goodPartsLocations.remove(loc);
-		
-	}
 	
 	// function to send updated info as a scout
 	public static boolean doScoutSendUpdates() throws GameActionException

@@ -4,7 +4,6 @@ import battlecode.common.*;
 
 public class RoboSoldier extends RobotPlayer
 {
-	public static Strategy myStrategy;
 	public static double myHealth;
 	public static MapLocation lastBallLocation;
 	
