@@ -10,7 +10,7 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 
 	public String getName()
 	{
-		return "Blitz strategy";
+		return "Blitzing";
 	}
 	
 	public static boolean shouldBlitz()

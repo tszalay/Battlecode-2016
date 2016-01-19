@@ -5,6 +5,8 @@ import battlecode.common.*;
 
 public class RoboArchon extends RobotPlayer
 {
+	public static int lastAdjacentScoutRound = 0;
+	
 	public static void init() throws GameActionException
 	{
 		if (BlitzTeamStrat.shouldBlitz())
@@ -23,6 +25,17 @@ public class RoboArchon extends RobotPlayer
 		
 		// always do this, no reason not to
 		tryRepair();
+	}
+	
+	public static void checkAdjacentScout() throws GameActionException
+	{
+		RobotInfo[] nearby = rc.senseNearbyRobots(2, ourTeam);
+		
+		for (RobotInfo ri : nearby)
+		{
+			if (ri.type == RobotType.SCOUT)
+				lastAdjacentScoutRound = rc.getRoundNum();
+		}
 	}
 	
 	public static boolean tryActivateNeutrals() throws GameActionException

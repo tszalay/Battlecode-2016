@@ -17,11 +17,11 @@ public class RobotPlayer
 	public static int 			myBuiltRound;
 	
 	public static MicroBase Micro = null;
-	
 	public static Strategy myStrategy = null;
 	
-	@SuppressWarnings("unused")
-	// BC Engine -> RobotPlayer.run -> RoboXXX.run
+	public static double 	myHealth;
+	public static int		lastDamageRound = -100;
+	
     public static void run(RobotController robotc)
 	{
 		// globals in our class
@@ -54,6 +54,8 @@ public class RobotPlayer
 				}
 			}
 		}
+		
+		myHealth = rc.getHealth();
 		
 		// and try go get the map symmetry. everyone can do this
 		MapInfo.calculateSymmetry();
@@ -109,6 +111,18 @@ public class RobotPlayer
 				RobotPlayer.here = rc.getLocation();
 				// clear all outstanding micro stuff
 				Micro = new MicroBase();
+				// update health
+				double health = rc.getHealth();
+				if (health < myHealth)
+				{
+					lastDamageRound = rc.getRoundNum();
+					myHealth = health;
+				}
+				else
+				{
+					// (in case of healing)
+					myHealth = rc.getHealth();
+				}
 				// process incoming messages
 				Message.readSignalQueue();
 				// update stuff with sensing
@@ -161,5 +175,10 @@ public class RobotPlayer
             e.printStackTrace();
 		}
 
+    }
+    
+    public static int roundsSince(int start)
+    {
+    	return rc.getRoundNum() - start;
     }
 }
