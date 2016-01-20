@@ -57,16 +57,16 @@ public class RobotPlayer
 		}
 		
 		myHealth = rc.getHealth();
-		
-		// also initialize Micro
-		Micro = new MicroBase();
-		// and try go get the map symmetry. everyone can do this
-		MapInfo.calculateSymmetry();
-		// and do this once, so init can see recent messages
-		Message.readSignalQueue();
-		
+				
 		try
 		{
+			// also initialize Micro
+			Micro = new MicroBase();
+			// and try go get the map symmetry. everyone can do this
+			MapInfo.calculateSymmetry();
+			// and do this once, so init can see recent messages
+			Message.readSignalQueue();
+
 			switch (robotc.getType())
 			{
 			case ARCHON:
@@ -167,7 +167,8 @@ public class RobotPlayer
 				// let's see what we're doing
 				if (myStrategy != null)
 					Debug.setStringAK(myStrategy.getName());
-				Debug.setStringTS("Dens known: " + MapInfo.zombieDenLocations.elements().size());
+				Debug.setStringTS("Dens: " + MapInfo.zombieDenLocations.elements().size()
+						+ ", Archons: " + MapInfo.neutralArchonLocations.elements().size());
 
 				Clock.yield();
 			}

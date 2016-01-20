@@ -62,6 +62,11 @@ public class MapInfo extends RobotPlayer
 		return Micro.getClosestLocationTo(zombieDenLocations.elements(), farthestArchonLoc);
 	}
 	
+	public static MapLocation getClosestNeutralArchon()
+	{
+		return Micro.getClosestLocationTo(neutralArchonLocations.elements(), here);
+	}
+	
 	
 	public static MapLocation getClosestDenThenPart()
 	{
