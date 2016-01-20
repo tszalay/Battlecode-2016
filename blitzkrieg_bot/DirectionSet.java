@@ -1,4 +1,4 @@
-package dropitlikeitsBot;
+package blitzkrieg_bot;
 
 import battlecode.common.*;
 import java.util.*;
@@ -118,9 +118,27 @@ public class DirectionSet
 		// pew pew pew
 		if (rightDist < leftDist)
 			return best.rotateRight();
-		else if (leftDist < rightDist || leftDist < distSq)
+		else if (leftDist < rightDist)
 			return best.rotateLeft();
+		else if (leftDist < distSq)
+			return rand.nextBoolean() ? best.rotateRight() : best.rotateLeft();
 		
+		/*
+		// still none. look to sides
+		int rightRightDist = distSq;
+		int leftLeftDist = distSq;
+		
+		if (isValid(best.rotateRight().rotateRight()))
+			rightDist = from.add(best.rotateRight().rotateRight()).distanceSquaredTo(to);
+		if (isValid(best.rotateLeft().rotateLeft()))
+			leftDist = from.add(best.rotateLeft().rotateLeft()).distanceSquaredTo(to);
+		
+		// pew pew pew
+		if (rightRightDist < leftLeftDist)
+			return best.rotateRight().rotateRight();
+		else if (leftLeftDist < rightRightDist || leftLeftDist < distSq)
+			return best.rotateLeft().rotateLeft();
+		*/
 		return null;
 	}
 	

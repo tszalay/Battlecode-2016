@@ -1,4 +1,4 @@
-package dropitlikeitsBot;
+package blitzkrieg_bot;
 
 import battlecode.common.*;
 
@@ -12,11 +12,6 @@ public class RoboViper extends RobotPlayer
 	public static void turn() throws GameActionException
 	{
         int fate = rand.nextInt(1000);
-
-        if (fate % 5 == 3) {
-            // Send a normal signal
-            rc.broadcastSignal(80);
-        }
 
         boolean shouldAttack = false;
 

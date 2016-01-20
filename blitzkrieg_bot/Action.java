@@ -1,10 +1,10 @@
-package dropitlikeitsBot;
+package blitzkrieg_bot;
 
 import battlecode.common.*;
 
 import java.util.*;
 
-public class Behavior extends RobotPlayer
+public class Action extends RobotPlayer
 {
 	public static boolean tryAttackSomeone() throws GameActionException
 	{
@@ -13,8 +13,10 @@ public class Behavior extends RobotPlayer
 		if (!rc.isWeaponReady())
 			return false;
 		
-		RobotInfo zombieTarget = Micro.getLowestHealth(Micro.getNearbyZombies());
-		RobotInfo enemyTarget = Micro.getLowestHealth(Micro.getNearbyEnemies());
+		//RobotInfo zombieTarget = Micro.getLowestHealthInMyRange(Micro.getNearbyZombies());
+		//RobotInfo enemyTarget = Micro.getLowestHealthInMyRange(Micro.getNearbyEnemies());
+		RobotInfo zombieTarget = Micro.getHighestPriorityTarget(Micro.getNearbyZombies());
+		RobotInfo enemyTarget = Micro.getHighestPriorityTarget(Micro.getNearbyEnemies());
 		
 		if (zombieTarget != null && rc.canAttackLocation(zombieTarget.location))
 		{
@@ -56,7 +58,7 @@ public class Behavior extends RobotPlayer
 		if (escapeDir == null)
 			return tryAttackSomeone();
 		else
-			return Micro.tryMove(escapeDir);
+			return tryMove(escapeDir);
 	}
 	
 	public static boolean tryGoToWithoutBeingShot(MapLocation target, DirectionSet dirSet) throws GameActionException
@@ -73,7 +75,6 @@ public class Behavior extends RobotPlayer
 		int roundsUntilDanger = Micro.getRoundsUntilDanger();
 		int dangerThreshold = 2;
 		int roundsUntilShootAndMove = Micro.getRoundsUntilShootAndMove();
-		Debug.setStringTS("DR: " + roundsUntilDanger + " SR: " + roundsUntilShootAndMove);
 		
 		// if we're in danger, try to retreat before we try to shoot
 		if (roundsUntilDanger <= dangerThreshold)
@@ -130,10 +131,48 @@ public class Behavior extends RobotPlayer
     	
     	// move if it's valid
     	if (bestMoveDir != null)
-    		return Micro.tryMove(bestMoveDir);
+    		return tryMove(bestMoveDir);
     	
         return false;
     }
+	
+	// tryMove expects to be given a valid direction
+	public static boolean tryMove(Direction d) throws GameActionException
+	{
+		// don't do anything, but don't throw error, this is ok
+		if (d == Direction.NONE)
+		{
+			//System.out.println("Given a NONE!");
+			return false;
+		}
+		
+		// double check!
+		if (d != null && rc.canMove(d) && rc.isCoreReady())
+		{
+			rc.move(d);
+			here = rc.getLocation();
+			lastMovedRound = rc.getRoundNum();
+			return true;
+		}
+//			else
+//			{
+//				System.out.println("Movement exception: tried to move but couldn't!");
+//				if (d == null)
+//				{
+//					System.out.println("Reason: null direction");
+//					return false;
+//				}
+//				if (!rc.isCoreReady())
+//					System.out.println("Reason: core not ready");
+//				if (rc.isLocationOccupied(here.add(d)))
+//					System.out.println("Reason: location occupied");
+//				if (rc.senseRubble(here.add(d)) > GameConstants.RUBBLE_OBSTRUCTION_THRESH)
+//					System.out.println("Reason: too much rubble");
+//				
+//				return false;
+//			}
+		return false;
+	}
 	
 	public static boolean tryClearRubble(Direction dir) throws GameActionException
 	{
@@ -148,24 +187,6 @@ public class Behavior extends RobotPlayer
 			rc.clearRubble(dir);
 		}
 		
-		return false;
-	}
-
-	public static boolean tryDirectMove(Direction dir) throws GameActionException
-	{
-		
-		// Tries the direction given in order of how close to the direction it I want to go.
-		// Doesn't move directly back
-		if (dir !=null)
-		{
-			if(Micro.tryMove(dir)) return true;
-			if(Micro.tryMove(dir.rotateLeft())) return true;
-			if(Micro.tryMove(dir.rotateRight())) return true;
-			if(Micro.tryMove(dir.rotateLeft().rotateLeft())) return true;
-			if(Micro.tryMove(dir.rotateRight().rotateRight())) return true;
-			if(Micro.tryMove(dir.rotateLeft().rotateLeft().rotateLeft())) return true;
-			if(Micro.tryMove(dir.rotateRight().rotateRight().rotateRight())) return true;
-		}
 		return false;
 	}
 }

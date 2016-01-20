@@ -1,4 +1,4 @@
-package dropitlikeitsBot;
+package blitzkrieg_bot;
 
 import battlecode.common.*;
 import java.util.*;
@@ -34,7 +34,8 @@ public class Sighting extends RobotPlayer
 				bestTarget = ri;
 		}
 		
-		if (bestTarget != null)
+		// leave off zombie dens because we already have a list
+		if (bestTarget != null && bestTarget.type != RobotType.ZOMBIEDEN)
 		{
 			lastSightingBroadcastRound = rc.getRoundNum();
 			if (bestTarget.type == RobotType.TURRET)

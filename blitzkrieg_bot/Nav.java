@@ -1,4 +1,4 @@
-package dropitlikeitsBot;
+package blitzkrieg_bot;
 
 import java.util.ArrayList;
 
@@ -34,7 +34,7 @@ public class Nav extends RobotPlayer
         if (toDest == null)
         	return false;
         
-        return Micro.tryMove(toDest);
+        return Action.tryMove(toDest);
     }
 
     private static void startBug() throws GameActionException
@@ -107,7 +107,7 @@ public class Nav extends RobotPlayer
 
     private static boolean bugMove(Direction dir) throws GameActionException
     {
-        if (Micro.tryMove(dir))
+        if (Action.tryMove(dir))
         {
             bugRotationCount += calculateBugRotation(dir);
         	bugLastMoveDir = dir;
@@ -209,18 +209,18 @@ public class Nav extends RobotPlayer
             	// succeeded
             	return true;
             }
-            else if (isBlockedByObstacle())
+            else //if (isBlockedByObstacle())
             {
             	// failed, do bugging only if running into an actual wall
             	// (or a turret!)
                 bugState = BugState.BUG;
-                startBug();            	
-            }
+                startBug();
+            }/*
             else
             {
             	// don't move at all
             	return false;
-            }
+            }*/
         }
 
         // If that failed, or if bugging, bug
@@ -232,45 +232,6 @@ public class Nav extends RobotPlayer
         // shouldn't be here, w/e
         return false;
     }
-
-    /*public static boolean tryAdjacentSafeMove(Direction dir, DirectionSet safeDirs) throws GameActionException
-    {
-    	if (!rc.isCoreReady() || dir == null || !safeDirs.any())
-    		return false;
-    	
-    	// get direction set that is all moves not away from dir
-    	DirectionSet towardDir = new DirectionSet();
-    	towardDir.add(dir);
-    	towardDir.add(dir.rotateLeft());
-    	towardDir.add(dir.rotateRight());
-    	towardDir.add(dir.rotateLeft().rotateLeft());
-    	towardDir.add(dir.rotateRight().rotateRight());
-    	
-    	// get safe dirs not away from dir
-    	ArrayList<Direction> goodDirs = towardDir.and(safeDirs).getDirections();
-    	
-    	if (goodDirs == null || goodDirs.size() == 0)
-    		return false;
-    	
-    	// best safe dir not away from dir
-    	Direction bestDir = null;
-    	MapLocation tempHere = new MapLocation(0,0);
-    	MapLocation tempTarget = tempHere.add(dir);
-    	for (Direction d : goodDirs)
-    	{
-    		if ( bestDir == null || tempHere.add(d).distanceSquaredTo(tempTarget) < tempHere.add(bestDir).distanceSquaredTo(tempTarget) )
-    			bestDir = d;
-    	}
-    	
-    	if (bestDir != null && rc.canMove(bestDir))
-    	{
-    		rc.move(bestDir);
-    		return true;
-    	}
-    	
-        return false;
-    }
-    */
     
     public static boolean tryGoTo(MapLocation dest, DirectionSet dirs) throws GameActionException
     {

@@ -1,4 +1,4 @@
-package dropitlikeitsBot;
+package blitzkrieg_bot;
 
 import battlecode.common.*;
 
@@ -10,7 +10,6 @@ public class MicroBase extends RobotPlayer
 	private RobotInfo[] nearbyZombies = null;
 	private RobotInfo[] nearbyHostiles = null;
 	private RobotInfo[] nearbyAllies = null;
-	private RobotInfo[] nearbyNeutrals = null;
 	
 	private DirectionSet canMoveDirs = null;
 	private DirectionSet safeMoveDirs = null;
@@ -23,7 +22,27 @@ public class MicroBase extends RobotPlayer
 	private Direction bestRetreatDirection = null;
 	
 	private int roundsUntilDanger = -1;
+	private int amOverpowered = -1;
 	
+	private double allyTotalDamagePerTurn = -1;
+	private double hostileTotalDamagePerTurn = -1;
+	private double hostileTotalHealth = -1;
+	
+	private static final int[] typePriorities = 
+		{
+			-1,	//0: ZOMBIEDEN
+			0,	//1: STANDARDZOMBIE
+			2,	//2: RANGEDZOMBIE
+			1,	//3: FASTZOMBIE
+			3,	//4: BIGZOMBIE
+			9,	//5: ARCHON
+			2,	//6: SCOUT
+			2,	//7: SOLDIER
+			1,	//8: GUARD
+			10,	//9: VIPER
+			10,	//10: TURRET
+			8	//11: TTM
+		};
 	
 	public RobotInfo[] getNearbyEnemies()
 	{
@@ -32,15 +51,6 @@ public class MicroBase extends RobotPlayer
 		
 		nearbyEnemies = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, theirTeam);
 		return nearbyEnemies;
-	}
-	
-	public RobotInfo[] getNearbyNeutrals()
-	{
-		if (nearbyNeutrals != null)
-			return nearbyNeutrals;
-		
-		nearbyNeutrals = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.NEUTRAL);
-		return nearbyNeutrals;
 	}
 	
 	public RobotInfo[] getNearbyAllies()
@@ -193,7 +203,7 @@ public class MicroBase extends RobotPlayer
 				break;
 				
 			case TURRET:
-				if (rc.getType() != RobotType.SCOUT)
+				if (here.distanceSquaredTo(ri.location) <= ri.type.attackRadiusSquared)
 					dangerTime = (int)Math.floor(ri.weaponDelay);
 				break;
 			}
@@ -207,6 +217,9 @@ public class MicroBase extends RobotPlayer
 		
 		if (roundsUntilDanger < 0)
 			roundsUntilDanger = 0;
+		
+		if (!Micro.getTurretSafeDirs().isValid(Direction.NONE))
+			roundsUntilDanger = 0;
 
 		return roundsUntilDanger;
 	}
@@ -214,8 +227,7 @@ public class MicroBase extends RobotPlayer
 	// how many rounds until we can shoot and move at once
 	public int getRoundsUntilShootAndMove()
 	{
-		double ourDelayDecrement = 1;
-		return (int)Math.floor( Math.max( (rc.getWeaponDelay() + rc.getType().cooldownDelay), rc.getCoreDelay()) / ourDelayDecrement);
+		return (int) ( Math.floor(rc.getWeaponDelay()) + Math.floor(rc.getCoreDelay() - 1) );
 	}
 	
 	// compute which direction moves us the farthest from the closest enemy
@@ -276,7 +288,8 @@ public class MicroBase extends RobotPlayer
 	public DirectionSet getSafeMoveDirs()
 	{
 		computeSafetyStats();
-		return safeMoveDirs;
+		// AK safe should always include turretSafe
+		return safeMoveDirs.and(getTurretSafeDirs());
 	}
 	
 	// get directions we can move in
@@ -316,29 +329,109 @@ public class MicroBase extends RobotPlayer
 		return dirs;
 	}
 	
-	public boolean isInDanger()
+	public double getAllyTotalDamagePerTurn() throws GameActionException
 	{
-		return (getRoundsUntilDanger() < 10);
+		if (allyTotalDamagePerTurn != -1) // already did this calculation, just return the value
+			return allyTotalDamagePerTurn;
+		
+		nearbyAllies = getNearbyAllies();
+		
+		allyTotalDamagePerTurn = rc.getType().attackPower / rc.getType().attackDelay;
+		
+		if (nearbyAllies == null || nearbyAllies.length == 0)
+			return allyTotalDamagePerTurn;
+		
+		if (getNearbyHostiles().length != 0)
+		{
+			MapLocation closestHostileLoc = getClosestUnitTo(nearbyHostiles,here).location;
+			for (RobotInfo ri : nearbyAllies)
+			{
+				allyTotalDamagePerTurn += ri.attackPower / ri.type.attackDelay / ((ri.location.distanceSquaredTo(closestHostileLoc)-ri.type.attackRadiusSquared)*1.4*ri.type.movementDelay + ri.type.cooldownDelay);
+			}
+		}
+		else
+		{
+			for (RobotInfo ri : nearbyAllies)
+			{
+				allyTotalDamagePerTurn += ri.attackPower / ri.type.attackDelay;
+			}
+		}
+		
+		return allyTotalDamagePerTurn;
 	}
 	
-	// tryMove expects to be given a valid direction
-	public boolean tryMove(Direction d) throws GameActionException
+	public double getHostileTotalDamagePerTurn() throws GameActionException
 	{
-		// don't do anything, but don't throw error, this is ok
-		if (d == Direction.NONE)
+		if (hostileTotalDamagePerTurn != -1) // already did this calculation, just return the value
+			return hostileTotalDamagePerTurn;
+		
+		nearbyHostiles = getNearbyHostiles();
+		
+		hostileTotalDamagePerTurn = 0;
+		
+		if (nearbyHostiles == null || nearbyHostiles.length == 0)
+			return hostileTotalDamagePerTurn;
+		
+		for (RobotInfo ri : nearbyHostiles)
 		{
-			//System.out.println("Given a NONE!");
+			if (here.distanceSquaredTo(ri.location) <= ri.type.attackRadiusSquared+1)
+				hostileTotalDamagePerTurn += ri.type.attackPower / ri.type.attackDelay;
+		}
+		
+		return hostileTotalDamagePerTurn;
+	}
+	
+	public double getHostileTotalHealth() throws GameActionException
+	{
+		if (hostileTotalHealth != -1) // already did this calculation, just return the value
+			return hostileTotalHealth;
+		
+		nearbyHostiles = getNearbyHostiles();
+		hostileTotalHealth = 0;
+		
+		if (nearbyHostiles == null || nearbyHostiles.length == 0)
+			return hostileTotalHealth;
+		
+		for (RobotInfo ri : nearbyHostiles)
+		{
+			hostileTotalHealth += ri.health;
+		}
+		
+		return hostileTotalHealth;
+	}
+	
+	public boolean amOverpowered() throws GameActionException
+	{
+		if (amOverpowered != -1) // already did this calculation, just return the value
+			return (amOverpowered == 1);
+		
+		// calculate relevant stuff
+		hostileTotalDamagePerTurn = getHostileTotalDamagePerTurn();
+		//System.out.println("hostileTotalDamagePerTurn = " + hostileTotalDamagePerTurn);
+		
+		if (hostileTotalDamagePerTurn == 0)
+		{
+			amOverpowered = 0;
 			return false;
 		}
 		
-		// double check!
-		if (d != null && rc.canMove(d) && rc.isCoreReady())
-		{
-			rc.move(d);
-			return true;
-		}
-
-		return false;
+		allyTotalDamagePerTurn = getAllyTotalDamagePerTurn();
+		hostileTotalHealth = getHostileTotalHealth();
+		
+		// compare enemy firepower with ours
+		double damageWeInflictBeforeDeath = allyTotalDamagePerTurn * ( rc.getHealth() / (hostileTotalDamagePerTurn) );
+		double damageTheyInflictBeforeDeath = hostileTotalDamagePerTurn * (hostileTotalHealth / allyTotalDamagePerTurn);
+		if ( damageWeInflictBeforeDeath > damageTheyInflictBeforeDeath ) // (allyTotalDamagePerTurn > hostileTotalDamagePerTurn)
+			amOverpowered = 0; // we are more powerful
+		else
+			amOverpowered = 1; // we are overpowered
+		
+		return (amOverpowered == 1);
+	}
+	
+	public boolean isInDanger()
+	{
+		return (getRoundsUntilDanger() < 10);
 	}
 	
 	public static RobotInfo getClosestTurretTarget(RobotInfo[] nearby, MapLocation loc)
@@ -433,6 +526,42 @@ public class MicroBase extends RobotPlayer
 		return closest;
 	}
 	
+	public MapLocation getFarthestLocationFrom(List<MapLocation> locs, MapLocation center)
+	{
+		int maxDistSq = 0;
+		MapLocation farthest = null;
+		
+		for (MapLocation ml : locs)
+		{
+			int dsq = ml.distanceSquaredTo(center);
+			if (dsq > maxDistSq)
+			{
+				maxDistSq = dsq;
+				farthest = ml;
+			}
+		}
+		
+		return farthest;
+	}
+	
+	public MapLocation getFarthestLocationFrom(MapLocation[] locs, MapLocation center)
+	{
+		int maxDistSq = 0;
+		MapLocation farthest = null;
+		
+		for (MapLocation ml : locs)
+		{
+			int dsq = ml.distanceSquaredTo(center);
+			if (dsq > maxDistSq)
+			{
+				maxDistSq = dsq;
+				farthest = ml;
+			}
+		}
+		
+		return farthest;
+	}
+	
 	public RobotInfo getLowestHealth(RobotInfo[] bots)
 	{
 		RobotInfo target = null;
@@ -450,65 +579,85 @@ public class MicroBase extends RobotPlayer
 		
 		return target;
 	}
-	public static boolean tryDirectMove(Direction dir) throws GameActionException
+	
+	public RobotInfo getLowestHealthInMyRange(RobotInfo[] bots)
 	{
+		RobotInfo target = null;
 		
-		// Tries the direction given in order of how close to the direction it I want to go.
-		// Doesn't move directly back
-		if (dir !=null)
+		for (RobotInfo ri : bots)
 		{
-			if(Micro.tryMove(dir)) return true;
-			if(Micro.tryMove(dir.rotateLeft())) return true;
-			if(Micro.tryMove(dir.rotateRight())) return true;
-			if(Micro.tryMove(dir.rotateLeft().rotateLeft())) return true;
-			if(Micro.tryMove(dir.rotateRight().rotateRight())) return true;
-			if(Micro.tryMove(dir.rotateLeft().rotateLeft().rotateLeft())) return true;
-			if(Micro.tryMove(dir.rotateRight().rotateRight().rotateRight())) return true;
+			if (here.distanceSquaredTo(ri.location) <= rc.getType().attackRadiusSquared)
+			{
+				if (target == null || ri.health < target.health)
+					target = ri;
+				if (ri.type == RobotType.ARCHON)
+				{
+					target = ri;
+					break; // archon targets take priority over ALL
+				}
+			}
 		}
-		return false;
+		
+		return target;
 	}
 	
-	public static MapLocation getVisibleArchonLoc(RobotInfo[] allies) throws GameActionException
+	public RobotInfo getHighestPriorityTarget(RobotInfo[] bots)
 	{
-		for (RobotInfo ri : allies)
+		RobotInfo target = null;
+		
+		for (RobotInfo ri : bots)
 		{
-			if (ri.type == RobotType.ARCHON) return ri.location;
+			// can't attack this dude
+			if (here.distanceSquaredTo(ri.location) > rc.getType().attackRadiusSquared)
+				continue;
+			
+			// no target yet
+			if (target == null)
+			{
+				target = ri;
+				continue;
+			}
+			
+			// archon targets take priority over ALL
+			if (ri.type == RobotType.ARCHON)
+			{
+				target = ri;
+				break;
+			}
+			
+			double power = ri.attackPower/ri.type.attackDelay;
+			double tgtpower = target.attackPower/target.type.attackDelay;
+			// ri's damage/turn is less than current target, do not prefer
+			if (power < tgtpower - 1e-8)
+				continue;
+			
+			// greater than current, do prefer
+			if (power > tgtpower + 1e-8)
+			{
+				target = ri;
+				continue;
+			}
+		
+			// they are the same, compare health
+			if (ri.health < target.health)
+				target = ri;
 		}
-		return null;
+		
+		return target;
 	}
 	
-//	public boolean canWin1v1(RobotInfo enemy) throws GameActionException
-//	{
-//		MapLocation onecloser = here.add(here.directionTo(enemy.location));
-//		
-//		boolean iAmAlive = true;
-//		boolean theyAreAlive = false;
-//		
-//		MapLocation myLoc = here;
-//		MapLocation enemyLoc = enemy.location;
-//		
-//		double myCoreDelay = rc.getCoreDelay();
-//		double theirCoreDelay = enemy.coreDelay;
-//		double myWeaponDelay = rc.getWeaponDelay();
-//		double theirWeaponDelay = enemy.weaponDelay;
-//		
-//		while (iAmAlive && theyAreAlive)
-//		{
-//			// me
-//			if (myCoreDelay < 1)
-//				myLoc
-//			
-//			// enemy
-//			
-//			
-//		}
-//		
-//		int numRoundsTillIKillThem = ;
-//		int numRoundsTillTheyKillMe = ;
-//		
-//		if (numRoundsTillIKillThem < numRoundsTillTheyKillMe)
-//			return true;
-//		
-//		return false;
-//	}
+	public DirectionSet getCanBuildDirectionSet(RobotType nextRobotType) throws GameActionException
+	{
+		if (nextRobotType == null)
+			return new DirectionSet();
+		
+		// check nearby open squares
+		DirectionSet valid = new DirectionSet();
+		for (Direction dir : Direction.values()) // check all Directions around
+		{
+			if (rc.canBuild(dir, nextRobotType))
+				valid.add(dir); // add this direction to the DirectionSet of valid build directions
+		}
+		return valid;
+	}
 }

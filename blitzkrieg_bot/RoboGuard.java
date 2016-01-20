@@ -1,4 +1,4 @@
-package dropitlikeitsBot;
+package blitzkrieg_bot;
 
 import battlecode.common.*;
 
@@ -6,14 +6,14 @@ public class RoboGuard extends RobotPlayer
 {
 	public static void init() throws GameActionException
 	{
-		BallMove.startBalling(RobotPlayer.myBuilderID);
+		myStrategy = new StratMobFight();
 	}
 	
 	public static void turn() throws GameActionException
 	{
-		if (rc.senseParts(here)==0)
-			MapInfo.removeWaypoint(here);
-			
-		BallMove.ballMove(3, 10);
+		if (roundsSince(lastDamageRound) == 0)
+			Message.sendSignal(rc.getType().sensorRadiusSquared*2);
+		
+		myStrategy.tryTurn();
 	}
 }
