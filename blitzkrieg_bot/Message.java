@@ -14,7 +14,8 @@ enum MessageType
 	FREE_BEER,
 	MAP_EDGE,
 	NEW_STRATEGY,
-	LOTSA_FRIENDLIES
+	LOTSA_FRIENDLIES,
+	NEUTRAL_ARCHON
 }
 
 class SignalLocation extends RobotPlayer
@@ -86,7 +87,7 @@ public class Message extends RobotPlayer
 	// and other things
 	public static Strategy.Type recentStrategySignal = null;
 	
-	public static void readSignalQueue()
+	public static void readSignalQueue() throws GameActionException
 	{
 		Signal[] sigs = rc.emptySignalQueue();
 		
@@ -134,6 +135,9 @@ public class Message extends RobotPlayer
 				break;
 			case LOTSA_FRIENDLIES:
 				recentFriendlySignal.update(sig);
+				break;
+			case NEUTRAL_ARCHON:
+				MapInfo.updateNeutralArchon(readLocation(vals[0]),readLocation(vals[1]));
 				break;
 			default:
 				break;

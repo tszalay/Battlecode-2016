@@ -8,6 +8,7 @@ public class MapInfo extends RobotPlayer
 {
 	public static FastLocSet zombieDenLocations = new FastLocSet();
 	public static FastLocSet goodPartsLocations = new FastLocSet();
+	public static FastLocSet neutralArchonLocations = new FastLocSet();
 	
 	public static MapLocation mapMin = new MapLocation(-18000,-18000);
 	public static MapLocation mapMax = new MapLocation(18001,18001);
@@ -194,6 +195,15 @@ public class MapInfo extends RobotPlayer
 	}
 	*/
 	
+	public static void updateNeutralArchons(MapLocation add_loc, MapLocation del_loc)
+	{
+		if (!add_loc.equals(nullLocation))
+			neutralArchonLocations.add(add_loc);
+		if (!del_loc.equals(nullLocation))
+			neutralArchonLocations.remove(del_loc);
+		//neutralArchonLocations.add(getSymmetricLocation(loc), DEN_SENT);
+	}
+	
 	// function to send updated info as a scout
 	public static boolean doScoutSendUpdates() throws GameActionException
 	{
@@ -238,15 +248,44 @@ public class MapInfo extends RobotPlayer
 	// function to quickly look around us and see what's new or what's changed
 	public static void doAnalyzeSurroundings() throws GameActionException
 	{
-		double visibleParts = 0;
-		
 		// neutral robot check
-		/*RobotInfo[] neutralRobots = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.NEUTRAL);
+		RobotInfo[] neutralRobots = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.NEUTRAL);
 		for (RobotInfo ri : neutralRobots)
 		{
-			updateParts(ri.location, isScout);
-			visibleParts += ri.type.partCost;
-		}*/
+			if (ri.type == RobotType.ARCHON)
+			{
+				if (neutralArchonLocations.contains(ri.location))
+					continue;
+				
+				neutralArchonLocations.add(ri.location);
+				// if a scout finds a neutral archon, instantly ping no matter what
+				// because these units are super duper important
+				if (rc.getType() == RobotType.SCOUT)
+				{
+					Message.sendMessageSignal(fullMapDistanceSq(), MessageType.NEUTRAL_ARCHON, ri.location);
+					// and don't really do any more this turn
+					return;
+				}
+					
+			}
+		}
+		
+		// neutral archon removal check, scout sends instantly
+		for (MapLocation arch : neutralArchonLocations.elements())
+		{
+			if (!rc.canSense(arch))
+				continue;
+			RobotInfo ri = rc.senseRobotAtLocation(arch);
+			if (ri == null || ri.type != RobotType.ARCHON)
+			{
+				neutralArchonLocations.remove(arch);
+				if (rc.getType() == RobotType.SCOUT)
+				{
+					Message.sendMessageSignal(fullMapDistanceSq(), MessageType.NEUTRAL_ARCHON, nullLocation, arch);
+					return;
+				}
+			}
+		}
 		
 		// zombie den check
 		for (RobotInfo ri : Micro.getNearbyHostiles())
