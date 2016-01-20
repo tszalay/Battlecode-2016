@@ -1,7 +1,6 @@
 package blitzkrieg_bot;
 
 import battlecode.common.*;
-
 import java.util.*;
 
 // turtle move tries to allow units to move around close to or inside a turtle ball
@@ -18,11 +17,7 @@ public class StratTurtleArchon extends RoboArchon implements Strategy
 	public StratTurtleArchon()
 	{
 		// find a good turtle location
-		// for now, pick a random corner of the map
-		turtleLocation = new MapLocation(
-						rand.nextBoolean() ? MapInfo.mapMin.x : MapInfo.mapMax.x,
-						rand.nextBoolean() ? MapInfo.mapMin.y : MapInfo.mapMax.y
-					);
+		turtleLocation = MapInfo.farthestArchonLoc;
 	}
 	
 	public boolean tryTurn() throws GameActionException
@@ -69,9 +64,42 @@ public class StratTurtleArchon extends RoboArchon implements Strategy
 			return true;
 		}
 		
+		MapLocation neutral = StratArchonNormal.senseClosestNeutral();
+		MapLocation part = StratArchonNormal.senseClosestPart();
+		if (neutral != null)
+		{
+			Action.tryGoToWithoutBeingShot(neutral, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
+			return true;
+		}
+		if (part != null)
+		{
+			Action.tryGoToWithoutBeingShot(part, Micro.getSafeMoveDirs());
+			return true;
+		}
+		
 		if (tryBuild())
 		{
 			return true;
+		}
+		
+		RobotInfo[] friends = Micro.getNearbyAllies();
+		if (!Micro.getCanMoveDirs().any()) // walled in
+		{
+			DirectionSet invalids = DirectionSet.makeAll();
+			invalids.remove(Direction.NONE);
+			for (RobotInfo ri : friends)
+				invalids.remove(here.directionTo(ri.location));
+			Direction rubbleDirection = Rubble.getRandomAdjacentRubble();
+			Rubble.doClearRubble(rubbleDirection);
+			Debug.setStringSJF("clearing rubble.");
+		}
+		
+		Action.tryAdjacentSafeMoveToward(Micro.getAllyCOM());
+		
+		UnitCounts count = new UnitCounts(friends);
+		if (count.Turrets < 3 && Micro.getNearbyEnemies().length > 2)
+		{
+			return false;
 		}
 		
 			

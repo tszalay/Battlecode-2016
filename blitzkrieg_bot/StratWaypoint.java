@@ -54,7 +54,19 @@ public class StratWaypoint extends RobotPlayer implements Strategy
 		
 		if (closestDen == null)
 		{
-			Nav.tryGoTo(MapInfo.ourArchonCenter, Micro.getSafeMoveDirs());
+			// not doing anything else, so look for parts and DIG
+			MapLocation closestPart = Rubble.senseClosestPart();
+			if (closestPart == null)
+				closestPart = MapInfo.getClosestPart();
+			if (closestPart != null)
+			{
+				if (Action.tryMove(here.directionTo(closestPart)))
+					return true;
+
+				if (Rubble.tryClearRubble(closestPart))
+					return true;
+			}
+			Nav.tryGoTo(MapInfo.farthestArchonLoc, Micro.getSafeMoveDirs());
 			return true;
 		}
 		
