@@ -189,4 +189,22 @@ public class Action extends RobotPlayer
 		
 		return false;
 	}
+	
+	public static boolean tryViperAttack() throws GameActionException
+	{
+		// attack someone in range if possible, low health first, prioritizing zombies
+
+		if (!rc.isWeaponReady())
+			return false;
+
+		RobotInfo enemyTarget = Micro.getViperTarget(Micro.getNearbyEnemies());
+
+		if (enemyTarget != null && rc.canAttackLocation(enemyTarget.location))
+		{
+			rc.attackLocation(enemyTarget.location);
+			return true;
+		}
+
+		return false;
+	}
 }

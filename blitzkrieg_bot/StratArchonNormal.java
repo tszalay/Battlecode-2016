@@ -1,7 +1,6 @@
 package blitzkrieg_bot;
 
 import battlecode.common.*;
-
 import java.util.*;
 
 public class StratArchonNormal extends RoboArchon implements Strategy
@@ -64,23 +63,25 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (dest == null)
 			dest = MapInfo.farthestArchonLoc;
 		
-		Nav.tryGoTo(dest, Micro.getSafeMoveDirs());
-		
-		// check if it should be deleted
-		/*
-		if (dest != null && rc.canSenseLocation(dest) && rc.senseParts(dest) == 0 && rc.senseRobotAtLocation(dest) == null)
+		// look for waypoint
+		dest =  MapInfo.getClosestNeutralArchon();
+		if (dest == null || here.distanceSquaredTo(dest) < 1)
 		{
-			dest = MapInfo.getClosestPartOrDen();
+			MapLocation closestPart = senseClosestPart();
+			MapLocation closestNeutral = senseClosestNeutral();
+			if (closestNeutral != null)
+				dest = closestNeutral;
+			else
+				dest = closestPart;
+			if (closestNeutral != null && closestPart != null && here.distanceSquaredTo(closestPart) < here.distanceSquaredTo(closestNeutral))
+				dest = closestPart;
 		}
+		if (dest == null || here.distanceSquaredTo(dest) < 1)
+			dest = MapInfo.getClosestPart();
+		if (dest == null)
+			return true;
 		
-		if (dest != null)
-		{
-			// go where we should
-			Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs());
-			// send a bit of a "ping"
-//			if (rc.getRoundNum() % 7 == 0)
-//				Message.sendSignal(63);
-		}*/
+		Nav.tryGoTo(dest, Micro.getSafeMoveDirs());
 		
 		return true;
 	}
@@ -156,7 +157,8 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		for (MapLocation loc : parts)
 		{
 			// don't try to go to a part we can't get
-			if ( (closestPartLoc == null && rc.senseRobotAtLocation(loc) == null && rc.senseRubble(loc) < GameConstants.RUBBLE_OBSTRUCTION_THRESH) || (closestPartLoc != null && here.distanceSquaredTo(loc) < here.distanceSquaredTo(closestPartLoc) && rc.senseRobotAtLocation(loc) == null && rc.senseRubble(loc) < GameConstants.RUBBLE_OBSTRUCTION_THRESH))
+			if (rc.senseRobotAtLocation(loc) == null && rc.senseRubble(loc) < GameConstants.RUBBLE_OBSTRUCTION_THRESH && 
+					(closestPartLoc == null || here.distanceSquaredTo(loc) < here.distanceSquaredTo(closestPartLoc)))
 				closestPartLoc = loc;
 		}
 		
@@ -173,7 +175,9 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		MapLocation closestNeutralLoc = null;
 		for (RobotInfo ri : neutrals)
 		{
-			if (closestNeutralLoc == null || ri.type == RobotType.ARCHON || (ri.type != RobotType.ARCHON && here.distanceSquaredTo(ri.location) < here.distanceSquaredTo(closestNeutralLoc)))
+			if (ri.type == RobotType.ARCHON)
+				return ri.location;
+			if (closestNeutralLoc == null || here.distanceSquaredTo(ri.location) < here.distanceSquaredTo(closestNeutralLoc))
 				closestNeutralLoc = ri.location;
 		}
 		

@@ -660,4 +660,36 @@ public class MicroBase extends RobotPlayer
 		}
 		return valid;
 	}
+	
+	public RobotInfo getViperTarget(RobotInfo[] bots)
+	{
+		RobotInfo target = null;
+		
+		for (RobotInfo ri : bots)
+		{
+			// can't attack this dude
+			if (here.distanceSquaredTo(ri.location) > rc.getType().attackRadiusSquared)
+				continue;
+			
+			// no target yet
+			if (target == null)
+			{
+				target = ri;
+				continue;
+			}
+			
+			// archon targets take priority over ALL
+			if (ri.type == RobotType.ARCHON)
+			{
+				target = ri;
+				return target;
+			}
+			
+			if (ri.viperInfectedTurns < target.viperInfectedTurns)
+				target = ri;
+				
+		}
+		
+		return target;
+	}
 }

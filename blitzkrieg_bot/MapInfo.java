@@ -38,6 +38,7 @@ public class MapInfo extends RobotPlayer
 	private static MapLocation dblCenter = null;
 	
 	public static MapLocation ourArchonCenter = null;
+	public static MapLocation theirArchonCenter = null;
 	public static MapLocation farthestArchonLoc = null;
 
 	
@@ -401,6 +402,7 @@ public class MapInfo extends RobotPlayer
 		// this _might_ be like half a unit away from the actual center
 		mapCenter = new MapLocation(xtot/(2*numInitialArchons),ytot/(2*numInitialArchons));
 		ourArchonCenter = new MapLocation(ourx/numInitialArchons,oury/numInitialArchons);
+		theirArchonCenter = new MapLocation(theirx/numInitialArchons,theiry/numInitialArchons);
 		farthestArchonLoc = Micro.getFarthestLocationFrom(ourArchons, mapCenter);
 		// and set Message's map offsets
 		Message.MAP_OFF_X = mapCenter.x - 128;
