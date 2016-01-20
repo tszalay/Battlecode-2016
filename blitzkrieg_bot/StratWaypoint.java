@@ -27,6 +27,13 @@ public class StratWaypoint extends RobotPlayer implements Strategy
 				overrideStrategy = null;
 		}
 		
+		// GTFO
+		if (rc.getHealth() < rc.getType().maxHealth / 3)
+		{
+			Nav.tryGoTo(myBuilderLocation, Micro.getCanMoveDirs());
+			return true;
+		}
+		
 		// ok let's see what the plan is
 		// if we received a recent ping _or_ we are under attack,
 		// we switch to mob fighing

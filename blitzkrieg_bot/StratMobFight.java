@@ -25,6 +25,9 @@ public class StratMobFight extends RobotPlayer implements Strategy
 	
 	public boolean tryTurn() throws GameActionException
 	{
+		if (rc.getHealth() < rc.getType().maxHealth / 3)
+			return false;
+			
 		switch (rc.getType())
 		{
 		case TURRET:
