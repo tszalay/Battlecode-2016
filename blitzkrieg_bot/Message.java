@@ -133,7 +133,7 @@ public class Message extends RobotPlayer
 				recentStrategySignal = Strategy.Type.values()[vals[1]];
 				break;
 			case LOTSA_FRIENDLIES:
-				
+				recentFriendlySignal.update(sig);
 				break;
 			default:
 				break;
@@ -164,13 +164,12 @@ public class Message extends RobotPlayer
 	}
 	
 	// Have we heard from any friendly units close by recently?
-	public static MapLocation getRecentFriendlyLocation() throws GameActionException
+	public static MapLocation getRecentFriendlyLocation()
 	{
 		if (recentFriendlySignal.sig != null)
 			return recentFriendlySignal.sig.getLocation();
 		return null;
 	}
-	
 	
 	// low-level functions past here
 	

@@ -168,7 +168,7 @@ public class RobotPlayer
 				if (myStrategy != null)
 					Debug.setStringAK(myStrategy.getName());
 				Debug.setStringTS("Dens known: " + MapInfo.zombieDenLocations.elements().size());
-				
+
 				Clock.yield();
 			}
 		}

@@ -15,7 +15,7 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (overrideStrategy != null)
 			return overrideStrategy.getName();
 
-		return "Normal Archon";
+		return "Normal Archon " + Message.getRecentFriendlyLocation();
 	}
 	
 	public boolean tryTurn() throws GameActionException
@@ -30,10 +30,16 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		}
 		
 		// first priority, avoid stuff
-		if (Micro.getRoundsUntilDanger() < 5 && (rc.getRoundNum()%5) == 0)
+		if (Micro.getRoundsUntilDanger() < 5)
 		{
-			Message.sendMessageSignal(400,MessageType.UNDER_ATTACK,0);
-			Action.tryRetreatOrShootIfStuck();
+			if ((rc.getRoundNum()%5) == 0)
+				Message.sendMessageSignal(400,MessageType.UNDER_ATTACK,0);
+			
+			
+			if (Message.getRecentFriendlyLocation() != null)
+				Nav.tryGoTo(Message.getRecentFriendlyLocation(), Micro.getCanMoveDirs());
+			else
+				Action.tryRetreatOrShootIfStuck();
 			return true;
 		}
 		if (Micro.getRoundsUntilDanger() < 20)

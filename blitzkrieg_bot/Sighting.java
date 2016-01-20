@@ -10,16 +10,19 @@ public class Sighting extends RobotPlayer
 	public static FastLocSet enemySightedTurrets = new FastLocSet();
 	
 	public static int lastSightingBroadcastRound = 0;
+	public static int lastFriendlyBroadcastRound = 0;
 	
 	public static final int SIGHT_MESSAGE_RADIUS = 63;
 	public static final int TURRET_MESSAGE_RADIUS = 255;
+	public static final int FRIENDLY_MESSAGE_RADIUS = 500;
 	public static final int TURRET_TIMEOUT_ROUNDS = 200;
 	public static final int BROADCAST_DELAY = 3;
+	public static final int FRIENDLY_DELAY = 50;
 	
 	// to be called by scouts and archons
 	public static void doSendSightingMessage() throws GameActionException
 	{
-		if (rc.getRoundNum() < lastSightingBroadcastRound + BROADCAST_DELAY)
+		if (roundsSince(lastSightingBroadcastRound) < BROADCAST_DELAY)
 			return;
 		
 		if (Micro.getRoundsUntilDanger() < 5)
@@ -43,8 +46,24 @@ public class Sighting extends RobotPlayer
 			else
 				Message.sendMessageSignal(SIGHT_MESSAGE_RADIUS,MessageType.SIGHT_TARGET,bestTarget.location);
 		}
+		
+		trySendFriendlyMessage();
 	}
 
+	// send a periodic beacon of places with clumps of allied forces
+	public static void trySendFriendlyMessage() throws GameActionException
+	{
+		if (rc.getCoreDelay() > 3)
+			return;
+		
+		if (Micro.getNearbyAllies().length > 8 && roundsSince(lastFriendlyBroadcastRound) > FRIENDLY_DELAY)
+		{
+			lastFriendlyBroadcastRound = rc.getRoundNum();
+			Message.sendMessageSignal(FRIENDLY_MESSAGE_RADIUS, MessageType.LOTSA_FRIENDLIES, Micro.getNearbyAllies().length);
+			System.out.println("Friendly message sent!");
+		}
+	}
+	
 	public static void addSightedTarget(MapLocation loc, RobotType target, int round)
 	{
 		if (target == RobotType.TURRET)
