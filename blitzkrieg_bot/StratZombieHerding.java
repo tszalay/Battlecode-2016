@@ -189,8 +189,10 @@ public class StratZombieHerding extends RobotPlayer implements Strategy
 		else
 		{
 			DirectionSet safeDirs = Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs());
-			if (Nav.tryGoTo(herdingDestLoc, safeDirs)) return true;
-			if (Nav.tryGoTo(herdingDestLoc,Micro.getCanMoveDirs())); return true;
+			if (Nav.tryGoTo(herdingDestLoc, safeDirs))
+				return true;
+			if (Nav.tryGoTo(herdingDestLoc,Micro.getCanMoveDirs()))
+				return true;
 		}
 		return false;
 	}

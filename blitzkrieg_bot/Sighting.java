@@ -42,9 +42,9 @@ public class Sighting extends RobotPlayer
 		{
 			lastSightingBroadcastRound = rc.getRoundNum();
 			if (bestTarget.type == RobotType.TURRET)
-				Message.sendMessageSignal(TURRET_MESSAGE_RADIUS,MessageType.SIGHT_TARGET,bestTarget.location);
+				Message.sendMessageSignal(TURRET_MESSAGE_RADIUS,Message.Type.SIGHT_TARGET,bestTarget.location);
 			else
-				Message.sendMessageSignal(SIGHT_MESSAGE_RADIUS,MessageType.SIGHT_TARGET,bestTarget.location);
+				Message.sendMessageSignal(SIGHT_MESSAGE_RADIUS,Message.Type.SIGHT_TARGET,bestTarget.location);
 		}
 		
 		trySendFriendlyMessage();
@@ -59,8 +59,7 @@ public class Sighting extends RobotPlayer
 		if (Micro.getNearbyAllies().length > 8 && roundsSince(lastFriendlyBroadcastRound) > FRIENDLY_DELAY)
 		{
 			lastFriendlyBroadcastRound = rc.getRoundNum();
-			Message.sendMessageSignal(FRIENDLY_MESSAGE_RADIUS, MessageType.LOTSA_FRIENDLIES, Micro.getNearbyAllies().length);
-			System.out.println("Friendly message sent!");
+			Message.sendMessageSignal(FRIENDLY_MESSAGE_RADIUS, Message.Type.LOTSA_FRIENDLIES, Micro.getNearbyAllies().length);
 		}
 	}
 	

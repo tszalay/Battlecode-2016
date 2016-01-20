@@ -12,7 +12,7 @@ public class MapInfo extends RobotPlayer
 	
 	public static MapLocation mapMin = new MapLocation(-18000,-18000);
 	public static MapLocation mapMax = new MapLocation(18001,18001);
-	private static MapLocation nullLocation = null;
+	public static MapLocation nullLocation = null;
 	
 	// update the boundary on one of the map min/maxes
 	public static boolean newMapEdge = false;
@@ -218,7 +218,7 @@ public class MapInfo extends RobotPlayer
 		// only send one at a time
 		if (newMapEdge)
 		{
-			Message.sendMessageSignal(fullMapDistanceSq(), MessageType.MAP_EDGE, mapMin, mapMax);
+			Message.sendMessageSignal(fullMapDistanceSq(), Message.Type.MAP_EDGE, mapMin, mapMax);
 			newMapEdge = false;
 			return true;
 		}
@@ -230,7 +230,7 @@ public class MapInfo extends RobotPlayer
 			if (val == DEN_ADD)
 			{
 				// send that we have seen a new zombie den
-				Message.sendMessageSignal(fullMapDistanceSq(), MessageType.ZOMBIE_DEN, loc, nullLocation);
+				Message.sendMessageSignal(fullMapDistanceSq(), Message.Type.ZOMBIE_DEN, loc, nullLocation);
 				// and flag it as sent in the loc set
 				zombieDenLocations.set(loc, DEN_SENT);
 				// and don't do any more this round
@@ -239,7 +239,7 @@ public class MapInfo extends RobotPlayer
 			else if (val == DEN_DEL)
 			{
 				// send that we have unseen a zombie den
-				Message.sendMessageSignal(fullMapDistanceSq(), MessageType.ZOMBIE_DEN, nullLocation, loc);
+				Message.sendMessageSignal(fullMapDistanceSq(), Message.Type.ZOMBIE_DEN, nullLocation, loc);
 				// and actually remove it from the array
 				zombieDenLocations.remove(loc);
 				// and don't do any more this round
@@ -267,7 +267,7 @@ public class MapInfo extends RobotPlayer
 				// because these units are super duper important
 				if (rc.getType() == RobotType.SCOUT)
 				{
-					Message.sendMessageSignal(fullMapDistanceSq(), MessageType.NEUTRAL_ARCHON, ri.location);
+					Message.sendMessageSignal(fullMapDistanceSq(), Message.Type.NEUTRAL_ARCHON, ri.location);
 					// and don't really do any more this turn
 					return;
 				}
@@ -286,7 +286,7 @@ public class MapInfo extends RobotPlayer
 				neutralArchonLocations.remove(arch);
 				if (rc.getType() == RobotType.SCOUT)
 				{
-					Message.sendMessageSignal(fullMapDistanceSq(), MessageType.NEUTRAL_ARCHON, nullLocation, arch);
+					Message.sendMessageSignal(fullMapDistanceSq(), Message.Type.NEUTRAL_ARCHON, nullLocation, arch);
 					return;
 				}
 			}

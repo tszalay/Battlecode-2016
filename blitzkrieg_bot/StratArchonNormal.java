@@ -33,7 +33,7 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (Micro.getRoundsUntilDanger() < 5)
 		{
 			if ((rc.getRoundNum()%5) == 0)
-				Message.sendMessageSignal(400,MessageType.UNDER_ATTACK,0);
+				Message.sendMessageSignal(400,Message.Type.UNDER_ATTACK,0);
 			
 			
 			if (Message.getRecentFriendlyLocation() != null)

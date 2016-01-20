@@ -4,20 +4,6 @@ import battlecode.common.*;
 
 import java.util.*;
 
-// enum for encoding the type of a message in the contents
-enum MessageType
-{
-	UNDER_ATTACK, // int free signals always mean under attack
-	ZOMBIE_DEN,
-	SIGHT_TARGET,
-	SPAM,
-	FREE_BEER,
-	MAP_EDGE,
-	NEW_STRATEGY,
-	LOTSA_FRIENDLIES,
-	NEUTRAL_ARCHON
-}
-
 class SignalLocation extends RobotPlayer
 {
 	public MapLocation loc;
@@ -65,7 +51,21 @@ class SignalRound extends RobotPlayer
 }
 
 public class Message extends RobotPlayer
-{	
+{
+	// enum for encoding the type of a message in the contents
+	enum Type
+	{
+		UNDER_ATTACK, // int free signals always mean under attack
+		ZOMBIE_DEN,
+		SIGHT_TARGET,
+		SPAM,
+		FREE_BEER,
+		MAP_EDGE,
+		NEW_STRATEGY,
+		LOTSA_FRIENDLIES,
+		NEUTRAL_ARCHON
+	}
+	
 	// bookkeeping stuff
 	public static final int FULL_MAP_DIST_SQ = GameConstants.MAP_MAX_HEIGHT*GameConstants.MAP_MAX_HEIGHT +
 											   GameConstants.MAP_MAX_WIDTH*GameConstants.MAP_MAX_WIDTH;
@@ -101,9 +101,9 @@ public class Message extends RobotPlayer
 			}
 			
 			int[] vals = sig.getMessage();
-			MessageType type;
+			Message.Type type;
 			if (vals == null)
-				type = MessageType.UNDER_ATTACK;
+				type = Message.Type.UNDER_ATTACK;
 			else
 				type = readType(vals[0]);
 			
@@ -146,12 +146,18 @@ public class Message extends RobotPlayer
 	}
 	
 	// to be called by Archon
+	// this takes about 1.5 core delay for 8 dens
 	public static void sendBuiltMessage(Strategy.Type strat) throws GameActionException
 	{
 		// send all four map edges in one go
-		Message.sendMessageSignal(9, MessageType.MAP_EDGE, MapInfo.mapMin, MapInfo.mapMax);
+		Message.sendMessageSignal(9, Message.Type.MAP_EDGE, MapInfo.mapMin, MapInfo.mapMax);
 		// and a strategy to use
-		Message.sendMessageSignal(9, MessageType.NEW_STRATEGY, strat.ordinal());
+		Message.sendMessageSignal(9, Message.Type.NEW_STRATEGY, strat.ordinal());
+		// and then all of the zombie dens and archons
+		for (MapLocation loc : MapInfo.zombieDenLocations.elements())
+			Message.sendMessageSignal(9, Message.Type.ZOMBIE_DEN, loc, MapInfo.nullLocation);
+		for (MapLocation loc : MapInfo.neutralArchonLocations.elements())
+			Message.sendMessageSignal(9, Message.Type.NEUTRAL_ARCHON, loc, MapInfo.nullLocation);
 	}
 	
 	// Basic signals always only done when under attack
@@ -202,27 +208,27 @@ public class Message extends RobotPlayer
 	}
 	
 	// and the type byte
-	public static int writeType(MessageType type)
+	public static int writeType(Message.Type type)
 	{
 		return writeByte(type.ordinal(), 3);
 	}
 	
-	public static MessageType readType(int val)
+	public static Message.Type readType(int val)
 	{
-		return MessageType.values()[readByte(val, 3)];
+		return Message.Type.values()[readByte(val, 3)];
 	}
 	
-	public static void sendMessageSignal(int sq_distance, MessageType type, int val) throws GameActionException
+	public static void sendMessageSignal(int sq_distance, Message.Type type, int val) throws GameActionException
 	{
 		sendMessageSignal(sq_distance, writeType(type), val);
 	}
 	
-	public static void sendMessageSignal(int sq_distance, MessageType type, MapLocation loc1, MapLocation loc2) throws GameActionException
+	public static void sendMessageSignal(int sq_distance, Message.Type type, MapLocation loc1, MapLocation loc2) throws GameActionException
 	{
 		sendMessageSignal(sq_distance, writeType(type) | writeLocation(loc1), writeLocation(loc2));
 	}
 	
-	public static void sendMessageSignal(int sq_distance, MessageType type, MapLocation loc) throws GameActionException
+	public static void sendMessageSignal(int sq_distance, Message.Type type, MapLocation loc) throws GameActionException
 	{
 		sendMessageSignal(sq_distance, writeType(type) | writeLocation(loc), 0);
 	}

@@ -9,9 +9,9 @@ public class RoboArchon extends RobotPlayer
 	
 	public static void init() throws GameActionException
 	{
-		/*if (here.equals(MapInfo.farthestArchonLoc) && MapInfo.numInitialArchons > 1)
+		if (here.equals(MapInfo.farthestArchonLoc) && MapInfo.numInitialArchons > 1)
 			myStrategy = new StratTurtleArchon();
-		else*/
+		else
 			myStrategy = new StratArchonNormal();
 	}
 	
