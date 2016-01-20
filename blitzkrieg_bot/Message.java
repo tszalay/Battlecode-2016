@@ -14,7 +14,7 @@ enum MessageType
 	FREE_BEER,
 	MAP_EDGE,
 	NEW_STRATEGY,
-	NEW_WAYPOINT
+	LOTSA_FRIENDLIES
 }
 
 class SignalLocation extends RobotPlayer
@@ -31,6 +31,38 @@ class SignalLocation extends RobotPlayer
 	}
 }
 
+class SignalRound extends RobotPlayer
+{
+	public Signal sig;
+	public int round;
+	private final int timeout;
+	
+	public SignalRound(int timeout)
+	{
+		sig = null;
+		round = -1000000;
+		this.timeout = timeout;
+	}
+	
+	public boolean update(Signal newsig)
+	{
+		if (roundsSince(round) > timeout || 
+				here.distanceSquaredTo(newsig.getLocation()) < 
+				here.distanceSquaredTo(sig.getLocation()))
+		{
+			sig = newsig;
+			round = rc.getRoundNum();
+			return true;
+		}
+		return false;
+	}
+	
+	public boolean isRecent()
+	{
+		return roundsSince(round) < timeout;
+	}
+}
+
 public class Message extends RobotPlayer
 {	
 	// bookkeeping stuff
@@ -41,22 +73,17 @@ public class Message extends RobotPlayer
 	public static int MAP_OFF_X = 0;
 	public static int MAP_OFF_Y = 0;
 	
-	private static Signal 	recentAllyAttackSignal = null;
-	private static int 		recentAllyAttackRound = -200;
+	private static SignalRound	recentAllyAttacked = new SignalRound(30);
+	private static SignalRound	recentArchonAttacked = new SignalRound(80);
+	private static SignalRound	recentFriendlySignal = new SignalRound(300);
 	
-	private static Signal 	recentArchonAttackSignal = null;
-	private static int 		recentArchonAttackRound = -200;
-	
-	// timeouts
-	private static final int ATTACK_ARCHON_ROUNDS = 100;
-	private static final int ATTACK_ALLY_ROUNDS = 100;
+	// closest recent friendly signal
 	
 	
 	// and for any transmitted enemy messages, only keep the latest received
 	public static MapLocation recentEnemySignal = null;
 	
 	// and other things
-	public static MapLocation closestAllyUnderAttackLocation = null;
 	public static Strategy.Type recentStrategySignal = null;
 	
 	public static void readSignalQueue()
@@ -82,7 +109,10 @@ public class Message extends RobotPlayer
 			switch (type)
 			{
 			case UNDER_ATTACK:
-				updateUnderAttack(sig);
+				if (vals == null)
+					recentAllyAttacked.update(sig);
+				else
+					recentArchonAttacked.update(sig);
 				break;
 			case FREE_BEER:
 				break;
@@ -102,6 +132,11 @@ public class Message extends RobotPlayer
 			case NEW_STRATEGY:
 				recentStrategySignal = Strategy.Type.values()[vals[1]];
 				break;
+			case LOTSA_FRIENDLIES:
+				
+				break;
+			default:
+				break;
 			}
 		}
 	}
@@ -115,53 +150,26 @@ public class Message extends RobotPlayer
 		Message.sendMessageSignal(9, MessageType.NEW_STRATEGY, strat.ordinal());
 	}
 	
-	private static void updateUnderAttack(Signal sig)
-	{
-		// did we get a recent Archon message?
-		if (sig.getMessage() != null)
-		{
-			// if it timed out, auto-set it
-			// or if it's closer
-			if (roundsSince(recentArchonAttackRound) > ATTACK_ARCHON_ROUNDS || sig.getLocation().distanceSquaredTo(here) < 
-					recentArchonAttackSignal.getLocation().distanceSquaredTo(here))
-			{
-				recentArchonAttackSignal = sig;
-				recentArchonAttackRound = rc.getRoundNum();
-				return;
-			}
-		}
-		else
-		{
-			// if it timed out, auto-set it
-			// or if it's closer
-			if (roundsSince(recentAllyAttackRound) > ATTACK_ALLY_ROUNDS || sig.getLocation().distanceSquaredTo(here) < 
-					recentAllyAttackSignal.getLocation().distanceSquaredTo(here))
-			{
-				recentAllyAttackSignal = sig;
-				recentAllyAttackRound = rc.getRoundNum();
-				return;
-			}
-		}
-	}
-	
-	//Basic signals always only done when under attack
+	// Basic signals always only done when under attack
 	public static MapLocation getClosestAllyUnderAttack() throws GameActionException
 	{
 		// timeout for old signals
-		if (roundsSince(recentArchonAttackRound) < ATTACK_ARCHON_ROUNDS)
-			return recentArchonAttackSignal.getLocation();
+		if (recentArchonAttacked.isRecent())
+			return recentArchonAttacked.sig.getLocation();
 		
-		if (roundsSince(recentAllyAttackRound) < ATTACK_ALLY_ROUNDS)
-			return recentAllyAttackSignal.getLocation();
+		if (recentAllyAttacked.isRecent())
+			return recentAllyAttacked.sig.getLocation();
 		
 		return null;
 	}
 	
-	public static void sendSightingSignal(int sq_distance, MapLocation loc)
+	// Have we heard from any friendly units close by recently?
+	public static MapLocation getRecentFriendlyLocation() throws GameActionException
 	{
-		
+		if (recentFriendlySignal.sig != null)
+			return recentFriendlySignal.sig.getLocation();
+		return null;
 	}
-	
 	
 	
 	// low-level functions past here

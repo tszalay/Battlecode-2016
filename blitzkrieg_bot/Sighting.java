@@ -22,7 +22,7 @@ public class Sighting extends RobotPlayer
 		if (rc.getRoundNum() < lastSightingBroadcastRound + BROADCAST_DELAY)
 			return;
 		
-		if (Micro.getRoundsUntilDanger() < 8)
+		if (Micro.getRoundsUntilDanger() < 5)
 			return;
 		
 		RobotInfo bestTarget = null;
