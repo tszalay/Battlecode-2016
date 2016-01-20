@@ -137,7 +137,7 @@ public class Message extends RobotPlayer
 				recentFriendlySignal.update(sig);
 				break;
 			case NEUTRAL_ARCHON:
-				MapInfo.updateNeutralArchon(readLocation(vals[0]),readLocation(vals[1]));
+				MapInfo.updateNeutralArchons(readLocation(vals[0]),readLocation(vals[1]));
 				break;
 			default:
 				break;
