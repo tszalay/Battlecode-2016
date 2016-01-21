@@ -30,6 +30,9 @@ public class FastLocSet
     
     public void add(MapLocation loc, int val)
     {
+    	if (loc == null)
+    		return;
+    	
         int x = (loc.x+HASH) % HASH;
         int y = (loc.y+HASH) % HASH;
         if (value[x][y] == 0)
