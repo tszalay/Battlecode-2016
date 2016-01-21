@@ -29,7 +29,7 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 				overrideStrategy = null;
 		}
 		
-		if (rc.getRoundNum() > 2500)
+		/*if (rc.getRoundNum() > 2500)
 		{
 			if (Micro.getNearbyHostiles().length > 0)
 				Nav.tryGoTo(Micro.getUnitCOM(Micro.getNearbyHostiles()), Micro.getCanMoveDirs());
@@ -37,7 +37,7 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 				Nav.tryGoTo(MapInfo.getSymmetricLocation(MapInfo.farthestArchonLoc), Micro.getCanMoveDirs());
 			Action.tryAttackSomeone();
 			return true;
-		}
+		}*/
 		
 		// retreat to the archon?
 		if (rc.getHealth() < 20)
