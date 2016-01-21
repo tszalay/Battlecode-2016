@@ -4,11 +4,9 @@ import battlecode.common.*;
 
 public class RoboSoldier extends RobotPlayer
 {
-	public static MapLocation lastBallLocation;
-	
 	public static void init() throws GameActionException
 	{
-		myStrategy = new StratWaypoint();
+		myStrategy = new StratTheft();
 	}
 	
 	public static void turn() throws GameActionException

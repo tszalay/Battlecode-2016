@@ -61,10 +61,12 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (dest == null)
 			dest = senseClosestPart();
 		if (dest == null)
+			dest = Micro.getAllyCOM();
+		if (dest == null)
 			dest = MapInfo.farthestArchonLoc;
 		
 		// look for waypoint
-		dest =  MapInfo.getClosestNeutralArchon();
+		/*dest =  MapInfo.getClosestNeutralArchon();
 		if (dest == null || here.distanceSquaredTo(dest) < 1)
 		{
 			MapLocation closestPart = senseClosestPart();
@@ -79,7 +81,7 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (dest == null || here.distanceSquaredTo(dest) < 1)
 			dest = MapInfo.getClosestPart();
 		if (dest == null)
-			return true;
+			return true;*/
 		
 		Nav.tryGoTo(dest, Micro.getSafeMoveDirs());
 		
@@ -104,7 +106,7 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		int buildPriority = RobotType.TURRET.partCost;
 		
 		// need to build a shadow scout, top priority
-		if (roundsSince(RoboArchon.lastAdjacentScoutRound) > 20)
+		if (roundsSince(RoboArchon.lastAdjacentScoutRound) > 20 && rc.getRoundNum() > 200)
 		{
 			buildPriority += 0;
 			robotToBuild = RobotType.SCOUT;

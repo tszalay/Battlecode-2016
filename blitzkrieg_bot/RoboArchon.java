@@ -9,15 +9,15 @@ public class RoboArchon extends RobotPlayer
 	
 	public static void init() throws GameActionException
 	{
-		if (StratArchonBlitz.shouldBlitz())
-			myStrategy = new StratArchonBlitz(rc.senseRobot(rc.getID()));
-		else if (here.equals(MapInfo.farthestArchonLoc) && MapInfo.numInitialArchons > 1)
-			myStrategy = new StratTurtleArchon();
-		else
+		//if (StratArchonBlitz.shouldBlitz())
+			//myStrategy = new StratArchonBlitz(rc.senseRobot(rc.getID()));
+//		else if (here.equals(MapInfo.farthestArchonLoc) && MapInfo.numInitialArchons > 1)
+//			myStrategy = new StratTurtleArchon();
+		//else
 			myStrategy = new StratArchonNormal();
 		
-		if (rc.getInitialArchonLocations(ourTeam).length < 2)
-			StratArchonBlitz.tryBuild(RobotType.VIPER);
+		//if (rc.getInitialArchonLocations(ourTeam).length < 2)
+			StratArchonBlitz.tryBuild(RobotType.SCOUT);
 	}
 	
 	public static void turn() throws GameActionException

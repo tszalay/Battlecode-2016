@@ -8,7 +8,7 @@ public class RoboScout extends RobotPlayer
 {
 	public static void init() throws GameActionException
 	{
-		if (Message.recentStrategySignal == null)
+		if (Message.recentStrategySignal == null || rc.getRoundNum() < 200)
 		{
 			myStrategy = new StratExplore();
 			return;

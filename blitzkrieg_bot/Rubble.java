@@ -49,10 +49,51 @@ public class Rubble extends RobotPlayer
 		return false;
 	}
 	
+	public static boolean tryClearSmallRubble(MapLocation target) throws GameActionException
+	{
+		//System.out.println("tryClearRubble got called for " + target.toString());
+		
+		if (target == null)
+			return false;
+		
+		if (!rc.isCoreReady())
+			return false;
+		
+		if (rc.canSense(target) && rc.senseRubble(here.add(here.directionTo(target))) < GameConstants.RUBBLE_OBSTRUCTION_THRESH)
+			return false;
+		
+		// DIG to target
+		Direction towards = here.directionTo(target);
+		double rubble = rc.senseRubble(here.add(towards));
+		if (rubble < 200 && rubble >= 100)
+		{
+			doClearRubble(towards);
+			return true;
+		}
+		
+		Direction tLeft = towards.rotateLeft();
+		rubble = rc.senseRubble(here.add(tLeft));
+		if (rubble < 200 && rubble >= 100)
+		{
+			doClearRubble(tLeft);
+			return true;
+		}
+		
+		Direction tRight = towards.rotateRight();
+		rubble = rc.senseRubble(here.add(tRight));
+		if (rubble < 200 && rubble >= 100)
+		{
+			doClearRubble(tRight);
+			return true;
+		}
+		
+		return false;
+	}
+	
 	public static Direction getRandomAdjacentRubble() throws GameActionException
 	{
-		DirectionSet dirs = new DirectionSet();
-		dirs.makeAll().remove(Direction.NONE);
+		DirectionSet dirs = DirectionSet.makeAll();
+		dirs.remove(Direction.NONE);
 		for(Direction dir : dirs.getDirections())
 		{
 			if (rc.senseRubble(here.add(dir)) > GameConstants.RUBBLE_OBSTRUCTION_THRESH && rc.senseRubble(here.add(dir)) < 5000)
@@ -66,7 +107,7 @@ public class Rubble extends RobotPlayer
 	
 	public static void doClearRubble(Direction dir) throws GameActionException
 	{
-		if (rc.isCoreReady())
+		if (rc.isCoreReady() && dir != null)
 			rc.clearRubble(dir);
 	}
 	

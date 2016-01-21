@@ -32,14 +32,17 @@ public class StratExplore extends RobotPlayer implements Strategy
 		
 		DirectionSet goodDirs = Micro.getSafeMoveDirs();
 		
-		if (Micro.getRoundsUntilDanger() < 10)
+		//if (Micro.getRoundsUntilDanger() < 10)
 		{
-			if (!Action.tryRetreatTowards(Message.recentEnemySignal, goodDirs))
-				Action.tryRetreatOrShootIfStuck();
+			//if (!Action.tryRetreatTowards(Message.recentEnemySignal, goodDirs))
+			//	Action.tryRetreatOrShootIfStuck();
 		}
-		else
+		//else
 		{
-			Nav.tryGoTo(myExploringTarget, goodDirs);
+			if (goodDirs.any())
+				Nav.tryGoTo(myExploringTarget, goodDirs);
+			else
+				Action.tryRetreatOrShootIfStuck();
 		}
 
 		return true;

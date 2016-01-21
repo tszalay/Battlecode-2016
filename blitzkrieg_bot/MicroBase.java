@@ -15,6 +15,7 @@ public class MicroBase extends RobotPlayer
 	private DirectionSet safeMoveDirs = null;
 	private DirectionSet noPartsDirs = null;
 	private DirectionSet turretSafeDirs = null;
+	private DirectionSet bufferDirs = null;
 	
 	private static final int DIST_MAX = 1000;
 	private int[] distToClosestHostile = null;
@@ -95,6 +96,7 @@ public class MicroBase extends RobotPlayer
 		
 		safeMoveDirs = new DirectionSet();
 		noPartsDirs = new DirectionSet();
+		bufferDirs = new DirectionSet();
 
 		turretSafeDirs = Sighting.getTurretSafeDirs();
 		
@@ -121,10 +123,11 @@ public class MicroBase extends RobotPlayer
 					if (ri.type == RobotType.TURRET)
 						turretSafeDirs.remove(d);
 				}
-
 			}
 			
 			distToClosestHostile[d.ordinal()] = closestDistSq;
+			if (closestDistSq > 8)
+				bufferDirs.add(d);
 			
 			if (isThisSquareSafe)
 				safeMoveDirs.add(d);
@@ -271,6 +274,12 @@ public class MicroBase extends RobotPlayer
 		getRoundsUntilDanger();
 		
 		return bestRetreatDirection;
+	}
+	
+	public DirectionSet getBufferDirs()
+	{
+		computeSafetyStats();
+		return bufferDirs;
 	}
 
 	public DirectionSet getTurretSafeDirs()
