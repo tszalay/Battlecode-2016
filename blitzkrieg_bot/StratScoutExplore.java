@@ -5,7 +5,7 @@ import battlecode.common.*;
 
 import java.util.*;
 
-public class StratExplore extends RobotPlayer implements Strategy
+public class StratScoutExplore extends RobotPlayer implements Strategy
 {
 	// linear distance of the spacing of exploration waypoints
 	private static final int EXPLORE_POINT_DIST = 7;
@@ -32,7 +32,7 @@ public class StratExplore extends RobotPlayer implements Strategy
 		return quad;
 	}
 	
-	public StratExplore() throws GameActionException
+	public StratScoutExplore() throws GameActionException
 	{
 		// set the quadrant to my build location
 		myExploringQuadrant = rand.nextInt(4);

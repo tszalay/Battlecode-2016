@@ -6,6 +6,7 @@ import battlecode.common.*;
 public class RoboArchon extends RobotPlayer
 {
 	public static int lastAdjacentScoutRound = 0;
+	public static final int SCOUT_SHADOW_ROUND = 200;
 	
 	public static void init() throws GameActionException
 	{

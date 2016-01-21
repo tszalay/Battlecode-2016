@@ -47,12 +47,25 @@ public class StratScoutShadow extends RobotPlayer implements Strategy
 		lastShadowLocation = newLoc;
 	}
 	
+	private boolean trySendArchonLocation(RobotInfo ri) throws GameActionException
+	{
+		if (ri.type != RobotType.ARCHON)
+			return false;
+		if (ri.coreDelay < 6)
+			return false;
+		
+		Message.sendArchonLocation(ri);
+		return true;
+	}
+	
 	private boolean tryUpdateTarget() throws GameActionException
 	{
 		// if we're still within sight range, just update the position
 		if (rc.canSenseRobot(shadowTargetID))
 		{
-			updateShadowLocation(rc.senseRobot(shadowTargetID).location);
+			RobotInfo ri = rc.senseRobot(shadowTargetID);
+			updateShadowLocation(ri.location);
+			trySendArchonLocation(ri);
 			return true;
 		}
 		// if we aren't, check for a timeout before saying "oh god we lost the ball"
@@ -77,7 +90,7 @@ public class StratScoutShadow extends RobotPlayer implements Strategy
 		// if we're getting beat up, let's try to draw the zombies away
 		if (rc.getHealth() < 15)
 		{
-			overrideStrategy = new StratExplore();//StratZombieHerding();
+			overrideStrategy = new StratScoutExplore();
 			overrideStrategy.tryTurn();
 			return true;
 		}
