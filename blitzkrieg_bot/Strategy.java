@@ -14,7 +14,8 @@ public interface Strategy
 		MOB_MOVE,
 		SHADOW_ARCHON,
 		SHADOW_SOLDIER,
-		EXPLORE
+		EXPLORE,
+		DEFAULT
 	}
 	
 	// run the turn for this strategy

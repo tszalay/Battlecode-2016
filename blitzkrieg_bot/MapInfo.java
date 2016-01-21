@@ -18,9 +18,9 @@ public class MapInfo extends RobotPlayer
 	public static boolean newMapEdge = false;
 	
 	// other stuff
-	private static final int DEN_ADD = 1;
-	private static final int DEN_SENT = 2;
-	private static final int DEN_DEL = 3;
+	private static final int DEN_SEND_ADD = 1;
+	private static final int DEN_SENT_ADD = 2;
+	private static final int DEN_SEND_DEL = 3;
 	
 	public static int numInitialArchons = 0;
 
@@ -71,29 +71,6 @@ public class MapInfo extends RobotPlayer
 	public static MapLocation getClosestNeutralArchon()
 	{
 		return Micro.getClosestLocationTo(neutralArchonLocations.elements(), here);
-	}
-	
-	
-	public static MapLocation getClosestDenThenPart()
-	{
-		MapLocation ml = Micro.getClosestLocationTo(zombieDenLocations.elements(), here);
-		if (ml == null)
-			ml = Micro.getClosestLocationTo(goodPartsLocations.elements(), here);
-		return ml;
-	}
-	
-	public static MapLocation getClosestPartOrDen()
-	{
-		MapLocation partloc = getClosestPart();
-		MapLocation denloc = getClosestDen();
-		
-		if (partloc == null)
-			return denloc;
-		
-		if (denloc == null || here.distanceSquaredTo(partloc) < here.distanceSquaredTo(denloc))
-			return partloc;
-		
-		return denloc;
 	}
 	
 	public static boolean isOnMap(MapLocation loc)
@@ -189,7 +166,10 @@ public class MapInfo extends RobotPlayer
 		// if we already reported it, or we already have one queued to send,
 		// don't do anything
 		if (!add_loc.equals(nullLocation))
-			zombieDenLocations.add(add_loc, DEN_SENT);
+		{
+			zombieDenLocations.add(add_loc, DEN_SENT_ADD);
+			zombieDenLocations.add(getSymmetricLocation(add_loc), DEN_SENT_ADD);
+		}
 		if (!del_loc.equals(nullLocation))
 			zombieDenLocations.remove(del_loc);
 	}
@@ -209,10 +189,22 @@ public class MapInfo extends RobotPlayer
 	public static void updateNeutralArchons(MapLocation add_loc, MapLocation del_loc)
 	{
 		if (!add_loc.equals(nullLocation))
+		{
 			neutralArchonLocations.add(add_loc);
+			neutralArchonLocations.add(getSymmetricLocation(add_loc));
+		}
 		if (!del_loc.equals(nullLocation))
+		{
+			/*System.out.println("!!!!elts before: " + neutralArchonLocations.elements().size());
+			System.out.println("removing " + del_loc);
+			System.out.println("foo: " + neutralArchonLocations.get(del_loc));
+			for (MapLocation z : neutralArchonLocations.elements())
+				System.out.println("contains " + z);*/
 			neutralArchonLocations.remove(del_loc);
-		//neutralArchonLocations.add(getSymmetricLocation(loc), DEN_SENT);
+			//System.out.println("!!!!elts after: " + neutralArchonLocations.elements().size());
+			
+//			neutralArchonLocations.remove(del_loc);
+		}
 	}
 	
 	// function to send updated info as a scout
@@ -233,16 +225,16 @@ public class MapInfo extends RobotPlayer
 		for (MapLocation loc : zombieDenLocations.elements())
 		{
 			int val = zombieDenLocations.get(loc);
-			if (val == DEN_ADD)
+			if (val == DEN_SEND_ADD)
 			{
 				// send that we have seen a new zombie den
 				Message.sendMessageSignal(fullMapDistanceSq(), Message.Type.ZOMBIE_DEN, loc, nullLocation);
 				// and flag it as sent in the loc set
-				zombieDenLocations.set(loc, DEN_SENT);
+				zombieDenLocations.set(loc, DEN_SENT_ADD);
 				// and don't do any more this round
 				return true;
 			}
-			else if (val == DEN_DEL)
+			else if (val == DEN_SEND_DEL)
 			{
 				// send that we have unseen a zombie den
 				Message.sendMessageSignal(fullMapDistanceSq(), Message.Type.ZOMBIE_DEN, nullLocation, loc);
@@ -269,11 +261,12 @@ public class MapInfo extends RobotPlayer
 					continue;
 				
 				neutralArchonLocations.add(ri.location);
+				neutralArchonLocations.add(getSymmetricLocation(ri.location));
 				// if a scout finds a neutral archon, instantly ping no matter what
 				// because these units are super duper important
 				if (rc.getType() == RobotType.SCOUT)
 				{
-					Message.sendMessageSignal(fullMapDistanceSq(), Message.Type.NEUTRAL_ARCHON, ri.location);
+					Message.sendMessageSignal(fullMapDistanceSq(), Message.Type.NEUTRAL_ARCHON, ri.location, nullLocation);
 					// and don't really do any more this turn
 					return;
 				}
@@ -282,19 +275,29 @@ public class MapInfo extends RobotPlayer
 		}
 		
 		// neutral archon removal check, scout sends instantly
+		//Iterator<MapLocation> iter = neutralArchonLocations.elements().iterator();
+		//while (iter.hasNext())
 		for (MapLocation arch : neutralArchonLocations.elements())
 		{
+			//MapLocation arch = iter.next();
+			
 			if (!rc.canSense(arch))
 				continue;
 			RobotInfo ri = rc.senseRobotAtLocation(arch);
-			if (ri == null || ri.type != RobotType.ARCHON)
+			if (ri == null || ri.type != RobotType.ARCHON || ri.team != Team.NEUTRAL)
 			{
+				//System.out.println("elts before: " + neutralArchonLocations.elements().size());
+				//for (MapLocation z : neutralArchonLocations.elements())
+				//	System.out.println("contains " + z);
 				neutralArchonLocations.remove(arch);
+				//iter.remove();
+				//System.out.println("elts after: " + neutralArchonLocations.elements().size());
 				if (rc.getType() == RobotType.SCOUT)
 				{
 					Message.sendMessageSignal(fullMapDistanceSq(), Message.Type.NEUTRAL_ARCHON, nullLocation, arch);
 					return;
 				}
+				break;
 			}
 		}
 		
@@ -308,7 +311,9 @@ public class MapInfo extends RobotPlayer
 					continue;
 				
 				// otherwise, let's add stuff
-				zombieDenLocations.add(ri.location, DEN_ADD);
+				zombieDenLocations.add(ri.location, DEN_SEND_ADD);
+				// let's add the symmetric pair as sent, so we know not to send it
+				zombieDenLocations.add(getSymmetricLocation(ri.location), DEN_SENT_ADD);
 			}
 		}
 		
@@ -322,7 +327,7 @@ public class MapInfo extends RobotPlayer
 				// if we're a scout, flag it so we send the removal message
 				// otherwise just straight up remove it
 				if (rc.getType() == RobotType.SCOUT)
-					zombieDenLocations.set(closestDen, DEN_DEL);
+					zombieDenLocations.set(closestDen, DEN_SEND_DEL);
 				else
 					zombieDenLocations.remove(closestDen);
 			}
@@ -444,7 +449,7 @@ public class MapInfo extends RobotPlayer
 			mapSymmetry = SYM_ROT;
 	}
 	
-    public static MapLocation getSymmetricLocation(MapLocation loc) throws GameActionException
+    public static MapLocation getSymmetricLocation(MapLocation loc)
     {
     	MapLocation loc_sym = null;
     	

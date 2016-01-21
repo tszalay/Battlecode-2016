@@ -25,9 +25,51 @@ public class StratExplore extends RobotPlayer implements Strategy
 				+ (64-myExploringTargets.elements().size()) + "/64";
 	}
 	
+	public int getQuadrant(MapLocation loc)
+	{
+		int quad = (loc.x < MapInfo.mapCenter.x) ? 0 : 1;
+		quad |= (loc.y < MapInfo.mapCenter.y) ? 0 : 2;
+		return quad;
+	}
+	
 	public StratExplore() throws GameActionException
 	{
+		// set the quadrant to my build location
 		myExploringQuadrant = rand.nextInt(4);
+
+		// first scouts built
+		if (rc.getRoundNum() < 50)
+		{
+			MapLocation[] ourArchons = rc.getInitialArchonLocations(ourTeam);
+			int archonInd = 0;
+			// find which archon we are closest to
+			for (int i=0; i<ourArchons.length; i++)
+				if (here.distanceSquaredTo(ourArchons[i]) < here.distanceSquaredTo(ourArchons[archonInd]))
+					archonInd = i;
+			
+			switch (ourArchons.length)
+			{
+			case 1:
+				// set it to explore quadrant we are in
+				myExploringQuadrant = getQuadrant(here);
+				break;
+			case 2:
+				// explore ours, or ours rotated by 1
+				// (should help with the symmetry)
+				myExploringQuadrant = getQuadrant(MapInfo.ourArchonCenter);
+				if (archonInd > 0)
+					myExploringQuadrant = (myExploringQuadrant+1)%4;
+				break;
+			case 3:
+			case 4:
+				// explore the quadrants offset by whichever archon we are closest to
+				myExploringQuadrant = getQuadrant(MapInfo.ourArchonCenter);
+				myExploringQuadrant = (myExploringQuadrant+archonInd)%4;
+				break;
+			default:
+				break;
+			}
+		}
 		
 		resetTargets();
 	}
