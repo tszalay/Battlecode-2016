@@ -280,12 +280,12 @@ public class Nav extends RobotPlayer
             bugState = BugState.DIRECT;
         }
         
-        if (Rubble.tryClearSmallRubble(myDest))
+        if (Rubble.tryClearRubbleInPathIfClearBeyondAndAlliesAround(myDest))
         	return true;
         
         if (here.equals(dest))
         	return true;
-
+        
         return bugMove();
     }
 }

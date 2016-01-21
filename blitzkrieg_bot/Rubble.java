@@ -49,10 +49,8 @@ public class Rubble extends RobotPlayer
 		return false;
 	}
 	
-	public static boolean tryClearSmallRubble(MapLocation target) throws GameActionException
+	public static boolean tryClearRubbleInPathIfClearBeyondAndAlliesAround(MapLocation target) throws GameActionException
 	{
-		//System.out.println("tryClearRubble got called for " + target.toString());
-		
 		if (target == null)
 			return false;
 		
@@ -62,28 +60,72 @@ public class Rubble extends RobotPlayer
 		if (rc.canSense(target) && rc.senseRubble(here.add(here.directionTo(target))) < GameConstants.RUBBLE_OBSTRUCTION_THRESH)
 			return false;
 		
-		// DIG to target
+		// if not many others are around, we're not piling up, so assume we can nav and don't dig
+		if (Micro.getNearbyAllies() == null || Micro.getNearbyAllies().length < 5)
+			return false;
+		
+		// look for a direction where digging is minimal
+		
+		// straight ahead
+		MapLocation temp = here;
+		double rubAhead = 0;
+		for (int i=0; i<3; i++)
+		{
+			temp = temp.add(temp.directionTo(target)); // projected location
+			double rubble = rc.senseRubble(temp);
+			if (rubble > GameConstants.RUBBLE_OBSTRUCTION_THRESH)
+				rubAhead += rubble - GameConstants.RUBBLE_OBSTRUCTION_THRESH;
+			// if there is no light at the end... don't go
+			if (rubble > GameConstants.RUBBLE_OBSTRUCTION_THRESH && i==2)
+				rubAhead += 10001;
+		}
+		
+		// ahead right
+		temp = here;
+		double rubRight = 0;
+		for (int i=0; i<3; i++)
+		{
+			temp = temp.add(temp.directionTo(target).rotateRight()); // projected location
+			double rubble = rc.senseRubble(temp);
+			if (rubble > GameConstants.RUBBLE_OBSTRUCTION_THRESH)
+				rubRight += rubble - GameConstants.RUBBLE_OBSTRUCTION_THRESH;
+			// if there is no light at the end... don't go
+			if (rubble > GameConstants.RUBBLE_OBSTRUCTION_THRESH && i==2)
+				rubAhead += 10001;
+		}
+		
+		// ahead left
+		temp = here;
+		double rubLeft = 0;
+		for (int i=0; i<3; i++)
+		{
+			temp = temp.add(temp.directionTo(target).rotateLeft()); // projected location
+			double rubble = rc.senseRubble(temp);
+			if (rubble > GameConstants.RUBBLE_OBSTRUCTION_THRESH)
+				rubLeft += rubble - GameConstants.RUBBLE_OBSTRUCTION_THRESH;
+			// if there is no light at the end... don't go
+			if (rubble > GameConstants.RUBBLE_OBSTRUCTION_THRESH && i==2)
+				rubAhead += 10001;
+		}
+		
+		// get min rubble direction
+		double rubble = rubAhead;
 		Direction towards = here.directionTo(target);
-		double rubble = rc.senseRubble(here.add(towards));
-		if (rubble < 200 && rubble >= 100)
+		if (rubRight < rubAhead)
+		{
+			rubble = rubRight;
+			towards = here.directionTo(target).rotateRight();
+		}
+		if (rubLeft < rubRight && rubLeft < rubAhead)
+		{
+			rubble = rubLeft;
+			towards = here.directionTo(target).rotateLeft();
+		}
+		
+		// DIG to target
+		if (rubble < 10000 && rc.senseRubble(here.add(towards)) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH)
 		{
 			doClearRubble(towards);
-			return true;
-		}
-		
-		Direction tLeft = towards.rotateLeft();
-		rubble = rc.senseRubble(here.add(tLeft));
-		if (rubble < 200 && rubble >= 100)
-		{
-			doClearRubble(tLeft);
-			return true;
-		}
-		
-		Direction tRight = towards.rotateRight();
-		rubble = rc.senseRubble(here.add(tRight));
-		if (rubble < 200 && rubble >= 100)
-		{
-			doClearRubble(tRight);
 			return true;
 		}
 		

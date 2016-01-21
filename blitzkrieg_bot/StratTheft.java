@@ -82,7 +82,9 @@ public class StratTheft extends RobotPlayer implements Strategy
 		else
 			Action.tryRetreatOrShootIfStuck();
 		
-		Rubble.doClearRubble(Rubble.getRandomAdjacentRubble());
+		if (!Rubble.tryClearRubble(dest))
+			if (!Rubble.tryClearRubble(MapInfo.farthestArchonLoc))
+				Rubble.doClearRubble(Rubble.getRandomAdjacentRubble());
 		
 		// GTFO
 		
