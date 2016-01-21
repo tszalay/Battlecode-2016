@@ -29,10 +29,13 @@ public class RoboArchon extends RobotPlayer
 		// always try this if we can, before moving
 		tryActivateNeutrals();
 		
-		for (MapLocation loc : MapInfo.zombieDenLocations.elements())
-			rc.setIndicatorLine(here, loc, 255,255,255);
-		for (MapLocation loc : MapInfo.neutralArchonLocations.elements())
-			rc.setIndicatorLine(here, loc, 255,0,255);
+		if (Debug.DISPLAY_DEBUG)
+		{
+			for (MapLocation loc : MapInfo.zombieDenLocations.elements())
+				rc.setIndicatorLine(here, loc, 255,255,255);
+			for (MapLocation loc : MapInfo.neutralArchonLocations.elements())
+				rc.setIndicatorLine(here, loc, 255,0,255);
+		}
 		
 		// for now, all archons just blitz all the time
 		myStrategy.tryTurn();		
