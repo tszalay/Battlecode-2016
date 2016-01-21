@@ -61,7 +61,7 @@ public class Rubble extends RobotPlayer
 			return false;
 		
 		// if not many others are around, we're not piling up, so assume we can nav and don't dig
-		if (Micro.getNearbyAllies() == null || Micro.getNearbyAllies().length < 5)
+		if (Micro.getNearbyAllies() == null || Micro.getNearbyAllies().length < 4)
 			return false;
 		
 		// look for a direction where digging is minimal
