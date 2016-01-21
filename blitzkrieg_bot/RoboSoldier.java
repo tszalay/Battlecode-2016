@@ -14,6 +14,9 @@ public class RoboSoldier extends RobotPlayer
 		if (roundsSince(lastDamageRound) == 0)
 			Message.sendSignal(rc.getType().sensorRadiusSquared*2);
 		
+		//for (MapLocation loc : MapInfo.zombieDenLocations.elements())
+		//	rc.setIndicatorLine(here, loc, 0,255,255);
+		
 		myStrategy.tryTurn();
 	}
 }

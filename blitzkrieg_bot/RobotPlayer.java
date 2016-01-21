@@ -27,7 +27,7 @@ public class RobotPlayer
 	{
 		// globals in our class
 		RobotPlayer.rc = robotc;
-		RobotPlayer.rand = new Random(rc.getID());
+		RobotPlayer.rand = new Random(rc.getID()+rc.getRoundNum());
 		RobotPlayer.ourTeam = rc.getTeam();
 		RobotPlayer.theirTeam = ourTeam.opponent();
 		RobotPlayer.here = rc.getLocation();
@@ -37,7 +37,7 @@ public class RobotPlayer
 		Debug.setStringAK("A-aron");
 		Debug.setStringSJF("Stephen J. Fry");
 		Debug.setStringRR("Ryan");
-				
+		
 		// look for an archon close by, if we aren't an Archon
 		if (rc.getType() != RobotType.ARCHON)
 		{

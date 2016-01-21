@@ -78,7 +78,7 @@ public class Message extends RobotPlayer
 	private static SignalRound	recentArchonAttacked = new SignalRound(80);
 	private static SignalRound	recentFriendlySignal = new SignalRound(300);
 	
-	// closest recent friendly signal
+	private static final int LOCATION_NO_SYM = 1;
 	
 	
 	// and for any transmitted enemy messages, only keep the latest received
@@ -125,7 +125,7 @@ public class Message extends RobotPlayer
 						rc.getRoundNum()-1);
 				break;
 			case ZOMBIE_DEN:
-				MapInfo.updateZombieDens(readLocation(vals[0]),readLocation(vals[1]));
+				MapInfo.updateZombieDens(readLocation(vals[0]), readLocation(vals[1]), readByte(vals[1],3)==0);
 				break;
 			case MAP_EDGE:
 				MapInfo.updateMapEdges(readLocation(vals[0]), readLocation(vals[1]));
@@ -137,7 +137,7 @@ public class Message extends RobotPlayer
 				recentFriendlySignal.update(sig);
 				break;
 			case NEUTRAL_ARCHON:
-				MapInfo.updateNeutralArchons(readLocation(vals[0]),readLocation(vals[1]));
+				MapInfo.updateNeutralArchons(readLocation(vals[0]), readLocation(vals[1]), readByte(vals[1],3)==0);
 				break;
 			default:
 				break;
@@ -153,11 +153,13 @@ public class Message extends RobotPlayer
 		Message.sendMessageSignal(9, Message.Type.MAP_EDGE, MapInfo.mapMin, MapInfo.mapMax);
 		// and a strategy to use
 		Message.sendMessageSignal(9, Message.Type.NEW_STRATEGY, strat.ordinal());
-		// and then all of the zombie dens and archons
+		// and then all of the zombie dens and archons, but signal
 		for (MapLocation loc : MapInfo.zombieDenLocations.elements())
-			Message.sendMessageSignal(9, Message.Type.ZOMBIE_DEN, loc, MapInfo.nullLocation);
+			Message.sendMessageSignal(9, Message.Type.ZOMBIE_DEN, loc, MapInfo.nullLocation, 
+					LOCATION_NO_SYM);
 		for (MapLocation loc : MapInfo.neutralArchonLocations.elements())
-			Message.sendMessageSignal(9, Message.Type.NEUTRAL_ARCHON, loc, MapInfo.nullLocation);
+			Message.sendMessageSignal(9, Message.Type.NEUTRAL_ARCHON, loc, MapInfo.nullLocation, 
+					LOCATION_NO_SYM);
 	}
 	
 	// Basic signals always only done when under attack
@@ -226,6 +228,11 @@ public class Message extends RobotPlayer
 	public static void sendMessageSignal(int sq_distance, Message.Type type, MapLocation loc1, MapLocation loc2) throws GameActionException
 	{
 		sendMessageSignal(sq_distance, writeType(type) | writeLocation(loc1), writeLocation(loc2));
+	}
+	
+	public static void sendMessageSignal(int sq_distance, Message.Type type, MapLocation loc1, MapLocation loc2, int val) throws GameActionException
+	{
+		sendMessageSignal(sq_distance, writeType(type) | writeLocation(loc1), writeByte(val, 3) | writeLocation(loc2));
 	}
 	
 	public static void sendMessageSignal(int sq_distance, Message.Type type, MapLocation loc) throws GameActionException

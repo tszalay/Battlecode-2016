@@ -161,14 +161,15 @@ public class MapInfo extends RobotPlayer
 
 	
 	// these are to be called by message to add a zombie den/part if it isn't in there already
-	public static void updateZombieDens(MapLocation add_loc, MapLocation del_loc)
+	public static void updateZombieDens(MapLocation add_loc, MapLocation del_loc, boolean add_symmetric)
 	{
 		// if we already reported it, or we already have one queued to send,
 		// don't do anything
 		if (!add_loc.equals(nullLocation))
 		{
 			zombieDenLocations.add(add_loc, DEN_SENT_ADD);
-			zombieDenLocations.add(getSymmetricLocation(add_loc), DEN_SENT_ADD);
+			if (add_symmetric)
+				zombieDenLocations.add(getSymmetricLocation(add_loc), DEN_SENT_ADD);
 		}
 		if (!del_loc.equals(nullLocation))
 			zombieDenLocations.remove(del_loc);
@@ -186,25 +187,16 @@ public class MapInfo extends RobotPlayer
 	}
 	*/
 	
-	public static void updateNeutralArchons(MapLocation add_loc, MapLocation del_loc)
+	public static void updateNeutralArchons(MapLocation add_loc, MapLocation del_loc, boolean add_symmetric)
 	{
 		if (!add_loc.equals(nullLocation))
 		{
 			neutralArchonLocations.add(add_loc);
-			neutralArchonLocations.add(getSymmetricLocation(add_loc));
+			if (add_symmetric)
+				neutralArchonLocations.add(getSymmetricLocation(add_loc));
 		}
 		if (!del_loc.equals(nullLocation))
-		{
-			/*System.out.println("!!!!elts before: " + neutralArchonLocations.elements().size());
-			System.out.println("removing " + del_loc);
-			System.out.println("foo: " + neutralArchonLocations.get(del_loc));
-			for (MapLocation z : neutralArchonLocations.elements())
-				System.out.println("contains " + z);*/
 			neutralArchonLocations.remove(del_loc);
-			//System.out.println("!!!!elts after: " + neutralArchonLocations.elements().size());
-			
-//			neutralArchonLocations.remove(del_loc);
-		}
 	}
 	
 	// function to send updated info as a scout
@@ -275,23 +267,14 @@ public class MapInfo extends RobotPlayer
 		}
 		
 		// neutral archon removal check, scout sends instantly
-		//Iterator<MapLocation> iter = neutralArchonLocations.elements().iterator();
-		//while (iter.hasNext())
 		for (MapLocation arch : neutralArchonLocations.elements())
 		{
-			//MapLocation arch = iter.next();
-			
 			if (!rc.canSense(arch))
 				continue;
 			RobotInfo ri = rc.senseRobotAtLocation(arch);
 			if (ri == null || ri.type != RobotType.ARCHON || ri.team != Team.NEUTRAL)
 			{
-				//System.out.println("elts before: " + neutralArchonLocations.elements().size());
-				//for (MapLocation z : neutralArchonLocations.elements())
-				//	System.out.println("contains " + z);
 				neutralArchonLocations.remove(arch);
-				//iter.remove();
-				//System.out.println("elts after: " + neutralArchonLocations.elements().size());
 				if (rc.getType() == RobotType.SCOUT)
 				{
 					Message.sendMessageSignal(fullMapDistanceSq(), Message.Type.NEUTRAL_ARCHON, nullLocation, arch);
