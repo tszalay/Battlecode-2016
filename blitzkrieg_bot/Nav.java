@@ -19,7 +19,7 @@ public class Nav extends RobotPlayer
         LEFT, RIGHT
     }
 
-    private static BugState bugState;
+    public static BugState bugState;
     public static WallSide bugWallSide = WallSide.LEFT;
     private static int bugStartDistSq;
     private static Direction bugLastMoveDir;
@@ -129,14 +129,15 @@ public class Nav extends RobotPlayer
 
     private static boolean detectBugIntoEdge() throws GameActionException
     {
-        if (bugWallSide == WallSide.LEFT)
+        /*if (bugWallSide == WallSide.LEFT)
         {
             return !rc.onTheMap(here.add(bugLastMoveDir.rotateLeft()));
         }
         else
         {
             return !rc.onTheMap(here.add(bugLastMoveDir.rotateRight()));
-        }
+        }*/
+    	return !rc.onTheMap(here.add(bugLastMoveDir));
     }
 
     private static void reverseBugWallFollowDir() throws GameActionException

@@ -27,15 +27,15 @@ public class StratScoutSighting extends RobotPlayer implements Strategy
 				overrideStrategy = null;
 		}
 		
-		// if we're not actively shadowing, we try to either do this
-		// or find a soldier to shadow
-		if (rc.getHealth() < 25)
+		if (rc.getHealth() < 15)
 		{
-			overrideStrategy = new StratZombieHerding();
+			overrideStrategy = new StratScoutExplore();
 			overrideStrategy.tryTurn();
 			return true;
 		}
 		
+		// if we're not actively shadowing, we try to either do this
+		// or find a soldier to shadow
 		for (RobotInfo ri : Micro.getNearbyAllies())
 		{
 			if (ri.type == RobotType.SOLDIER)

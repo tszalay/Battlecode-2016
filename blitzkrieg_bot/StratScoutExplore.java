@@ -7,6 +7,8 @@ import java.util.*;
 
 public class StratScoutExplore extends RobotPlayer implements Strategy
 {
+	private Strategy overrideStrategy = null;
+
 	// linear distance of the spacing of exploration waypoints
 	private static final int EXPLORE_POINT_DIST = 7;
 	// square distance of how close we need to be as a scout to 'visit'
@@ -21,6 +23,9 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 	
 	public String getName()
 	{
+		if (overrideStrategy != null)
+			return overrideStrategy.getName();
+
 		return "Explored Q" + myExploringQuadrant + " "
 				+ (64-myExploringTargets.elements().size()) + "/64";
 	}
@@ -123,6 +128,15 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 			}
 		}
 		
+		// now do we need to update my target?
+		if (!MapInfo.isOnMap(myExploringTarget))
+		{
+			// remove the target
+			myExploringTargets.remove(myExploringTarget);
+			// set it to update in if statement below
+			myExploringTarget = null;
+		}
+
 		// no targets for me? reset all of them
 		if (myExploringTargets.elements().size() == 0)
 		{
@@ -130,9 +144,8 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 			resetTargets();
 		}
 		
-		// now do we need to update my target?
 		if (myExploringTarget == null || !myExploringTargets.contains(myExploringTarget) ||
-				!MapInfo.isOnMap(myExploringTarget) || roundsSince(lastNewTargetRound) > 100)
+				roundsSince(lastNewTargetRound) > 100)
 		{
 			int ind = rand.nextInt(myExploringTargets.elements().size());
 			myExploringTarget = myExploringTargets.elements().get(ind);
@@ -141,24 +154,32 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 	}
 	
 	public boolean tryTurn() throws GameActionException
-	{		
+	{
+		// do we have a strategy that takes precedence over this one?
+		if (overrideStrategy != null)
+		{
+			if (overrideStrategy.tryTurn())
+				return true;
+			else
+				overrideStrategy = null;
+		}
+
+		if (StratScoutTurrets.shouldScoutTurrets())
+		{
+			overrideStrategy = new StratScoutTurrets();
+			overrideStrategy.tryTurn();
+			return true;
+		}
+		
 		// update all of our targets, visited and otherwise
 		updateTargets();
 		
 		DirectionSet goodDirs = Micro.getSafeMoveDirs();
 		
-		//if (Micro.getRoundsUntilDanger() < 10)
-		{
-			//if (!Action.tryRetreatTowards(Message.recentEnemySignal, goodDirs))
-			//	Action.tryRetreatOrShootIfStuck();
-		}
-		//else
-		{
-			if (goodDirs.any())
-				Nav.tryGoTo(myExploringTarget, goodDirs);
-			else
-				Action.tryRetreatOrShootIfStuck();
-		}
+		if (goodDirs.any())
+			Nav.tryGoTo(myExploringTarget, goodDirs);
+		else
+			Action.tryRetreatOrShootIfStuck();
 
 		return true;
 	}
