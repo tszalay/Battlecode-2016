@@ -6,7 +6,7 @@ import battlecode.common.*;
 
 public class Nav extends RobotPlayer
 {
-    private static MapLocation myDest;
+    public static MapLocation myDest;
     private static DirectionSet myDirs;
 
     private enum BugState
@@ -22,7 +22,7 @@ public class Nav extends RobotPlayer
     private static BugState bugState;
     public static WallSide bugWallSide = WallSide.LEFT;
     private static int bugStartDistSq;
-    private static Direction bugLastMoveDir;
+    public static Direction bugLastMoveDir;
     private static Direction bugLookStartDir;
     private static int bugRotationCount;
     private static int bugMovesSinceSeenObstacle = 0;

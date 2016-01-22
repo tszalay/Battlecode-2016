@@ -57,14 +57,14 @@ public class Rubble extends RobotPlayer
 		if (!rc.isCoreReady())
 			return false;
 		
-		if (rc.canSense(target) && rc.senseRubble(here.add(here.directionTo(target))) < GameConstants.RUBBLE_OBSTRUCTION_THRESH)
+		if (rc.canSense(target) && rc.senseRubble(here.add(here.directionTo(target))) < GameConstants.RUBBLE_SLOW_THRESH)
 			return false;
 		
 		// look for a direction where digging is minimal
 		
 		// straight ahead
 		double rubAhead = rc.senseRubble(here.add(here.directionTo(target))) + rc.senseRubble(here.add(here.directionTo(target)).add(here.directionTo(target)));
-
+		
 		// ahead right
 		//double rubRight = rc.senseRubble(here.add(here.directionTo(target).rotateRight())) + rc.senseRubble(here.add(here.directionTo(target).rotateRight()).add(here.directionTo(target).rotateRight()));
 		
@@ -86,14 +86,20 @@ public class Rubble extends RobotPlayer
 //		}
 		rubble = rubble - 2 * GameConstants.RUBBLE_OBSTRUCTION_THRESH; // how much just to get through
 		
+		// fast moves in the right direction?  take them
+		DirectionSet fastMovesSet = Micro.getCanFastMoveDirs();
+		Direction towardFast = fastMovesSet.getDirectionTowards(towards);
+		if (towardFast != null)
+			return false;
+		
 		// probabilities
 		double g = rand.nextGaussian();
-		if ( (rubble - 2*100) > g*1000+2000 || Micro.getNearbyAllies().length < 3+g*3)
+		if ((rubble - 2*100) > g*1000+2000 || Micro.getNearbyAllies().length < 3+g*3)
 			return false;
 		
 		// DIG to target
 		Debug.setStringSJF("rubble = " + rubble);
-		if (rc.senseRubble(here.add(towards)) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH)
+		if (rc.senseRubble(here.add(towards)) >= GameConstants.RUBBLE_SLOW_THRESH)
 		{
 			doClearRubble(towards);
 			return true;
@@ -123,7 +129,9 @@ public class Rubble extends RobotPlayer
 	public static void doClearRubble(Direction dir) throws GameActionException
 	{
 		if (rc.isCoreReady() && dir != null)
+		{
 			rc.clearRubble(dir);
+		}
 	}
 	
 	public static MapLocation senseClosestPart() throws GameActionException
