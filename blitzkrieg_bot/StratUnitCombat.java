@@ -104,7 +104,7 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 		// or shoot if we couldn't move
 		Action.tryAttackSomeone();
 		
-		if (!Rubble.tryClearRubble(dest))
+		if (!Rubble.tryClearRubble(lastDest))
 			if (!Rubble.tryClearRubble(MapInfo.farthestArchonLoc))
 				Rubble.doClearRubble(Rubble.getRandomAdjacentRubble());
 		
