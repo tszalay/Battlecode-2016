@@ -52,7 +52,7 @@ public class MicroBase extends RobotPlayer
 			8,	//2: RANGEDZOMBIE
 			2,	//3: FASTZOMBIE
 			8,	//4: BIGZOMBIE
-			2,	//5: ARCHON
+			0,	//5: ARCHON
 			2,	//6: SCOUT
 			8,	//7: SOLDIER
 			8,	//8: GUARD
