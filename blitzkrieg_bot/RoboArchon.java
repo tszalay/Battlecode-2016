@@ -1,6 +1,7 @@
 package blitzkrieg_bot;
 
 import java.util.ArrayList;
+
 import battlecode.common.*;
 
 public class RoboArchon extends RobotPlayer
@@ -17,7 +18,9 @@ public class RoboArchon extends RobotPlayer
 		//else
 			myStrategy = new StratArchonNormal();
 		
-		//if (rc.getInitialArchonLocations(ourTeam).length < 2)
+		if (shouldBuildViper())
+			StratArchonBlitz.tryBuild(RobotType.VIPER);
+		else
 			StratArchonBlitz.tryBuild(RobotType.SCOUT);
 	}
 	
@@ -93,6 +96,39 @@ public class RoboArchon extends RobotPlayer
 			rc.repair(minBot.location);
 			return true;
 		}
+		return false;
+	}
+	
+	public static boolean shouldBuildViper()
+	{
+		MapLocation[] theirArchons = rc.getInitialArchonLocations(theirTeam);
+		MapLocation[] ourArchons = rc.getInitialArchonLocations(ourTeam);
+		
+		if (ourArchons.length < 2)
+			return true;
+		
+		int x = 0;
+		int y = 0;
+		for (MapLocation them : theirArchons)
+		{
+			x += them.x;
+			y += them.y;
+		}
+		x = x/theirArchons.length;
+		y = y/theirArchons.length;
+		MapLocation theirCOM = new MapLocation(x,y);
+		int myDist = here.distanceSquaredTo(theirCOM);
+		
+		int shortestDist = myDist;
+		for (MapLocation us : ourArchons)
+		{
+			if (us.distanceSquaredTo(theirCOM) < shortestDist)
+				shortestDist = us.distanceSquaredTo(theirCOM);
+		}
+		
+		if (myDist == shortestDist)
+			return true;
+		
 		return false;
 	}
 }
