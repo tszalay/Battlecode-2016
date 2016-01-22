@@ -167,8 +167,7 @@ public class Message extends RobotPlayer
 				break;
 			case SIGHT_TARGET:
 				Sighting.addSightedTarget(readLocation(vals[0]),
-						RobotType.values()[readByte(vals[1],0)],
-						rc.getRoundNum()-1);
+										  readLocation(vals[1]));
 				break;
 			case ZOMBIE_DEN:
 				MapInfo.updateZombieDens(readLocation(vals[0]), readLocation(vals[1]), readByte(vals[1],3)==0);

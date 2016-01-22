@@ -58,6 +58,11 @@ public class StratUnitRush extends RobotPlayer implements Strategy
 		}
 		if (lastDest == null)
 		{
+			myTask = "enemy";
+			lastDest = Sighting.getClosestTurret();
+		}
+		if (lastDest == null)
+		{
 			myTask = "rally";
 			lastDest = MapInfo.ourArchonCenter;
 		}

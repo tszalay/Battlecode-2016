@@ -15,36 +15,51 @@ public class Sighting extends RobotPlayer
 	public static final int SIGHT_MESSAGE_RADIUS = 63;
 	public static final int TURRET_MESSAGE_RADIUS = 255;
 	public static final int FRIENDLY_MESSAGE_RADIUS = 1500;
-	public static final int TURRET_TIMEOUT_ROUNDS = 200;
-	public static final int BROADCAST_DELAY = 3;
+	public static final int TURRET_TIMEOUT_ROUNDS = 500;
 	public static final int FRIENDLY_DELAY = 50;
+	
+	// every 25 rounds we can send a signal really far
+	private static SignalDelay farBroadcastSignal = new SignalDelay(25);
 	
 	// to be called by scouts and archons
 	public static void doSendSightingMessage() throws GameActionException
 	{
-		if (roundsSince(lastSightingBroadcastRound) < BROADCAST_DELAY)
-			return;
-		
-		if (Micro.getRoundsUntilDanger() < 5)
-			return;
-		
-		RobotInfo bestTarget = null;
+		RobotInfo bestHostile = null;
+		ArrayList<RobotInfo> nearbyTurrets = new ArrayList<RobotInfo>(5);
 		
 		// prioritize the target with the biggest attack radius
 		for (RobotInfo ri : Micro.getNearbyHostiles())
 		{
-			if (bestTarget == null || ri.type.attackRadiusSquared > bestTarget.type.attackRadiusSquared)
-				bestTarget = ri;
+			if (ri.type == RobotType.TURRET)
+			{
+				nearbyTurrets.add(ri);
+			}
+			else
+			{
+				if (bestHostile == null || ri.type.attackRadiusSquared > bestHostile.type.attackRadiusSquared)
+					bestHostile = ri;
+			}
 		}
 		
 		// leave off zombie dens because we already have a list
-		if (bestTarget != null && bestTarget.type != RobotType.ZOMBIEDEN)
+		if (bestHostile != null)
 		{
+			MapLocation targetloc = MapInfo.nullLocation;
+			if (bestHostile != null && bestHostile.type != RobotType.ZOMBIEDEN)
+				targetloc = bestHostile.location;
+			// get a random turret from our list
+			MapLocation turretloc = (nearbyTurrets.size() > 0) ? nearbyTurrets.get(rand.nextInt(nearbyTurrets.size())).location : MapInfo.nullLocation;
+			
 			lastSightingBroadcastRound = rc.getRoundNum();
-			if (bestTarget.type == RobotType.TURRET)
-				Message.sendMessageSignal(TURRET_MESSAGE_RADIUS,Message.Type.SIGHT_TARGET,bestTarget.location);
-			else
-				Message.sendMessageSignal(SIGHT_MESSAGE_RADIUS,Message.Type.SIGHT_TARGET,bestTarget.location);
+			int broadcast_dist = 63;
+			if (Micro.getRoundsUntilDanger() < 5 && Micro.getRoundsUntilDanger() > 0)
+				broadcast_dist = 121;
+			if (Micro.getRoundsUntilDanger() < 10)
+				broadcast_dist = 400;
+			if (farBroadcastSignal.canSend())
+				broadcast_dist = MapInfo.fullMapDistanceSq();
+			
+			Message.sendMessageSignal(broadcast_dist,Message.Type.SIGHT_TARGET,targetloc,turretloc);
 		}
 		
 		trySendFriendlyMessage();
@@ -63,12 +78,12 @@ public class Sighting extends RobotPlayer
 		}
 	}
 	
-	public static void addSightedTarget(MapLocation loc, RobotType target, int round)
+	public static void addSightedTarget(MapLocation sight_loc, MapLocation turret_loc)
 	{
-		if (target == RobotType.TURRET)
-			enemySightedTurrets.add(loc, round);
-		else
-			enemySightedTargets.add(loc, round);
+		if (!sight_loc.equals(MapInfo.nullLocation))
+			enemySightedTargets.add(sight_loc);
+		if (!turret_loc.equals(MapInfo.nullLocation))
+			enemySightedTurrets.addOrSet(turret_loc, rc.getRoundNum());
 	}
 	
 	public static MapLocation getClosestSightedTarget()
@@ -91,33 +106,47 @@ public class Sighting extends RobotPlayer
 		return closest;
 	}
 	
+	public static MapLocation getClosestTurret()
+	{
+		return Micro.getClosestLocationTo(enemySightedTurrets.elements(), here);
+	}
+	
 	public static DirectionSet getTurretSafeDirs()
 	{
 		// find out which directions are safe vis-a-vis enemy turrets
 		DirectionSet dirs = DirectionSet.makeAll();
 		
-		int curround = rc.getRoundNum();
+		if (Debug.DISPLAY_DEBUG && rc.getHealth() < 30)
+		{
+			for (MapLocation ml : enemySightedTurrets.elements())
+				rc.setIndicatorLine(here, ml, 0, 255, 255);
+		}
+		
+		// any turrets need removin'?
+		MapLocation remove_turret = null;
 		
 		for (MapLocation ml : enemySightedTurrets.elements())
 		{
 			// is there any chance we're close to turret, and is it maybe still there?
-			if (here.distanceSquaredTo(ml) < RobotType.SCOUT.sensorRadiusSquared)
+			if (here.distanceSquaredTo(ml) < 81)
 			{
-				if (curround-enemySightedTurrets.get(ml) < TURRET_TIMEOUT_ROUNDS)
-				{
-					// loop through and remove directions that are still safe
-					for (Direction d : Direction.values())
-					{ 
-						if (d != Direction.OMNI && here.add(d).distanceSquaredTo(ml) <= RobotType.TURRET.attackRadiusSquared)
-							dirs.remove(d);
-					}
+				// loop through and remove directions that are still safe
+				for (Direction d : Direction.values())
+				{ 
+					if (d != Direction.OMNI && here.add(d).distanceSquaredTo(ml) <= RobotType.SCOUT.sensorRadiusSquared)
+						dirs.remove(d);
 				}
-				else
-				{
-					enemySightedTurrets.remove(ml);
-				}
+				if (roundsSince(enemySightedTurrets.get(ml)) > TURRET_TIMEOUT_ROUNDS)
+					remove_turret = ml;
 			}
 		}
+		
+		if (remove_turret != null)
+			enemySightedTurrets.remove(remove_turret);
+		
+		// hack, since scouts can see turrets, duh
+		if (rc.getType() == RobotType.SCOUT)
+			dirs = DirectionSet.makeAll();
 				
 		return dirs;
 	}

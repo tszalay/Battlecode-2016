@@ -43,6 +43,20 @@ public class FastLocSet
         }
     }
     
+    public void addOrSet(MapLocation loc, int val)
+    {
+    	if (loc == null)
+    		return;
+    	
+        int x = (loc.x+HASH) % HASH;
+        int y = (loc.y+HASH) % HASH;
+
+        if (isUsingList && value[x][y] <= 0)
+        	locations.add(loc);
+    
+        value[x][y] = val;
+    }
+    
     public void set(MapLocation loc, int val)
     {
         value[(loc.x+HASH) % HASH][(loc.y+HASH) % HASH] = val;

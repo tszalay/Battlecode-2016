@@ -46,7 +46,7 @@ public class StratTurtleArchon extends RoboArchon implements Strategy
 			}
 			else
 			{
-				if (new UnitCounts(Micro.getNearbyAllies()).Soldiers < 4)
+				if (Micro.getFriendlyUnits().Soldiers < 4)
 					tryBuild();
 				else
 					Nav.tryGoTo(turtleLocation, Micro.getSafeMoveDirs());
@@ -96,8 +96,7 @@ public class StratTurtleArchon extends RoboArchon implements Strategy
 		
 		Action.tryAdjacentSafeMoveToward(Micro.getAllyCOM());
 		
-		UnitCounts count = new UnitCounts(friends);
-		if (count.Turrets < 3 && Micro.getNearbyEnemies().length > 2)
+		if (Micro.getFriendlyUnits().Turrets < 3 && Micro.getNearbyEnemies().length > 2)
 		{
 			return false;
 		}
@@ -113,7 +112,7 @@ public class StratTurtleArchon extends RoboArchon implements Strategy
 		
 		
 		// figure out what robot to try and build
-		UnitCounts units = new UnitCounts(Micro.getNearbyAllies());
+		UnitCounts units = Micro.getFriendlyUnits();
 		
 		RobotType robotToBuild = null;
 		Strategy.Type stratToBuild = null;

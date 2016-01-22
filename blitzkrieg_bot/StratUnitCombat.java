@@ -68,6 +68,11 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 		}
 		if (lastDest == null)
 		{
+			myTask = "enemy";
+			lastDest = Sighting.getClosestTurret();
+		}
+		if (lastDest == null)
+		{
 			myTask = "rally";
 			lastDest = MapInfo.ourArchonCenter;
 		}
@@ -91,14 +96,18 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 			return true;
 		}
 		
+		// can we actually move anywhere? then do so
 		if (bufferDirs.any())
-			Nav.tryGoTo(lastDest, bufferDirs);
-		else
 		{
+			Nav.tryGoTo(lastDest, bufferDirs);
+		}
+		else if (!Micro.getSafeMoveDirs().isValid(Direction.NONE))
+		{
+			// if we're not safe here, we should move
 			lastDest = Message.getClosestArchon();
 			if (lastDest == null)
 				lastDest = MapInfo.farthestArchonLoc;
-			Nav.tryGoTo(lastDest, Micro.getCanMoveDirs());
+			Nav.tryGoTo(lastDest, Micro.getSafeMoveDirs());
 		}
 		
 		// or shoot if we couldn't move

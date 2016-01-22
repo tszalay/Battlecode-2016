@@ -29,6 +29,9 @@ public class MicroBase extends RobotPlayer
 	private double hostileTotalDamagePerTurn = -1;
 	private double hostileTotalHealth = -1;
 	
+	private UnitCounts nearbyFriendlyCounts = null;
+	private UnitCounts nearbyEnemyCounts = null;
+	
 	private static final int[] typePriorities = 
 		{
 			-1,	//0: ZOMBIEDEN
@@ -488,6 +491,20 @@ public class MicroBase extends RobotPlayer
 		}
 		
 		return closest;
+	}
+	
+	public UnitCounts getFriendlyUnits()
+	{
+		if (this.nearbyFriendlyCounts == null)
+			this.nearbyFriendlyCounts = new UnitCounts(this.getNearbyAllies());
+		return this.nearbyFriendlyCounts;
+	}
+	
+	public UnitCounts getEnemyUnits()
+	{
+		if (this.nearbyEnemyCounts == null)
+			this.nearbyEnemyCounts = new UnitCounts(this.getNearbyEnemies());
+		return this.nearbyEnemyCounts;
 	}
 	
 	public MapLocation getAllyCOM()
