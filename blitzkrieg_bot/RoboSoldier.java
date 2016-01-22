@@ -6,7 +6,7 @@ public class RoboSoldier extends RobotPlayer
 {
 	public static void init() throws GameActionException
 	{
-		myStrategy = new StratTheft();
+		myStrategy = new StratUnitCombat();
 	}
 	
 	public static void turn() throws GameActionException

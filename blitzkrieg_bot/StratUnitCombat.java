@@ -4,22 +4,18 @@ import battlecode.common.*;
 
 import java.util.*;
 
-public class StratTheft extends RobotPlayer implements Strategy
+public class StratUnitCombat extends RobotPlayer implements Strategy
 {
 	private Strategy overrideStrategy = null;
+	private MapLocation lastDest = null;
+	private String myTask = "";
 	
 	public String getName()
 	{
 		if (overrideStrategy != null)
 			return overrideStrategy.getName();
 
-		try {
-		return "Shamelessly plagiarizing " + Nav.roundsToDigThrough();
-		} 
-		catch (Exception e) {
-			
-		}
-		return "Aefawef";
+		return "Fighting: " + myTask + " at " + lastDest;
 	}
 	
 	public boolean tryTurn() throws GameActionException
@@ -33,7 +29,7 @@ public class StratTheft extends RobotPlayer implements Strategy
 				overrideStrategy = null;
 		}
 		
-		if (rc.getRoundNum() > 2500)
+		/*if (rc.getRoundNum() > 2500)
 		{
 			if (Micro.getNearbyHostiles().length > 0)
 				Nav.tryGoTo(Micro.getUnitCOM(Micro.getNearbyHostiles()), Micro.getCanMoveDirs());
@@ -41,46 +37,72 @@ public class StratTheft extends RobotPlayer implements Strategy
 				Nav.tryGoTo(MapInfo.getSymmetricLocation(MapInfo.farthestArchonLoc), Micro.getCanMoveDirs());
 			Action.tryAttackSomeone();
 			return true;
+		}*/
+		
+		// retreat to the archon?
+		if (rc.getHealth() < 20)
+		{
+			overrideStrategy = new StratUnitRetreat();
+			overrideStrategy.tryTurn();
+			return true;
 		}
 		
-		MapLocation dest = null;
-		
+		// target priority: nearby enemy > nearby ally > zombie den > our archon stuff
+		lastDest = null;
 		RobotInfo closestUnit = Micro.getClosestUnitTo(Micro.getNearbyHostiles(), here);
 		if (closestUnit != null)
-			dest = closestUnit.location;
-		
-		if (dest == null)
-			dest = MapInfo.getClosestDen();
-		if (dest == null)
-			dest = MapInfo.ourArchonCenter;
+		{
+			myTask = "enemy";
+			lastDest = closestUnit.location;
+		}
+
+		if (lastDest == null)
+		{
+			myTask = "ally";
+			lastDest = Message.getClosestAllyUnderAttack();
+		}
+		if (lastDest == null)
+		{
+			myTask = "den";
+			lastDest = MapInfo.getClosestDen();
+		}
+		if (lastDest == null)
+		{
+			myTask = "rally";
+			lastDest = MapInfo.ourArchonCenter;
+		}
 			
 		DirectionSet bufferDirs = Micro.getBufferDirs();
 		bufferDirs = bufferDirs.and(Micro.getTurretSafeDirs());
 		
-		boolean gtfo = rc.getHealth() < rc.getType().maxHealth / 3;
-		
-		if (gtfo)
-		{
-			dest = Message.getRecentFriendlyLocation();
-			if (dest == null)
-				dest = myBuilderLocation;
-		}
-
-		if (Message.getClosestAllyUnderAttack() != null)
-			dest = Message.getClosestAllyUnderAttack();
-		
 		// only shoot if we're safe here
-		if (!gtfo && bufferDirs.isValid(Direction.NONE) && Action.tryAttackSomeone())
+		if (bufferDirs.isValid(Direction.NONE) && Action.tryAttackSomeone())
 			return true;
 		
 		// don't move if we're safe and just shot
 		if (bufferDirs.isValid(Direction.NONE) && !rc.isWeaponReady())
+		{
+			if (Micro.getRoundsUntilDanger() > 10)
+			{
+				Direction d = bufferDirs.getDirectionTowards(here,lastDest);
+				if (d != null)
+					Action.tryMove(d);
+			}
 			return true;
+		}
 		
 		if (bufferDirs.any())
-			Nav.tryGoTo(dest, bufferDirs);
+			Nav.tryGoTo(lastDest, bufferDirs);
 		else
-			Action.tryRetreatOrShootIfStuck();
+		{
+			lastDest = Message.getClosestArchon();
+			if (lastDest == null)
+				lastDest = MapInfo.farthestArchonLoc;
+			Nav.tryGoTo(lastDest, Micro.getCanMoveDirs());
+		}
+		
+		// or shoot if we couldn't move
+		Action.tryAttackSomeone();
 		
 		if (!Rubble.tryClearRubble(dest))
 			if (!Rubble.tryClearRubble(MapInfo.farthestArchonLoc))

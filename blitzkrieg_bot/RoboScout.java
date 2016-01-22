@@ -10,7 +10,7 @@ public class RoboScout extends RobotPlayer
 	{
 		if (Message.recentStrategySignal == null || rc.getRoundNum() < 200)
 		{
-			myStrategy = new StratExplore();
+			myStrategy = new StratScoutExplore();
 			return;
 		}
 		// start off balling around closest archon
@@ -24,7 +24,7 @@ public class RoboScout extends RobotPlayer
 			break;
 		case EXPLORE:
 		default:
-			myStrategy = new StratExplore();
+			myStrategy = new StratScoutExplore();
 			break;
 		}
 	}
@@ -34,7 +34,7 @@ public class RoboScout extends RobotPlayer
 	{
 		// Free unit if everything else breaks
 		if (!myStrategy.tryTurn())
-			myStrategy = new StratFreeUnit();
+			myStrategy = new StratScoutExplore();
 		//myStrategy.tryTurn();
 		
 		Sighting.doSendSightingMessage();

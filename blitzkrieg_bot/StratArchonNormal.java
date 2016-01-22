@@ -14,7 +14,7 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (overrideStrategy != null)
 			return overrideStrategy.getName();
 
-		return "Normal Archon " + Message.getRecentFriendlyLocation();
+		return "Normal Archon " + Message.getClosestArchon();
 	}
 	
 	public boolean tryTurn() throws GameActionException
@@ -34,11 +34,11 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 			if ((rc.getRoundNum()%5) == 0)
 				Message.sendMessageSignal(400,Message.Type.UNDER_ATTACK,0);
 			
-			
-			if (Message.getRecentFriendlyLocation() != null)
-				Nav.tryGoTo(Message.getRecentFriendlyLocation(), Micro.getCanMoveDirs());
-			else
-				Action.tryRetreatOrShootIfStuck();
+			MapLocation dest = Message.getClosestArchon();
+			if (dest == null)
+				dest = MapInfo.farthestArchonLoc;
+
+			Nav.tryGoTo(dest, Micro.getCanMoveDirs());
 			return true;
 		}
 		if (Micro.getRoundsUntilDanger() < 20)
@@ -51,6 +51,9 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 				Action.tryGoToWithoutBeingShot(retreatloc, Micro.getSafeMoveDirs());
 			return true;
 		}
+		
+		if (rc.getRoundNum() < SCOUT_SHADOW_ROUND)
+			Message.sendArchonLocation(rc.senseRobot(rc.getID()));
 
 		// next, try doing some building
 		if (tryBuild())
@@ -106,7 +109,7 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		int buildPriority = RobotType.TURRET.partCost;
 		
 		// need to build a shadow scout, top priority
-		if (roundsSince(RoboArchon.lastAdjacentScoutRound) > 20 && rc.getRoundNum() > 200)
+		if (roundsSince(RoboArchon.lastAdjacentScoutRound) > 20 && rc.getRoundNum() > SCOUT_SHADOW_ROUND)
 		{
 			buildPriority += 0;
 			robotToBuild = RobotType.SCOUT;

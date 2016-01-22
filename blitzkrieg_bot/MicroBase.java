@@ -45,6 +45,22 @@ public class MicroBase extends RobotPlayer
 			8	//11: TTM
 		};
 	
+	private static final int[] bufferDist = 
+		{
+			2,	//0: ZOMBIEDEN
+			8,	//1: STANDARDZOMBIE
+			8,	//2: RANGEDZOMBIE
+			2,	//3: FASTZOMBIE
+			8,	//4: BIGZOMBIE
+			2,	//5: ARCHON
+			2,	//6: SCOUT
+			8,	//7: SOLDIER
+			8,	//8: GUARD
+			8,	//9: VIPER
+			2,	//10: TURRET
+			2	//11: TTM
+		};
+	
 	public RobotInfo[] getNearbyEnemies()
 	{
 		if (nearbyEnemies != null)
@@ -107,13 +123,18 @@ public class MicroBase extends RobotPlayer
 			
 			int closestDistSq = DIST_MAX;
 			boolean isThisSquareSafe = true;
+			boolean isThisSquareBuffer = true;
 			
 			for (RobotInfo ri : nearby)
-			{
+			{				
+				int distSq = testloc.distanceSquaredTo(ri.location);
+
+				if (distSq <= bufferDist[ri.type.ordinal()])
+					isThisSquareBuffer = false;
+				
 				if (ri.attackPower == 0)
 					continue;
-				
-				int distSq = testloc.distanceSquaredTo(ri.location);
+
 				if (distSq < closestDistSq)
 					closestDistSq = distSq;
 
@@ -126,7 +147,7 @@ public class MicroBase extends RobotPlayer
 			}
 			
 			distToClosestHostile[d.ordinal()] = closestDistSq;
-			if (closestDistSq > 8)
+			if (isThisSquareBuffer)
 				bufferDirs.add(d);
 			
 			if (isThisSquareSafe)

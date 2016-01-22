@@ -32,7 +32,8 @@ public class MapInfo extends RobotPlayer
 	private static final int SYM_VFLIP = 4;
 	
 	// if it is neither of these, it's some other bullshit
-	private static int mapSymmetry = SYM_ROT|SYM_HFLIP|SYM_VFLIP;
+	private static int 			mapSymmetry = SYM_ROT|SYM_HFLIP|SYM_VFLIP;
+	private static boolean 		mapSymmetryKnown = false;
 	
 	public static MapLocation mapCenter = null;
 	private static MapLocation dblCenter = null;
@@ -116,6 +117,18 @@ public class MapInfo extends RobotPlayer
 				Math.min(mapMax.x, newMax.x),
 				Math.min(mapMax.y, newMax.y)
 			);
+		
+		if (!mapSymmetryKnown)
+		{
+			MapLocation mmSum = mapMin.add(mapMax.x,mapMax.y);
+			MapLocation mmSub = mapMax.add(-mapMin.x,-mapMin.y);
+			
+			if (!mmSum.equals(dblCenter) && mmSub.x <= GameConstants.MAP_MAX_WIDTH+2 && mmSub.y <= GameConstants.MAP_MAX_HEIGHT+2)
+			{
+				mapSymmetry &= ~SYM_ROT;
+				mapSymmetryKnown = true;
+			}
+		}
 	}
 	
 	// called by local units when checking for map edge info
@@ -161,14 +174,15 @@ public class MapInfo extends RobotPlayer
 
 	
 	// these are to be called by message to add a zombie den/part if it isn't in there already
-	public static void updateZombieDens(MapLocation add_loc, MapLocation del_loc)
+	public static void updateZombieDens(MapLocation add_loc, MapLocation del_loc, boolean add_symmetric)
 	{
 		// if we already reported it, or we already have one queued to send,
 		// don't do anything
 		if (!add_loc.equals(nullLocation))
 		{
 			zombieDenLocations.add(add_loc, DEN_SENT_ADD);
-			zombieDenLocations.add(getSymmetricLocation(add_loc), DEN_SENT_ADD);
+			if (add_symmetric)
+				zombieDenLocations.add(getSymmetricLocation(add_loc), DEN_SENT_ADD);
 		}
 		if (!del_loc.equals(nullLocation))
 			zombieDenLocations.remove(del_loc);
@@ -186,25 +200,16 @@ public class MapInfo extends RobotPlayer
 	}
 	*/
 	
-	public static void updateNeutralArchons(MapLocation add_loc, MapLocation del_loc)
+	public static void updateNeutralArchons(MapLocation add_loc, MapLocation del_loc, boolean add_symmetric)
 	{
 		if (!add_loc.equals(nullLocation))
 		{
 			neutralArchonLocations.add(add_loc);
-			neutralArchonLocations.add(getSymmetricLocation(add_loc));
+			if (add_symmetric)
+				neutralArchonLocations.add(getSymmetricLocation(add_loc));
 		}
 		if (!del_loc.equals(nullLocation))
-		{
-			/*System.out.println("!!!!elts before: " + neutralArchonLocations.elements().size());
-			System.out.println("removing " + del_loc);
-			System.out.println("foo: " + neutralArchonLocations.get(del_loc));
-			for (MapLocation z : neutralArchonLocations.elements())
-				System.out.println("contains " + z);*/
 			neutralArchonLocations.remove(del_loc);
-			//System.out.println("!!!!elts after: " + neutralArchonLocations.elements().size());
-			
-//			neutralArchonLocations.remove(del_loc);
-		}
 	}
 	
 	// function to send updated info as a scout
@@ -251,6 +256,9 @@ public class MapInfo extends RobotPlayer
 	// function to quickly look around us and see what's new or what's changed
 	public static void doAnalyzeSurroundings() throws GameActionException
 	{
+		// map symmetry check
+		
+		
 		// neutral robot check
 		RobotInfo[] neutralRobots = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.NEUTRAL);
 		for (RobotInfo ri : neutralRobots)
@@ -275,23 +283,14 @@ public class MapInfo extends RobotPlayer
 		}
 		
 		// neutral archon removal check, scout sends instantly
-		//Iterator<MapLocation> iter = neutralArchonLocations.elements().iterator();
-		//while (iter.hasNext())
 		for (MapLocation arch : neutralArchonLocations.elements())
 		{
-			//MapLocation arch = iter.next();
-			
 			if (!rc.canSense(arch))
 				continue;
 			RobotInfo ri = rc.senseRobotAtLocation(arch);
 			if (ri == null || ri.type != RobotType.ARCHON || ri.team != Team.NEUTRAL)
 			{
-				//System.out.println("elts before: " + neutralArchonLocations.elements().size());
-				//for (MapLocation z : neutralArchonLocations.elements())
-				//	System.out.println("contains " + z);
 				neutralArchonLocations.remove(arch);
-				//iter.remove();
-				//System.out.println("elts after: " + neutralArchonLocations.elements().size());
 				if (rc.getType() == RobotType.SCOUT)
 				{
 					Message.sendMessageSignal(fullMapDistanceSq(), Message.Type.NEUTRAL_ARCHON, nullLocation, arch);
@@ -417,12 +416,6 @@ public class MapInfo extends RobotPlayer
 		// and set Message's map offsets
 		Message.MAP_OFF_X = mapCenter.x - 128;
 		Message.MAP_OFF_Y = mapCenter.y - 128;
-		// and the map edge min and max
-		mapMin = mapCenter.add(-GameConstants.MAP_MAX_WIDTH/2-1,-GameConstants.MAP_MAX_HEIGHT/2-1);
-		mapMax = mapCenter.add(GameConstants.MAP_MAX_WIDTH/2+1,GameConstants.MAP_MAX_HEIGHT/2+1);
-		
-		// add a few to the max location to signify "invalid location"
-		nullLocation = mapMax.add(5,5);
 		
 		// this, on the other hand, is exactly twice the center
 		dblCenter = new MapLocation(xtot/numInitialArchons,ytot/numInitialArchons);
@@ -443,10 +436,36 @@ public class MapInfo extends RobotPlayer
 				mapSymmetry &= ~(SYM_ROT);
 		}
 		
+		// ok, now let's get the min/max set up
+		// if we know we have a flip across an axis, we know the map size in that direction is limited
+		// or if we have a rotation, we know what it is exactly
+		if (mapSymmetry == SYM_ROT)
+		{
+			mapMin = mapCenter.add(-GameConstants.MAP_MAX_WIDTH/2-1,-GameConstants.MAP_MAX_HEIGHT/2-1);
+			mapMax = mapCenter.add(GameConstants.MAP_MAX_WIDTH/2+1,GameConstants.MAP_MAX_HEIGHT/2+1);
+		}
+		else if ((mapSymmetry&SYM_HFLIP) > 0)
+		{			
+			mapMin = mapCenter.add(-GameConstants.MAP_MAX_WIDTH/2-1,-GameConstants.MAP_MAX_HEIGHT-1);
+			mapMax = mapCenter.add(GameConstants.MAP_MAX_WIDTH/2+1,GameConstants.MAP_MAX_HEIGHT+1);
+		}
+		else if ((mapSymmetry&SYM_VFLIP) > 0)
+		{
+			mapMin = mapCenter.add(-GameConstants.MAP_MAX_WIDTH-1,-GameConstants.MAP_MAX_HEIGHT/2-1);
+			mapMax = mapCenter.add(GameConstants.MAP_MAX_WIDTH+1,GameConstants.MAP_MAX_HEIGHT/2+1);			
+		}
+		else
+		{
+			System.out.println("Unhandled map type: " + mapSymmetry);
+		}
+		
+		// add a few to the max location to signify "invalid location"
+		nullLocation = mapMax.add(5,5);
+		
 		// has more than one symmetry, so it doesn't really matter
 		// and it's probably rotation because of the map editor
-		if (Integer.bitCount(mapSymmetry) > 1)
-			mapSymmetry = SYM_ROT;
+		if (Integer.bitCount(mapSymmetry) == 1)
+			mapSymmetryKnown = true;
 	}
 	
     public static MapLocation getSymmetricLocation(MapLocation loc)
@@ -455,16 +474,25 @@ public class MapInfo extends RobotPlayer
     	
     	switch (mapSymmetry)
     	{
-    	case SYM_ROT:
-    		loc_sym = new MapLocation(dblCenter.x-loc.x,dblCenter.y-loc.y);
-    		break;
     	case SYM_HFLIP:
     		loc_sym = new MapLocation(loc.x, dblCenter.y-loc.y);
     		break;
     	case SYM_VFLIP:
     		loc_sym = new MapLocation(dblCenter.x-loc.x, loc.y);
     		break;
+    	case SYM_ROT:
+    		loc_sym = new MapLocation(dblCenter.x-loc.x,dblCenter.y-loc.y);
+    		break;
 		default:
+			// check if we have resolved it yet
+			MapLocation loc_rot = new MapLocation(dblCenter.x-loc.x,dblCenter.y-loc.y);
+			// if rotation doesn't work, we know it's the other one
+			if (!isOnMap(loc_rot))
+			{
+				mapSymmetry &= ~SYM_ROT;
+				mapSymmetryKnown = true;
+				return getSymmetricLocation(loc);
+			}
 			break;
     	}
     	

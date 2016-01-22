@@ -4,17 +4,38 @@ import battlecode.common.*;
 
 import java.util.*;
 
-class SignalLocation extends RobotPlayer
+class ArchonLocation extends Message
 {
 	public MapLocation loc;
-	public Signal sig;
 	public int round;
+	public int id;
+	private static final int ARCHON_TIMEOUT = 200;
 	
-	public SignalLocation (Signal s, MapLocation ml)
+	public ArchonLocation (int newid, int newround, MapLocation newloc)
 	{
-		sig = s;
-		loc = ml;
-		round = rc.getRoundNum();
+		loc = newloc;
+		round = newround;
+		id = newid;
+	}
+	
+	public boolean update(int newid, int newround, MapLocation newloc)
+	{
+		// does this correspond to the same archon id? 
+		// if it's newer, update the archon's info
+		if (id == newid && newround > round)
+		{
+			loc = newloc;
+			round = newround;
+			id = newid;
+			return true;
+		}
+		
+		return false;
+	}
+	
+	public boolean isRecent()
+	{
+		return roundsSince(round) < ARCHON_TIMEOUT;
 	}
 }
 
@@ -50,6 +71,28 @@ class SignalRound extends RobotPlayer
 	}
 }
 
+class SignalDelay extends RobotPlayer
+{
+	private final int timeout;
+	private int round;
+	
+	public SignalDelay(int timeout)
+	{
+		this.timeout = timeout;
+		this.round = -100000;
+	}
+	
+	public boolean canSend()
+	{
+		if (roundsSince(round) > timeout)
+		{
+			this.round = rc.getRoundNum();
+			return true;
+		}
+		return false;
+	}
+}
+
 public class Message extends RobotPlayer
 {
 	// enum for encoding the type of a message in the contents
@@ -63,7 +106,8 @@ public class Message extends RobotPlayer
 		MAP_EDGE,
 		NEW_STRATEGY,
 		LOTSA_FRIENDLIES,
-		NEUTRAL_ARCHON
+		NEUTRAL_ARCHON,
+		ARCHON_LOCATION
 	}
 	
 	// bookkeeping stuff
@@ -78,8 +122,10 @@ public class Message extends RobotPlayer
 	private static SignalRound	recentArchonAttacked = new SignalRound(80);
 	private static SignalRound	recentFriendlySignal = new SignalRound(300);
 	
-	// closest recent friendly signal
+	private static ArrayList<ArchonLocation> recentArchonLocations = new ArrayList<ArchonLocation>();
+	private static SignalDelay archonLocationTimer = new SignalDelay(20);
 	
+	private static final int LOCATION_NO_SYM = 1;
 	
 	// and for any transmitted enemy messages, only keep the latest received
 	public static MapLocation recentEnemySignal = null;
@@ -125,7 +171,7 @@ public class Message extends RobotPlayer
 						rc.getRoundNum()-1);
 				break;
 			case ZOMBIE_DEN:
-				MapInfo.updateZombieDens(readLocation(vals[0]),readLocation(vals[1]));
+				MapInfo.updateZombieDens(readLocation(vals[0]), readLocation(vals[1]), readByte(vals[1],3)==0);
 				break;
 			case MAP_EDGE:
 				MapInfo.updateMapEdges(readLocation(vals[0]), readLocation(vals[1]));
@@ -137,12 +183,56 @@ public class Message extends RobotPlayer
 				recentFriendlySignal.update(sig);
 				break;
 			case NEUTRAL_ARCHON:
-				MapInfo.updateNeutralArchons(readLocation(vals[0]),readLocation(vals[1]));
+				MapInfo.updateNeutralArchons(readLocation(vals[0]), readLocation(vals[1]), readByte(vals[1],3)==0);
+				break;
+			case ARCHON_LOCATION:
+				updateArchonLocations(readLocation(vals[0]),readShort(vals[1],0),readShort(vals[1],1));
 				break;
 			default:
 				break;
 			}
 		}
+	}
+	
+	// if we received a nearby archon message
+	private static void updateArchonLocations(MapLocation loc, int round, int id)
+	{
+		// don't save if we _are_ an archon, so we know about all the others
+		if (id == rc.getID())
+			return;
+		
+		// look through the list of id/loc pairs and see if we already have this dude on file
+		for (ArchonLocation aloc : recentArchonLocations)
+		{
+			if (aloc.id == id)
+			{
+				aloc.update(id, round, loc);
+				return;
+			}
+		}
+		recentArchonLocations.add(new ArchonLocation(id,round,loc));
+	}
+	
+	// scouts send archon location messages
+	public static void sendArchonLocation(RobotInfo ri) throws GameActionException
+	{
+		int messageDist = (rc.getType() == RobotType.SCOUT) ? MapInfo.fullMapDistanceSq() : 500;
+		if (archonLocationTimer.canSend())
+			Message.sendMessageSignal(messageDist, Type.ARCHON_LOCATION, ri.location, rc.getRoundNum(), ri.ID);
+	}
+	
+	// who is the closest to meeeeeeee
+	public static MapLocation getClosestArchon()
+	{
+		MapLocation closest = null;
+		
+		for (ArchonLocation al : recentArchonLocations)
+		{
+			if (closest == null || al.loc.distanceSquaredTo(here) < closest.distanceSquaredTo(here))
+				closest = al.loc;
+		}
+		
+		return closest;
 	}
 	
 	// to be called by Archon
@@ -153,11 +243,13 @@ public class Message extends RobotPlayer
 		Message.sendMessageSignal(9, Message.Type.MAP_EDGE, MapInfo.mapMin, MapInfo.mapMax);
 		// and a strategy to use
 		Message.sendMessageSignal(9, Message.Type.NEW_STRATEGY, strat.ordinal());
-		// and then all of the zombie dens and archons
+		// and then all of the zombie dens and archons, but signal
 		for (MapLocation loc : MapInfo.zombieDenLocations.elements())
-			Message.sendMessageSignal(9, Message.Type.ZOMBIE_DEN, loc, MapInfo.nullLocation);
+			Message.sendMessageSignal(9, Message.Type.ZOMBIE_DEN, loc, MapInfo.nullLocation, 
+					LOCATION_NO_SYM);
 		for (MapLocation loc : MapInfo.neutralArchonLocations.elements())
-			Message.sendMessageSignal(9, Message.Type.NEUTRAL_ARCHON, loc, MapInfo.nullLocation);
+			Message.sendMessageSignal(9, Message.Type.NEUTRAL_ARCHON, loc, MapInfo.nullLocation, 
+					LOCATION_NO_SYM);
 	}
 	
 	// Basic signals always only done when under attack
@@ -183,6 +275,10 @@ public class Message extends RobotPlayer
 	
 	// low-level functions past here
 	
+	private static int readShort(int val, int ind)
+	{
+		return (val>>>(ind*16))&65535;
+	}
 	
 	private static int readByte(int val, int ind)
 	{
@@ -192,6 +288,11 @@ public class Message extends RobotPlayer
 	private static MapLocation readLocation(int val)
 	{
 		return new MapLocation(readByte(val,0)+MAP_OFF_X, readByte(val,1)+MAP_OFF_Y);
+	}
+	
+	public static int writeShort(int val, int ind)
+	{
+		return (val << (ind*16));
 	}
 	
 	// writes a particular byte
@@ -226,6 +327,16 @@ public class Message extends RobotPlayer
 	public static void sendMessageSignal(int sq_distance, Message.Type type, MapLocation loc1, MapLocation loc2) throws GameActionException
 	{
 		sendMessageSignal(sq_distance, writeType(type) | writeLocation(loc1), writeLocation(loc2));
+	}
+	
+	public static void sendMessageSignal(int sq_distance, Message.Type type, MapLocation loc, int val1, int val2) throws GameActionException
+	{
+		sendMessageSignal(sq_distance, writeType(type) | writeLocation(loc), writeShort(val1,0) | writeShort(val2,1));
+	}
+	
+	public static void sendMessageSignal(int sq_distance, Message.Type type, MapLocation loc1, MapLocation loc2, int val) throws GameActionException
+	{
+		sendMessageSignal(sq_distance, writeType(type) | writeLocation(loc1), writeByte(val, 3) | writeLocation(loc2));
 	}
 	
 	public static void sendMessageSignal(int sq_distance, Message.Type type, MapLocation loc) throws GameActionException
