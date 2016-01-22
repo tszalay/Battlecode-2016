@@ -99,7 +99,12 @@ public class Rubble extends RobotPlayer
 		
 		// DIG to target
 		Debug.setStringSJF("rubble = " + rubble);
-		if (rc.senseRubble(here.add(towards)) >= GameConstants.RUBBLE_SLOW_THRESH)
+		if (rc.senseRubble(here.add(towards)) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH)
+		{
+			doClearRubble(towards);
+			return true;
+		}
+		if (rc.senseRubble(here.add(towards)) >= GameConstants.RUBBLE_SLOW_THRESH && rand.nextInt(3) > 0)
 		{
 			doClearRubble(towards);
 			return true;
