@@ -189,8 +189,9 @@ public class RobotPlayer
 				if (myStrategy != null)
 					Debug.setStringAK(myStrategy.getName());
 				
-				Debug.setStringTS("Dens: " + MapInfo.zombieDenLocations.elements().size()
-						+ ", Archons: " + MapInfo.neutralArchonLocations.elements().size());
+				Debug.setStringTS("D: " + MapInfo.zombieDenLocations.elements().size()
+						+ ", A: " + MapInfo.neutralArchonLocations.elements().size()
+						+ ", M: " + MapInfo.mapSymmetry);
 				
 				Debug.setStringSJF(lastMicroTime + "/" + lastSignalsTime + "/" +
 									lastSurroundingsTime + "/" + lastTurnTime);

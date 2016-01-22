@@ -15,7 +15,7 @@ public class StratScoutTurrets extends RobotPlayer implements Strategy
 		if (overrideStrategy != null)
 			return overrideStrategy.getName();
 
-		return "Turret monitoring " + Nav.bugState + " " + Nav.bugWallSide;
+		return "Turret monitoring";
 	}
 	
 	// we oughta scout turrets if there are turrets to scout

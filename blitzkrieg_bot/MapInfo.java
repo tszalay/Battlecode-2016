@@ -32,7 +32,7 @@ public class MapInfo extends RobotPlayer
 	private static final int SYM_VFLIP = 4;
 	
 	// if it is neither of these, it's some other bullshit
-	private static int 			mapSymmetry = SYM_ROT|SYM_HFLIP|SYM_VFLIP;
+	public static int 			mapSymmetry = SYM_ROT|SYM_HFLIP|SYM_VFLIP;
 	private static boolean 		mapSymmetryKnown = false;
 	
 	public static MapLocation mapCenter = null;
