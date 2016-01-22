@@ -33,24 +33,31 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		{
 			if ((rc.getRoundNum()%5) == 0)
 				Message.sendMessageSignal(400,Message.Type.UNDER_ATTACK,0);
-			
-//			MapLocation dest = Message.getClosestArchon();
-//			if (dest == null)
-//				dest = MapInfo.farthestArchonLoc;
-//
-//			Nav.tryGoTo(dest, Micro.getCanMoveDirs());
-//			return true;
+			if (rc.getRoundNum() > 100 || (Micro.getNearbyAllies() != null && Micro.getNearbyAllies().length > 5))
+			{
+				MapLocation dest = Message.getClosestArchon();
+				if (dest == null)
+					dest = MapInfo.farthestArchonLoc;
+	
+				Nav.tryGoTo(dest, Micro.getCanMoveDirs());
+				return true;
+			}
 		}
-//		if (Micro.getRoundsUntilDanger() < 20)
-//		{
-//			Message.sendSignal(120);
-//			MapLocation retreatloc = MapInfo.farthestArchonLoc;
-//			if (retreatloc == null)
-//				Action.tryRetreatOrShootIfStuck();
-//			else
-//				Action.tryGoToWithoutBeingShot(retreatloc, Micro.getSafeMoveDirs());
-//			return true;
-//		}
+		if (Micro.getRoundsUntilDanger() < 20 && (rc.getRoundNum() > 200 || (Micro.getNearbyAllies() != null && Micro.getNearbyAllies().length > 5) ))
+		{
+			Message.sendSignal(120);
+			MapLocation retreatloc = MapInfo.farthestArchonLoc;
+			if (retreatloc == null)
+			{
+				Action.tryRetreatOrShootIfStuck();
+				return true;
+			}
+			else if (here.distanceSquaredTo(retreatloc) > 9)
+			{
+				Action.tryGoToWithoutBeingShot(retreatloc, Micro.getSafeMoveDirs());
+				return true;
+			}
+		}
 		
 		if (rc.getRoundNum() < SCOUT_SHADOW_ROUND)
 			Message.sendArchonLocation(rc.senseRobot(rc.getID()));
