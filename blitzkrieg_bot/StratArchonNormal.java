@@ -34,23 +34,23 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 			if ((rc.getRoundNum()%5) == 0)
 				Message.sendMessageSignal(400,Message.Type.UNDER_ATTACK,0);
 			
-			MapLocation dest = Message.getClosestArchon();
-			if (dest == null)
-				dest = MapInfo.farthestArchonLoc;
-
-			Nav.tryGoTo(dest, Micro.getCanMoveDirs());
-			return true;
+//			MapLocation dest = Message.getClosestArchon();
+//			if (dest == null)
+//				dest = MapInfo.farthestArchonLoc;
+//
+//			Nav.tryGoTo(dest, Micro.getCanMoveDirs());
+//			return true;
 		}
-		if (Micro.getRoundsUntilDanger() < 20)
-		{
-			Message.sendSignal(120);
-			MapLocation retreatloc = MapInfo.farthestArchonLoc;
-			if (retreatloc == null)
-				Action.tryRetreatOrShootIfStuck();
-			else
-				Action.tryGoToWithoutBeingShot(retreatloc, Micro.getSafeMoveDirs());
-			return true;
-		}
+//		if (Micro.getRoundsUntilDanger() < 20)
+//		{
+//			Message.sendSignal(120);
+//			MapLocation retreatloc = MapInfo.farthestArchonLoc;
+//			if (retreatloc == null)
+//				Action.tryRetreatOrShootIfStuck();
+//			else
+//				Action.tryGoToWithoutBeingShot(retreatloc, Micro.getSafeMoveDirs());
+//			return true;
+//		}
 		
 		if (rc.getRoundNum() < SCOUT_SHADOW_ROUND)
 			Message.sendArchonLocation(rc.senseRobot(rc.getID()));
