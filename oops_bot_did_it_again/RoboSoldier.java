@@ -1,12 +1,12 @@
-package blitzkrieg_bot;
+package oops_bot_did_it_again;
 
 import battlecode.common.*;
 
-public class RoboGuard extends RobotPlayer
+public class RoboSoldier extends RobotPlayer
 {
 	public static void init() throws GameActionException
 	{
-		myStrategy = new StratUnitRush();
+		myStrategy = new StratUnitCombat();
 	}
 	
 	public static void turn() throws GameActionException
@@ -17,3 +17,4 @@ public class RoboGuard extends RobotPlayer
 		myStrategy.tryTurn();
 	}
 }
+	

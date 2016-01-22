@@ -1,4 +1,4 @@
-package blitzkrieg_bot;
+package oops_bot_did_it_again;
 
 import battlecode.common.*;
 
@@ -115,14 +115,10 @@ public class MicroBase extends RobotPlayer
 		bufferDirs = new DirectionSet();
 
 		turretSafeDirs = Sighting.getTurretSafeDirs();
-		getCanMoveDirs();
-				
-		for (Direction d : Direction.values())
+		
+		// only check directions we can actually move
+		for (Direction d : getCanMoveDirs().getDirections())
 		{
-			// only check directions we can actually move
-			if (!canMoveDirs.isValid(d))
-				continue;
-			
 			MapLocation testloc = here.add(d);
 			
 			int closestDistSq = DIST_MAX;
@@ -158,7 +154,7 @@ public class MicroBase extends RobotPlayer
 				safeMoveDirs.add(d);
 			
 			// keep track of directions without parts
-			if (rc.senseParts(testloc) == 0)
+			if (rc.senseParts(here.add(d)) == 0)
 				noPartsDirs.add(d);
 		}
 	}
@@ -278,11 +274,8 @@ public class MicroBase extends RobotPlayer
 		Direction bestDir = null;
 		int distToClosest = 0;
 		
-		for (Direction d : Direction.values())
+		for (Direction d : dirs.getDirections())
 		{
-			if (!dirs.isValid(d))
-				continue;
-			
 			if (distToClosestHostile[d.ordinal()] > distToClosest)
 			{
 				distToClosest = distToClosestHostile[d.ordinal()];

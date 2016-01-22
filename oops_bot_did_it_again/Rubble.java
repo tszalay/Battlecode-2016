@@ -1,4 +1,4 @@
-package blitzkrieg_bot;
+package oops_bot_did_it_again;
 
 import battlecode.common.*;
 
@@ -49,8 +49,10 @@ public class Rubble extends RobotPlayer
 		return false;
 	}
 	
-	public static boolean tryClearRubbleInPathIfClearBeyondAndAlliesAround(MapLocation target) throws GameActionException
+	public static boolean tryClearSmallRubble(MapLocation target) throws GameActionException
 	{
+		//System.out.println("tryClearRubble got called for " + target.toString());
+		
 		if (target == null)
 			return false;
 		
@@ -60,42 +62,28 @@ public class Rubble extends RobotPlayer
 		if (rc.canSense(target) && rc.senseRubble(here.add(here.directionTo(target))) < GameConstants.RUBBLE_OBSTRUCTION_THRESH)
 			return false;
 		
-		// look for a direction where digging is minimal
-		
-		// straight ahead
-		double rubAhead = rc.senseRubble(here.add(here.directionTo(target))) + rc.senseRubble(here.add(here.directionTo(target)).add(here.directionTo(target)));
-
-		// ahead right
-		//double rubRight = rc.senseRubble(here.add(here.directionTo(target).rotateRight())) + rc.senseRubble(here.add(here.directionTo(target).rotateRight()).add(here.directionTo(target).rotateRight()));
-		
-		// ahead left
-		//double rubLeft = rc.senseRubble(here.add(here.directionTo(target).rotateLeft())) + rc.senseRubble(here.add(here.directionTo(target).rotateLeft()).add(here.directionTo(target).rotateLeft()));
-		
-		// get min rubble direction
-		double rubble = rubAhead;
-		Direction towards = here.directionTo(target);
-//		if (rubRight < rubAhead)
-//		{
-//			rubble = rubRight;
-//			towards = here.directionTo(target).rotateRight();
-//		}
-//		if (rubLeft < rubRight && rubLeft < rubAhead)
-//		{
-//			rubble = rubLeft;
-//			towards = here.directionTo(target).rotateLeft();
-//		}
-		rubble = rubble - 2 * GameConstants.RUBBLE_OBSTRUCTION_THRESH; // how much just to get through
-		
-		// probabilities
-		double g = rand.nextGaussian();
-		if ( (rubble - 2*100) > g*1000+2000 || Micro.getNearbyAllies().length < 3+g*3)
-			return false;
-		
 		// DIG to target
-		Debug.setStringSJF("rubble = " + rubble);
-		if (rc.senseRubble(here.add(towards)) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH)
+		Direction towards = here.directionTo(target);
+		double rubble = rc.senseRubble(here.add(towards));
+		if (rubble < 200 && rubble >= 100)
 		{
 			doClearRubble(towards);
+			return true;
+		}
+		
+		Direction tLeft = towards.rotateLeft();
+		rubble = rc.senseRubble(here.add(tLeft));
+		if (rubble < 200 && rubble >= 100)
+		{
+			doClearRubble(tLeft);
+			return true;
+		}
+		
+		Direction tRight = towards.rotateRight();
+		rubble = rc.senseRubble(here.add(tRight));
+		if (rubble < 200 && rubble >= 100)
+		{
+			doClearRubble(tRight);
 			return true;
 		}
 		
@@ -106,11 +94,8 @@ public class Rubble extends RobotPlayer
 	{
 		DirectionSet dirs = DirectionSet.makeAll();
 		dirs.remove(Direction.NONE);
-		for(Direction dir : Direction.values())
+		for(Direction dir : dirs.getDirections())
 		{
-			if (!dirs.isValid(dir))
-				continue;
-			
 			if (rc.senseRubble(here.add(dir)) > GameConstants.RUBBLE_OBSTRUCTION_THRESH && rc.senseRubble(here.add(dir)) < 5000)
 			{
 				return dir;

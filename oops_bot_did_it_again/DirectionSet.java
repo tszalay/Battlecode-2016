@@ -1,4 +1,4 @@
-package blitzkrieg_bot;
+package oops_bot_did_it_again;
 
 import battlecode.common.*;
 import java.util.*;
@@ -10,6 +10,7 @@ public class DirectionSet
 	static final Random rand = new Random();
 	static final int[] dirOffsets = {1,7,2,6,3,5,4};
 	static final int[] dirOffsetsTowards = {1,7};
+	
 	
 	public int dirs = 0;
 	
@@ -139,6 +140,17 @@ public class DirectionSet
 			return best.rotateLeft().rotateLeft();
 		*/
 		return null;
+	}
+	
+	public ArrayList<Direction> getDirections()
+	{
+		ArrayList<Direction> dirlist = new ArrayList<Direction>();
+		
+		for (int i=0; i<9; i++)
+			if (( (1<<i)&this.dirs) > 0)
+				dirlist.add(Direction.values()[i]);
+		
+		return dirlist;
 	}
 	
 	public static DirectionSet getOddSquares(MapLocation currentLoc)

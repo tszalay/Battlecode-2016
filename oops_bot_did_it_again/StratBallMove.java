@@ -1,4 +1,4 @@
-package blitzkrieg_bot;
+package oops_bot_did_it_again;
 
 import battlecode.common.*;
 import java.util.*;
@@ -115,10 +115,8 @@ public class StratBallMove extends RobotPlayer implements Strategy
 		
 		 // avoid crowding other archons RR
         RobotInfo[] nearbyAllies = rc.senseNearbyRobots(9, ourTeam);
-        for (Direction d : Direction.values())
+        for (Direction d : ballDirs.getDirections())
         {
-        	if (!ballDirs.isValid(d))
-        		continue;
             for (RobotInfo ri: nearbyAllies)
             {
                 if ((ri.type == RobotType.ARCHON) && ri.ID!=ballTargetID && here.add(d).distanceSquaredTo(ri.location) < 2)
@@ -130,11 +128,8 @@ public class StratBallMove extends RobotPlayer implements Strategy
             }
         }
 		
-		for (Direction d : Direction.values())
+		for (Direction d : ballDirs.getDirections())
 		{
-			if (!ballDirs.isValid(d))
-        		continue;
-
 			int dSq = here.add(d).distanceSquaredTo(lastBallLocation);
 			if (dSq < minDistSq || dSq > maxDistSq)
 				ballDirs.remove(d);

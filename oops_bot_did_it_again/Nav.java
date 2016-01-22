@@ -1,4 +1,4 @@
-package blitzkrieg_bot;
+package oops_bot_did_it_again;
 
 import java.util.ArrayList;
 
@@ -280,12 +280,11 @@ public class Nav extends RobotPlayer
             bugState = BugState.DIRECT;
         }
         
-        if (Rubble.tryClearRubbleInPathIfClearBeyondAndAlliesAround(myDest))
+        if (Rubble.tryClearSmallRubble(myDest))
         	return true;
         
-        // technically, can't move
         if (here.equals(dest))
-        	return false;
+        	return true;
 
         return bugMove();
     }

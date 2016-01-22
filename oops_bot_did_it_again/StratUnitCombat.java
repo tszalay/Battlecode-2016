@@ -1,4 +1,4 @@
-package blitzkrieg_bot;
+package oops_bot_did_it_again;
 
 import battlecode.common.*;
 
@@ -103,25 +103,25 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 		
 		// or shoot if we couldn't move
 		Action.tryAttackSomeone();
-		
-		if (Rubble.tryClearRubble(lastDest))
-			return true;
-		
-		if (Rubble.tryClearRubble(MapInfo.farthestArchonLoc))
-			return true;
-
+		//Rubble.doClearRubble(Rubble.getRandomAdjacentRubble());
 		// GTFO
 		
+		/*
 		MapLocation allyAttacked = Message.getClosestAllyUnderAttack();
 		if (allyAttacked != null)
 		{
-			if (here.distanceSquaredTo(allyAttacked) < 100)
+			if (here.distanceSquaredTo(allyAttacked) > 200)
 			{
 				Nav.tryGoTo(allyAttacked, Micro.getSafeMoveDirs());
 				return true;
 			}
+			overrideStrategy = new StratMobFight(Message.getClosestAllyUnderAttack());
+			overrideStrategy.tryTurn();
+			return true;
 		}
 		
-		return false;
+*/
+		
+		return true;
 	}
 }

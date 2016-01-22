@@ -1,4 +1,4 @@
-package blitzkrieg_bot;
+package oops_bot_did_it_again;
 
 import battlecode.common.*;
 import java.util.*;
@@ -106,9 +106,9 @@ public class Sighting extends RobotPlayer
 				if (curround-enemySightedTurrets.get(ml) < TURRET_TIMEOUT_ROUNDS)
 				{
 					// loop through and remove directions that are still safe
-					for (Direction d : Direction.values())
-					{ 
-						if (d != Direction.OMNI && here.add(d).distanceSquaredTo(ml) <= RobotType.TURRET.attackRadiusSquared)
+					for (Direction d : dirs.getDirections())
+					{
+						if (here.add(d).distanceSquaredTo(ml) <= RobotType.TURRET.attackRadiusSquared)
 							dirs.remove(d);
 					}
 				}
