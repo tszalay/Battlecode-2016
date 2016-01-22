@@ -21,7 +21,7 @@ public class StratScoutTurrets extends RobotPlayer implements Strategy
 	// we oughta scout turrets if there are turrets to scout
 	public static boolean shouldScoutTurrets()
 	{
-		return Micro.getFriendlyUnits().Turrets > 0;
+		return Micro.getFriendlyUnits().Turrets > 0 && Micro.getFriendlyUnits().Scouts == 0;
 	}
 	
 	public boolean tryTurn() throws GameActionException
