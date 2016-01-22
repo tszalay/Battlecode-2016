@@ -103,9 +103,7 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 		
 		// or shoot if we couldn't move
 		Action.tryAttackSomeone();
-		
-		Rubble.doClearRubble(Rubble.getRandomAdjacentRubble());
-		
+		//Rubble.doClearRubble(Rubble.getRandomAdjacentRubble());
 		// GTFO
 		
 		/*

@@ -26,6 +26,15 @@ public class Debug extends RobotPlayer
 		System.out.println(s + " time:" + dt);
 	}
 	
+	public static int stopTiming()
+	{
+		int dt = Clock.getBytecodeNum() - timer_start;
+		if (dt < 0) // wrapped around
+			dt += rc.getType().bytecodeLimit;
+		
+		return dt;
+	}
+	
 	public static void setStringAK(String s)
 	{
 		auStrings[0] = s;

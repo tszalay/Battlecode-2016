@@ -23,6 +23,11 @@ public class RobotPlayer
 	public static int		lastDamageRound = -100;
 	public static int		lastMovedRound = 0;
 	
+	public static int		lastMicroTime = 0;
+	public static int		lastSurroundingsTime = 0;
+	public static int		lastSignalsTime = 0;
+	public static int		lastTurnTime = 0;
+	
     public static void run(RobotController robotc)
 	{
 		// globals in our class
@@ -112,8 +117,14 @@ public class RobotPlayer
 			while (true)
 			{
 				RobotPlayer.here = rc.getLocation();
+				
 				// clear all outstanding micro stuff
+				Debug.startTiming();
 				Micro = new MicroBase();
+				//Micro.getRoundsUntilDanger();
+				Micro.getSafeMoveDirs();
+				lastMicroTime = Debug.stopTiming();
+				
 				// update health
 				double health = rc.getHealth();
 				if (health < myHealth)
@@ -126,10 +137,18 @@ public class RobotPlayer
 					// (in case of healing)
 					myHealth = rc.getHealth();
 				}
+				
 				// process incoming messages
+				Debug.startTiming();
 				Message.readSignalQueue();
+				lastSignalsTime = Debug.stopTiming();
+				
 				// update stuff with sensing
+				Debug.startTiming();
 				MapInfo.doAnalyzeSurroundings();
+				lastSurroundingsTime = Debug.stopTiming();
+				
+				Debug.startTiming();
 				
 				switch (robotc.getType())
 				{
@@ -164,11 +183,17 @@ public class RobotPlayer
 					break;
 				}
 				
+				lastTurnTime = Debug.stopTiming();
+				
 				// let's see what we're doing
 				if (myStrategy != null)
 					Debug.setStringAK(myStrategy.getName());
+				
 				Debug.setStringTS("Dens: " + MapInfo.zombieDenLocations.elements().size()
 						+ ", Archons: " + MapInfo.neutralArchonLocations.elements().size());
+				
+				Debug.setStringSJF(lastMicroTime + "/" + lastSignalsTime + "/" +
+									lastSurroundingsTime + "/" + lastTurnTime);
 
 				Clock.yield();
 			}
