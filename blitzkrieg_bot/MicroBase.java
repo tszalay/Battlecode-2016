@@ -115,10 +115,14 @@ public class MicroBase extends RobotPlayer
 		bufferDirs = new DirectionSet();
 
 		turretSafeDirs = Sighting.getTurretSafeDirs();
-		
-		// only check directions we can actually move
-		for (Direction d : getCanMoveDirs().getDirections())
+		getCanMoveDirs();
+				
+		for (Direction d : Direction.values())
 		{
+			// only check directions we can actually move
+			if (!canMoveDirs.isValid(d))
+				continue;
+			
 			MapLocation testloc = here.add(d);
 			
 			int closestDistSq = DIST_MAX;
@@ -154,7 +158,7 @@ public class MicroBase extends RobotPlayer
 				safeMoveDirs.add(d);
 			
 			// keep track of directions without parts
-			if (rc.senseParts(here.add(d)) == 0)
+			if (rc.senseParts(testloc) == 0)
 				noPartsDirs.add(d);
 		}
 	}
@@ -274,8 +278,11 @@ public class MicroBase extends RobotPlayer
 		Direction bestDir = null;
 		int distToClosest = 0;
 		
-		for (Direction d : dirs.getDirections())
+		for (Direction d : Direction.values())
 		{
+			if (!dirs.isValid(d))
+				continue;
+			
 			if (distToClosestHostile[d.ordinal()] > distToClosest)
 			{
 				distToClosest = distToClosestHostile[d.ordinal()];

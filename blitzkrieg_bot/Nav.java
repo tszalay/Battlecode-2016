@@ -283,8 +283,9 @@ public class Nav extends RobotPlayer
         if (Rubble.tryClearSmallRubble(myDest))
         	return true;
         
+        // technically, can't move
         if (here.equals(dest))
-        	return true;
+        	return false;
 
         return bugMove();
     }

@@ -6,7 +6,7 @@ public class RoboGuard extends RobotPlayer
 {
 	public static void init() throws GameActionException
 	{
-		myStrategy = new StratMobFight();
+		myStrategy = new StratUnitRush();
 	}
 	
 	public static void turn() throws GameActionException

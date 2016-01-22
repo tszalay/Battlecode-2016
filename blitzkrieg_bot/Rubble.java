@@ -94,8 +94,11 @@ public class Rubble extends RobotPlayer
 	{
 		DirectionSet dirs = DirectionSet.makeAll();
 		dirs.remove(Direction.NONE);
-		for(Direction dir : dirs.getDirections())
+		for(Direction dir : Direction.values())
 		{
+			if (!dirs.isValid(dir))
+				continue;
+			
 			if (rc.senseRubble(here.add(dir)) > GameConstants.RUBBLE_OBSTRUCTION_THRESH && rc.senseRubble(here.add(dir)) < 5000)
 			{
 				return dir;

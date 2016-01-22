@@ -115,8 +115,10 @@ public class StratBallMove extends RobotPlayer implements Strategy
 		
 		 // avoid crowding other archons RR
         RobotInfo[] nearbyAllies = rc.senseNearbyRobots(9, ourTeam);
-        for (Direction d : ballDirs.getDirections())
+        for (Direction d : Direction.values())
         {
+        	if (!ballDirs.isValid(d))
+        		continue;
             for (RobotInfo ri: nearbyAllies)
             {
                 if ((ri.type == RobotType.ARCHON) && ri.ID!=ballTargetID && here.add(d).distanceSquaredTo(ri.location) < 2)
@@ -128,8 +130,11 @@ public class StratBallMove extends RobotPlayer implements Strategy
             }
         }
 		
-		for (Direction d : ballDirs.getDirections())
+		for (Direction d : Direction.values())
 		{
+			if (!ballDirs.isValid(d))
+        		continue;
+
 			int dSq = here.add(d).distanceSquaredTo(lastBallLocation);
 			if (dSq < minDistSq || dSq > maxDistSq)
 				ballDirs.remove(d);
