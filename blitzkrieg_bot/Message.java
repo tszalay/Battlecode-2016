@@ -118,8 +118,8 @@ public class Message extends RobotPlayer
 	public static int MAP_OFF_X = 0;
 	public static int MAP_OFF_Y = 0;
 	
-	private static SignalRound	recentAllyAttacked = new SignalRound(30);
-	private static SignalRound	recentArchonAttacked = new SignalRound(80);
+	private static SignalRound	recentAllyAttacked = new SignalRound(20);
+	private static SignalRound	recentArchonAttacked = new SignalRound(50);
 	private static SignalRound	recentFriendlySignal = new SignalRound(300);
 	
 	private static ArrayList<ArchonLocation> recentArchonLocations = new ArrayList<ArchonLocation>();

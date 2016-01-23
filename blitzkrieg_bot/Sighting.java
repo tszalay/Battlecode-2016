@@ -56,7 +56,7 @@ public class Sighting extends RobotPlayer
 				broadcast_dist = 121;
 			if (Micro.getRoundsUntilDanger() < 10)
 				broadcast_dist = 400;
-			if (farBroadcastSignal.canSend())
+			if (Micro.getRoundsUntilDanger() > 12 && farBroadcastSignal.canSend())
 				broadcast_dist = MapInfo.fullMapDistanceSq();
 			
 			Message.sendMessageSignal(broadcast_dist,Message.Type.SIGHT_TARGET,targetloc,turretloc);
