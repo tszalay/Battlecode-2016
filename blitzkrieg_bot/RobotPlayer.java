@@ -43,6 +43,8 @@ public class RobotPlayer
 		Debug.setStringSJF("Stephen J. Fry");
 		Debug.setStringRR("Ryan");
 		
+		
+		
 		// look for an archon close by, if we aren't an Archon
 		if (rc.getType() != RobotType.ARCHON)
 		{

@@ -129,12 +129,10 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 		}
 		
 		// now do we need to update my target?
+		// if it's off the map, re-initialize
 		if (!MapInfo.isOnMap(myExploringTarget))
 		{
-			// remove the target
-			myExploringTargets.remove(myExploringTarget);
-			// set it to update in if statement below
-			myExploringTarget = null;
+			resetTargets();
 		}
 
 		// no targets for me? reset all of them
