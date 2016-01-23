@@ -148,6 +148,9 @@ public class RobotPlayer
 				MapInfo.doAnalyzeSurroundings();
 				lastSurroundingsTime = Debug.stopTiming();
 				
+				if (StratZDay.shouldActivate())
+					myStrategy = new StratZDay();
+				
 				Debug.startTiming();
 				
 				switch (robotc.getType())
