@@ -29,22 +29,26 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 				overrideStrategy = null;
 		}
 		
-		/*if (rc.getRoundNum() > 2500)
-		{
-			if (Micro.getNearbyHostiles().length > 0)
-				Nav.tryGoTo(Micro.getUnitCOM(Micro.getNearbyHostiles()), Micro.getCanMoveDirs());
-			else
-				Nav.tryGoTo(MapInfo.getSymmetricLocation(MapInfo.farthestArchonLoc), Micro.getCanMoveDirs());
-			Action.tryAttackSomeone();
-			return true;
-		}*/
-		
 		// retreat to the archon?
 		if (rc.getHealth() < 20 && Micro.getFriendlyUnits().Archons == 0)
 		{
 			overrideStrategy = new StratUnitRetreat();
 			overrideStrategy.tryTurn();
 			return true;
+		}
+		
+		// any vipers or turrets? rush 'em
+		if (Micro.getEnemyUnits().TurrTTMs > 0 || Micro.getEnemyUnits().Vipers > 0)
+		{
+			for (RobotInfo ri : Micro.getNearbyEnemies())
+			{
+				if (ri.type == RobotType.TURRET || ri.type == RobotType.TTM || (ri.type == RobotType.VIPER && rc.getViperInfectedTurns() > 0))
+				{
+					overrideStrategy = new StratTempRush(ri.ID);
+					overrideStrategy.tryTurn();
+					return true;
+				}
+			}
 		}
 		
 		// target priority: nearby enemy > nearby ally > zombie den > our archon stuff
