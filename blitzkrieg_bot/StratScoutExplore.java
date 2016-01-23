@@ -27,7 +27,7 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 			return overrideStrategy.getName();
 
 		return "Explored Q" + myExploringQuadrant + " "
-				+ (64-myExploringTargets.elements().size()) + "/64";
+				+ myExploringTargets.elements().size() + " left";
 	}
 	
 	public int getQuadrant(MapLocation loc)
@@ -174,12 +174,14 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 		// update all of our targets, visited and otherwise
 		updateTargets();
 		
-		DirectionSet goodDirs = Micro.getSafeMoveDirs();
-		
-		if (goodDirs.any())
-			Nav.tryGoTo(myExploringTarget, goodDirs);
-		else
-			Action.tryRetreatOrShootIfStuck();
+		DirectionSet goodDirs = Micro.getBufferDirs();
+		if (!goodDirs.any())
+			goodDirs = Micro.getSafeMoveDirs();
+		if (!goodDirs.any())
+			goodDirs = Micro.getCanMoveDirs();
+
+		// try to go to the target with the best dirs possible
+		Nav.tryGoTo(myExploringTarget, goodDirs);
 
 		return true;
 	}

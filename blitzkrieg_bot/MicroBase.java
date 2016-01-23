@@ -48,7 +48,7 @@ public class MicroBase extends RobotPlayer
 			8	//11: TTM
 		};
 	
-	private static final int[] bufferDist = 
+	private static int[] bufferDist = 
 		{
 			2,	//0: ZOMBIEDEN
 			8,	//1: STANDARDZOMBIE
@@ -63,6 +63,28 @@ public class MicroBase extends RobotPlayer
 			2,	//10: TURRET
 			2	//11: TTM
 		};
+	
+	private static final int[] scoutBufferDist = 
+		{
+			0,	//0: ZOMBIEDEN
+			8,	//1: STANDARDZOMBIE
+			24,	//2: RANGEDZOMBIE
+			48,	//3: FASTZOMBIE
+			8,	//4: BIGZOMBIE
+			0,	//5: ARCHON
+			0,	//6: SCOUT
+			24,	//7: SOLDIER
+			13,	//8: GUARD
+			35,	//9: VIPER
+			40,	//10: TURRET
+			0	//11: TTM
+		};
+	
+	public MicroBase()
+	{
+		if (rc.getType() == RobotType.SCOUT)
+			bufferDist = scoutBufferDist;
+	}
 	
 	public RobotInfo[] getNearbyEnemies()
 	{
