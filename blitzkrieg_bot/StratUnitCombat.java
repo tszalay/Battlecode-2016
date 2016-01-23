@@ -61,11 +61,11 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 			myTask = "ally";
 			lastDest = Message.getClosestAllyUnderAttack();
 		}
-		if (lastDest == null)
+/*		if (lastDest == null)
 		{
 			myTask = "archon";
 			lastDest = MapInfo.getClosestNeutralArchon();
-		}
+		}*/
 		if (lastDest == null)
 		{
 			myTask = "den";
