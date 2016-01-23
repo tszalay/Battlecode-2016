@@ -116,11 +116,11 @@ public class Sighting extends RobotPlayer
 		// find out which directions are safe vis-a-vis enemy turrets
 		DirectionSet dirs = DirectionSet.makeAll();
 		
-		if (Debug.DISPLAY_DEBUG && rc.getHealth() < 30)
+		/*if (Debug.DISPLAY_DEBUG && rc.getHealth() < 30)
 		{
 			for (MapLocation ml : enemySightedTurrets.elements())
 				rc.setIndicatorLine(here, ml, 0, 255, 255);
-		}
+		}*/
 		
 		// any turrets need removin'?
 		MapLocation remove_turret = null;
