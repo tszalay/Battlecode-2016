@@ -732,13 +732,6 @@ public class MicroBase extends RobotPlayer
 				continue;
 			}
 			
-			// archon targets take priority over ALL
-			if (ri.type == RobotType.ARCHON)
-			{
-				target = ri;
-				return target;
-			}
-			
 			if (ri.viperInfectedTurns < target.viperInfectedTurns)
 				target = ri;
 				

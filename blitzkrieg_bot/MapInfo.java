@@ -9,6 +9,7 @@ public class MapInfo extends RobotPlayer
 	public static FastLocSet zombieDenLocations = new FastLocSet();
 	public static FastLocSet goodPartsLocations = new FastLocSet();
 	public static FastLocSet neutralArchonLocations = new FastLocSet();
+	public static FastLocSet formerDenLocations = new FastLocSet();
 	
 	public static MapLocation mapMin = new MapLocation(-18000,-18000);
 	public static MapLocation mapMax = new MapLocation(18001,18001);
@@ -185,7 +186,10 @@ public class MapInfo extends RobotPlayer
 				zombieDenLocations.add(getSymmetricLocation(add_loc), DEN_SENT_ADD);
 		}
 		if (!del_loc.equals(nullLocation))
+		{
 			zombieDenLocations.remove(del_loc);
+			formerDenLocations.add(del_loc);
+		}
 	}
 	/*
 	public static void updateParts(MapLocation loc, boolean sendUpdate)
@@ -245,6 +249,7 @@ public class MapInfo extends RobotPlayer
 				Message.sendMessageSignal(fullMapDistanceSq(), Message.Type.ZOMBIE_DEN, nullLocation, loc);
 				// and actually remove it from the array
 				zombieDenLocations.remove(loc);
+				formerDenLocations.add(loc);
 				// and don't do any more this round
 				return true;
 			}
@@ -326,9 +331,14 @@ public class MapInfo extends RobotPlayer
 				// if we're a scout, flag it so we send the removal message
 				// otherwise just straight up remove it
 				if (rc.getType() == RobotType.SCOUT)
+				{
 					zombieDenLocations.set(closestDen, DEN_SEND_DEL);
+				}
 				else
+				{
 					zombieDenLocations.remove(closestDen);
+					formerDenLocations.remove(closestDen);
+				}
 			}
 		}
 		
@@ -497,5 +507,19 @@ public class MapInfo extends RobotPlayer
     	}
     	
     	return loc_sym;
+    }
+    
+    
+    public static ArrayList<MapLocation> getBunkerLocations()
+    {
+    	ArrayList<MapLocation> locations = new ArrayList<MapLocation>();
+    	
+    	for (MapLocation loc : rc.getInitialArchonLocations(ourTeam))
+    		locations.add(loc);
+    	
+    	
+    	locations.addAll(formerDenLocations.elements());
+    	
+    	return locations;
     }
 }
