@@ -40,7 +40,7 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 		}*/
 		
 		// retreat to the archon?
-		if (rc.getHealth() < 20)
+		if (rc.getHealth() < 20 && Micro.getFriendlyUnits().Archons == 0)
 		{
 			overrideStrategy = new StratUnitRetreat();
 			overrideStrategy.tryTurn();

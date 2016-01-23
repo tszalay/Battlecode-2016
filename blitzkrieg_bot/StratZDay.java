@@ -36,6 +36,9 @@ public class StratZDay extends RobotPlayer implements Strategy
 		}
 
 		MapLocation closestTurret = Sighting.getClosestTurret();
+		if (closestTurret == null)
+			return false;
+		
 		MapLocation dest;
 		
 		int maxinfected = Math.max(rc.getViperInfectedTurns(),rc.getZombieInfectedTurns());
@@ -48,6 +51,7 @@ public class StratZDay extends RobotPlayer implements Strategy
 			break;
 			
 		case VIPER:
+			
 			Action.tryFriendlyViperAttack();			
 			break;
 			

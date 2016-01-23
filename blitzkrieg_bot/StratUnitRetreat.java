@@ -32,6 +32,10 @@ public class StratUnitRetreat extends RobotPlayer implements Strategy
 		if (rc.getHealth()+1 >= rc.getType().maxHealth)
 			return false;
 		
+		// or if we can see an archon and also enemies
+		if (Micro.getFriendlyUnits().Archons > 0 && Micro.getRoundsUntilDanger() < 20)
+			return false;
+		
 		myDest = Message.getClosestArchon();
 		if (myDest == null)
 			myDest = myBuilderLocation;
@@ -43,6 +47,9 @@ public class StratUnitRetreat extends RobotPlayer implements Strategy
 			Nav.tryGoTo(myDest, bufferDirs);
 		else
 			Nav.tryGoTo(myDest, Micro.getCanMoveDirs());
+		
+		// should we shoot here? probably
+		Action.tryAttackSomeone();
 		
 		//Rubble.doClearRubble(Rubble.getRandomAdjacentRubble());
 		
