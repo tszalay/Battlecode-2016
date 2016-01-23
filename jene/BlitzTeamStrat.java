@@ -147,7 +147,6 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 				if (!Action.tryGoToWithoutBeingShot(dest, Micro.getSafeMoveDirs()))
 				{
 					Rubble.tryClearRubble(dest);
-					System.out.println("I'm clearing rubble to get to the neutral archon");
 				}
 				
 				return true;

@@ -113,23 +113,6 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 		// or shoot if we couldn't move
 		Action.tryAttackSomeone();
 		//Rubble.doClearRubble(Rubble.getRandomAdjacentRubble());
-		// GTFO
-		
-		/*
-		MapLocation allyAttacked = Message.getClosestAllyUnderAttack();
-		if (allyAttacked != null)
-		{
-			if (here.distanceSquaredTo(allyAttacked) > 200)
-			{
-				Nav.tryGoTo(allyAttacked, Micro.getSafeMoveDirs());
-				return true;
-			}
-			overrideStrategy = new StratMobFight(Message.getClosestAllyUnderAttack());
-			overrideStrategy.tryTurn();
-			return true;
-		}
-		
-*/
 		
 		return true;
 	}
