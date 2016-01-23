@@ -15,6 +15,7 @@ public class MicroBase extends RobotPlayer
 	private DirectionSet safeMoveDirs = null;
 	private DirectionSet noPartsDirs = null;
 	private DirectionSet turretSafeDirs = null;
+	private DirectionSet bufferDirs = null;
 	
 	private static final int DIST_MAX = 1000;
 	private int[] distToClosestHostile = null;
@@ -27,6 +28,9 @@ public class MicroBase extends RobotPlayer
 	private double allyTotalDamagePerTurn = -1;
 	private double hostileTotalDamagePerTurn = -1;
 	private double hostileTotalHealth = -1;
+	
+	private UnitCounts nearbyFriendlyCounts = null;
+	private UnitCounts nearbyEnemyCounts = null;
 	
 	private static final int[] typePriorities = 
 		{
@@ -42,6 +46,22 @@ public class MicroBase extends RobotPlayer
 			10,	//9: VIPER
 			10,	//10: TURRET
 			8	//11: TTM
+		};
+	
+	private static final int[] bufferDist = 
+		{
+			2,	//0: ZOMBIEDEN
+			8,	//1: STANDARDZOMBIE
+			8,	//2: RANGEDZOMBIE
+			2,	//3: FASTZOMBIE
+			8,	//4: BIGZOMBIE
+			0,	//5: ARCHON
+			2,	//6: SCOUT
+			8,	//7: SOLDIER
+			8,	//8: GUARD
+			8,	//9: VIPER
+			2,	//10: TURRET
+			2	//11: TTM
 		};
 	
 	public RobotInfo[] getNearbyEnemies()
@@ -95,23 +115,33 @@ public class MicroBase extends RobotPlayer
 		
 		safeMoveDirs = new DirectionSet();
 		noPartsDirs = new DirectionSet();
+		bufferDirs = new DirectionSet();
 
 		turretSafeDirs = Sighting.getTurretSafeDirs();
-		
-		// only check directions we can actually move
-		for (Direction d : getCanMoveDirs().getDirections())
+		getCanMoveDirs();
+				
+		for (Direction d : Direction.values())
 		{
+			// only check directions we can actually move
+			if (!canMoveDirs.isValid(d))
+				continue;
+			
 			MapLocation testloc = here.add(d);
 			
 			int closestDistSq = DIST_MAX;
 			boolean isThisSquareSafe = true;
+			boolean isThisSquareBuffer = true;
 			
 			for (RobotInfo ri : nearby)
-			{
+			{				
+				int distSq = testloc.distanceSquaredTo(ri.location);
+
+				if (distSq <= bufferDist[ri.type.ordinal()])
+					isThisSquareBuffer = false;
+				
 				if (ri.attackPower == 0)
 					continue;
-				
-				int distSq = testloc.distanceSquaredTo(ri.location);
+
 				if (distSq < closestDistSq)
 					closestDistSq = distSq;
 
@@ -121,16 +151,17 @@ public class MicroBase extends RobotPlayer
 					if (ri.type == RobotType.TURRET)
 						turretSafeDirs.remove(d);
 				}
-
 			}
 			
 			distToClosestHostile[d.ordinal()] = closestDistSq;
+			if (isThisSquareBuffer)
+				bufferDirs.add(d);
 			
 			if (isThisSquareSafe)
 				safeMoveDirs.add(d);
 			
 			// keep track of directions without parts
-			if (rc.senseParts(here.add(d)) == 0)
+			if (rc.senseParts(testloc) == 0)
 				noPartsDirs.add(d);
 		}
 	}
@@ -203,7 +234,7 @@ public class MicroBase extends RobotPlayer
 				break;
 				
 			case TURRET:
-				if (rc.getType() != RobotType.SCOUT)
+				if (here.distanceSquaredTo(ri.location) <= ri.type.attackRadiusSquared)
 					dangerTime = (int)Math.floor(ri.weaponDelay);
 				break;
 			}
@@ -216,6 +247,9 @@ public class MicroBase extends RobotPlayer
 		}
 		
 		if (roundsUntilDanger < 0)
+			roundsUntilDanger = 0;
+		
+		if (!Micro.getTurretSafeDirs().isValid(Direction.NONE))
 			roundsUntilDanger = 0;
 
 		return roundsUntilDanger;
@@ -247,8 +281,11 @@ public class MicroBase extends RobotPlayer
 		Direction bestDir = null;
 		int distToClosest = 0;
 		
-		for (Direction d : dirs.getDirections())
+		for (Direction d : Direction.values())
 		{
+			if (!dirs.isValid(d))
+				continue;
+			
 			if (distToClosestHostile[d.ordinal()] > distToClosest)
 			{
 				distToClosest = distToClosestHostile[d.ordinal()];
@@ -268,6 +305,12 @@ public class MicroBase extends RobotPlayer
 		getRoundsUntilDanger();
 		
 		return bestRetreatDirection;
+	}
+	
+	public DirectionSet getBufferDirs()
+	{
+		computeSafetyStats();
+		return bufferDirs;
 	}
 
 	public DirectionSet getTurretSafeDirs()
@@ -450,6 +493,20 @@ public class MicroBase extends RobotPlayer
 		return closest;
 	}
 	
+	public UnitCounts getFriendlyUnits()
+	{
+		if (this.nearbyFriendlyCounts == null)
+			this.nearbyFriendlyCounts = new UnitCounts(this.getNearbyAllies());
+		return this.nearbyFriendlyCounts;
+	}
+	
+	public UnitCounts getEnemyUnits()
+	{
+		if (this.nearbyEnemyCounts == null)
+			this.nearbyEnemyCounts = new UnitCounts(this.getNearbyEnemies());
+		return this.nearbyEnemyCounts;
+	}
+	
 	public MapLocation getAllyCOM()
 	{
 		return getUnitCOM(this.getNearbyAllies());
@@ -480,26 +537,6 @@ public class MicroBase extends RobotPlayer
 		
 		xtot /= nearby.length;
 		ytot /= nearby.length;
-		
-		return new MapLocation(xtot,ytot);
-	}
-	
-	public MapLocation getUnitCOM(MapLocation[] locs)
-	{
-		int xtot = 0;
-		int ytot = 0;
-		
-		if (locs == null || locs.length == 0)
-			return null;
-		
-		for (MapLocation loc : locs)
-		{
-			xtot += loc.x;
-			ytot += loc.y;
-		}
-		
-		xtot /= locs.length;
-		ytot /= locs.length;
 		
 		return new MapLocation(xtot,ytot);
 	}
@@ -541,6 +578,42 @@ public class MicroBase extends RobotPlayer
 		}
 		
 		return closest;
+	}
+	
+	public MapLocation getFarthestLocationFrom(List<MapLocation> locs, MapLocation center)
+	{
+		int maxDistSq = 0;
+		MapLocation farthest = null;
+		
+		for (MapLocation ml : locs)
+		{
+			int dsq = ml.distanceSquaredTo(center);
+			if (dsq > maxDistSq)
+			{
+				maxDistSq = dsq;
+				farthest = ml;
+			}
+		}
+		
+		return farthest;
+	}
+	
+	public MapLocation getFarthestLocationFrom(MapLocation[] locs, MapLocation center)
+	{
+		int maxDistSq = 0;
+		MapLocation farthest = null;
+		
+		for (MapLocation ml : locs)
+		{
+			int dsq = ml.distanceSquaredTo(center);
+			if (dsq > maxDistSq)
+			{
+				maxDistSq = dsq;
+				farthest = ml;
+			}
+		}
+		
+		return farthest;
 	}
 	
 	public RobotInfo getLowestHealth(RobotInfo[] bots)
@@ -603,7 +676,7 @@ public class MicroBase extends RobotPlayer
 			if (ri.type == RobotType.ARCHON)
 			{
 				target = ri;
-				return target;
+				break;
 			}
 			
 			double power = ri.attackPower/ri.type.attackDelay;
@@ -625,6 +698,21 @@ public class MicroBase extends RobotPlayer
 		}
 		
 		return target;
+	}
+	
+	public DirectionSet getCanBuildDirectionSet(RobotType nextRobotType) throws GameActionException
+	{
+		if (nextRobotType == null)
+			return new DirectionSet();
+		
+		// check nearby open squares
+		DirectionSet valid = new DirectionSet();
+		for (Direction dir : Direction.values()) // check all Directions around
+		{
+			if (rc.canBuild(dir, nextRobotType))
+				valid.add(dir); // add this direction to the DirectionSet of valid build directions
+		}
+		return valid;
 	}
 	
 	public RobotInfo getViperTarget(RobotInfo[] bots)
@@ -657,39 +745,5 @@ public class MicroBase extends RobotPlayer
 		}
 		
 		return target;
-	}
-	
-	public boolean tryMove(Direction d) throws GameActionException
-	{
-		// don't do anything, but don't throw error, this is ok
-		if (d == Direction.NONE)
-		{
-			//System.out.println("Given a NONE!");
-			return false;
-		}
-		
-		// double check!
-		if (d != null && rc.canMove(d) && rc.isCoreReady())
-		{
-			rc.move(d);
-			return true;
-		}
-
-		return false;
-	}
-	
-	public DirectionSet getCanBuildDirectionSet(RobotType nextRobotType) throws GameActionException
-	{
-		if (nextRobotType == null)
-			return new DirectionSet();
-		
-		// check nearby open squares
-		DirectionSet valid = new DirectionSet();
-		for (Direction dir : Direction.values()) // check all Directions around
-		{
-			if (rc.canBuild(dir, nextRobotType))
-				valid.add(dir); // add this direction to the DirectionSet of valid build directions
-		}
-		return valid;
 	}
 }

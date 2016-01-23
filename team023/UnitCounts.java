@@ -7,6 +7,8 @@ public class UnitCounts
 	public int Scouts;
 	public int Soldiers;
 	public int Turrets;
+	public int TTMs;
+	public int TurrTTMs;
 	public int Archons;
 	public int Guards;
 	public int Vipers;
@@ -24,8 +26,10 @@ public class UnitCounts
 				Soldiers++;
 				break;
 			case TURRET:
-			case TTM:
 				Turrets++;
+				break;
+			case TTM:
+				TTMs++;
 				break;
 			case ARCHON:
 				Archons++;
@@ -40,5 +44,6 @@ public class UnitCounts
 				break;
 			}
 		}
+		TurrTTMs = Turrets + TTMs;
 	}
 }

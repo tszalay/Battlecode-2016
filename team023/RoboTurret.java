@@ -4,11 +4,9 @@ import battlecode.common.*;
 
 public class RoboTurret extends RobotPlayer
 {
-	static Strategy myStrategy = null;
-
 	public static void init() throws GameActionException
 	{
-		myStrategy = new TurtleTurretStrategy();
+		myStrategy = new StratTurtleTurret();
 	}
 	
 	public static void turn() throws GameActionException

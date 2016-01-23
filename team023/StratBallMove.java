@@ -1,13 +1,10 @@
 package team023;
 
 import battlecode.common.*;
-
 import java.util.*;
 
-public class BallMoveStrategy extends RobotPlayer implements Strategy
+public class StratBallMove extends RobotPlayer implements Strategy
 {	
-	private String stratName;
-	
 	// minimum and maximum radii that we wish to use for the ball
 	// set on initialization
 	private int minDistSq;
@@ -22,9 +19,14 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
 
 	public static final int BALL_LOST_TIMEOUT = 20;
 	
-	public BallMoveStrategy(int targetID, int minDSq, int maxDSq) throws GameActionException
+	
+	public String getName()
 	{
-		this.stratName = "BallMoveStrat";	
+		return "Ball Move";
+	}
+	
+	public StratBallMove(int targetID, int minDSq, int maxDSq) throws GameActionException
+	{
 		minDistSq = minDSq;
 		maxDistSq = maxDSq;
 		
@@ -67,8 +69,6 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
 
 	public boolean tryTurn() throws GameActionException
 	{
-		//Debug.setStringAK("My Strategy: " + this.stratName);
-		
 		// first check if we can still ball
 		if (!tryUpdateTarget())
 			return false;
@@ -115,21 +115,26 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
 		
 		 // avoid crowding other archons RR
         RobotInfo[] nearbyAllies = rc.senseNearbyRobots(9, ourTeam);
-        for (Direction d : ballDirs.getDirections())
+        for (Direction d : Direction.values())
         {
+        	if (!ballDirs.isValid(d))
+        		continue;
             for (RobotInfo ri: nearbyAllies)
             {
                 if ((ri.type == RobotType.ARCHON) && ri.ID!=ballTargetID && here.add(d).distanceSquaredTo(ri.location) < 2)
                 {
                     ballDirs.remove(d);
-                    //System.out.println("Avoiding a neighbor arhcon");
+                    System.out.println("Avoiding a neighbor arhcon");
                     break;
                 }    
             }
         }
 		
-		for (Direction d : ballDirs.getDirections())
+		for (Direction d : Direction.values())
 		{
+			if (!ballDirs.isValid(d))
+        		continue;
+
 			int dSq = here.add(d).distanceSquaredTo(lastBallLocation);
 			if (dSq < minDistSq || dSq > maxDistSq)
 				ballDirs.remove(d);
@@ -163,9 +168,8 @@ public class BallMoveStrategy extends RobotPlayer implements Strategy
 		if (moveDir != null)
 			Action.tryMove(moveDir);
 		
-		// not doing anything else, so look for parts and DIG
-		MapLocation closestPart = Rubble.senseClosestPart();
-		return Rubble.tryClearRubble(closestPart);
-		
+		return true;
 	}
+	
+
 }

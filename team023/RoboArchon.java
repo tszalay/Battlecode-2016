@@ -6,59 +6,56 @@ import battlecode.common.*;
 
 public class RoboArchon extends RobotPlayer
 {
-	public static Strategy myStrategy;
-
+	public static int lastAdjacentScoutRound = 0;
+	public static final int SCOUT_SHADOW_ROUND = 200;
+	
 	public static void init() throws GameActionException
 	{
-		if (BlitzTeamStrat.shouldBlitz())
-			myStrategy = new BlitzTeamStrat(rc.senseRobot(rc.getID()));
+		//if (StratArchonBlitz.shouldBlitz())
+			//myStrategy = new StratArchonBlitz(rc.senseRobot(rc.getID()));
+//		else if (here.equals(MapInfo.farthestArchonLoc) && MapInfo.numInitialArchons > 1)
+//			myStrategy = new StratTurtleArchon();
+		//else
+			myStrategy = new StratArchonNormal();
+		
+		if (shouldBuildViper())
+			StratArchonBlitz.tryBuild(RobotType.VIPER);
 		else
-			myStrategy = new ArchonNormalStrat();
-		
-		MapLocation[] ourArchons = rc.getInitialArchonLocations(ourTeam);
-		
-		if (ourArchons.length < 2)
-			BlitzTeamStrat.tryBuild(RobotType.VIPER);
+			StratArchonBlitz.tryBuild(RobotType.SCOUT);
 	}
 	
 	public static void turn() throws GameActionException
 	{
+		// do local check
+		checkAdjacentScout();
+		
 		// always try this if we can, before moving
-		if (!tryActivateNeutrals() && rc.senseNearbyRobots(1,Team.NEUTRAL) != null && rc.senseNearbyRobots(1,Team.NEUTRAL).length > 0)
-			return; // wait to activate
+		tryActivateNeutrals();
+		
+		if (Debug.DISPLAY_DEBUG)
+		{
+			for (MapLocation loc : MapInfo.zombieDenLocations.elements())
+				rc.setIndicatorLine(here, loc, 255,255,255);
+			for (MapLocation loc : MapInfo.neutralArchonLocations.elements())
+				rc.setIndicatorLine(here, loc, 255,0,255);
+		}
+		
+		// for now, all archons just blitz all the time
+		myStrategy.tryTurn();		
 		
 		// always do this, no reason not to
 		tryRepair();
+	}
+	
+	public static void checkAdjacentScout() throws GameActionException
+	{
+		RobotInfo[] nearby = rc.senseNearbyRobots(2, ourTeam);
 		
-		// try to find new neutral archon
-		MapLocation nuetralArchonLoc = MapInfo.getClosestNeutralArchon();
-		if (nuetralArchonLoc != null && Micro.getNearbyAllies().length > 1)
+		for (RobotInfo ri : nearby)
 		{
-			myStrategy = new BlitzTeamStrat(nuetralArchonLoc);
-			//Message.sendMessageSignal(here.distanceSquaredTo(nuetralArchonLoc), MessageType.REMOVE_WAYPOINT, nuetralArchonLoc);
+			if (ri.type == RobotType.SCOUT)
+				lastAdjacentScoutRound = rc.getRoundNum();
 		}
-		if (nuetralArchonLoc != null && here.distanceSquaredTo(nuetralArchonLoc) == 1)
-		{
-			MapInfo.removeWaypoint(nuetralArchonLoc);
-		}
-		
-		// turtle if in good position and no other turtlers
-		RobotInfo[] allies = Micro.getNearbyAllies();
-		UnitCounts count = new UnitCounts(allies);
-		int turretNum = count.Turrets;
-		int soldierNum = count.Soldiers;
-		if (soldierNum >= 5 && Micro.getNearbyHostiles().length == 0)
-			myStrategy = new TurtleArchonStrategy();
-		
-		// archons who stopped blitzing do normal
-		if (!myStrategy.tryTurn())
-			myStrategy = new ArchonNormalStrat();
-		
-		// and this - look for & update nearby cool stuff
-		MapInfo.analyzeSurroundings();
-		
-		Debug.setStringTS("D:" + MapInfo.zombieDenLocations.elements().size()
-				+ ",P:" + MapInfo.goodPartsLocations.elements().size());
 	}
 	
 	public static boolean tryActivateNeutrals() throws GameActionException
@@ -73,8 +70,7 @@ public class RoboArchon extends RobotPlayer
 		{
 			// activate just the first one
 			rc.activate(adjNeutrals[0].location);
-			// remove it from parts list
-			MapInfo.removeWaypoint(adjNeutrals[0].location);
+			Message.sendBuiltMessage(Strategy.Type.DEFAULT);
 			return true;
 		}
 		
@@ -83,7 +79,7 @@ public class RoboArchon extends RobotPlayer
 	
 	public static boolean tryRepair() throws GameActionException
 	{
-		RobotInfo[] nearbyFriends = rc.senseNearbyRobots(rc.getType().attackRadiusSquared,ourTeam);
+		RobotInfo[] nearbyFriends = rc.senseNearbyRobots(rc.getType().attackRadiusSquared, ourTeam);
 		RobotInfo minBot = null;
 
 		for (RobotInfo ri : nearbyFriends)
@@ -100,6 +96,39 @@ public class RoboArchon extends RobotPlayer
 			rc.repair(minBot.location);
 			return true;
 		}
+		return false;
+	}
+	
+	public static boolean shouldBuildViper()
+	{
+		MapLocation[] theirArchons = rc.getInitialArchonLocations(theirTeam);
+		MapLocation[] ourArchons = rc.getInitialArchonLocations(ourTeam);
+		
+		if (ourArchons.length < 2)
+			return true;
+		
+		int x = 0;
+		int y = 0;
+		for (MapLocation them : theirArchons)
+		{
+			x += them.x;
+			y += them.y;
+		}
+		x = x/theirArchons.length;
+		y = y/theirArchons.length;
+		MapLocation theirCOM = new MapLocation(x,y);
+		int myDist = here.distanceSquaredTo(theirCOM);
+		
+		int shortestDist = myDist;
+		for (MapLocation us : ourArchons)
+		{
+			if (us.distanceSquaredTo(theirCOM) < shortestDist)
+				shortestDist = us.distanceSquaredTo(theirCOM);
+		}
+		
+		if (myDist == shortestDist)
+			return true;
+		
 		return false;
 	}
 }

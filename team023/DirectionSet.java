@@ -11,7 +11,6 @@ public class DirectionSet
 	static final int[] dirOffsets = {1,7,2,6,3,5,4};
 	static final int[] dirOffsetsTowards = {1,7};
 	
-	
 	public int dirs = 0;
 	
 	// don't really need to do any construction
@@ -118,9 +117,12 @@ public class DirectionSet
 		// pew pew pew
 		if (rightDist < leftDist)
 			return best.rotateRight();
-		else if (leftDist < rightDist || leftDist < distSq)
+		else if (leftDist < rightDist)
 			return best.rotateLeft();
+		else if (leftDist < distSq)
+			return rand.nextBoolean() ? best.rotateRight() : best.rotateLeft();
 		
+		/*
 		// still none. look to sides
 		int rightRightDist = distSq;
 		int leftLeftDist = distSq;
@@ -135,19 +137,8 @@ public class DirectionSet
 			return best.rotateRight().rotateRight();
 		else if (leftLeftDist < rightRightDist || leftLeftDist < distSq)
 			return best.rotateLeft().rotateLeft();
-		
+		*/
 		return null;
-	}
-	
-	public ArrayList<Direction> getDirections()
-	{
-		ArrayList<Direction> dirlist = new ArrayList<Direction>();
-		
-		for (int i=0; i<9; i++)
-			if (( (1<<i)&this.dirs) > 0)
-				dirlist.add(Direction.values()[i]);
-		
-		return dirlist;
 	}
 	
 	public static DirectionSet getOddSquares(MapLocation currentLoc)

@@ -4,15 +4,22 @@ import battlecode.common.*;
 
 import java.util.*;
 
-public class BuildingStrategy extends RobotPlayer implements Strategy
+public class StratBuilding extends RoboArchon implements Strategy
 {
 	// which strategy to use
-	Strategy.Type myStrat = null;
+	private Strategy.Type myStrat = null;
+	private RobotType buildType = null;
+	
+	public String getName()
+	{
+		return "Building " + buildType + " for " + myStrat;
+	}
 	
 	// creating the strategy actually forces us to build, so it better be valid
-	public BuildingStrategy(RobotType robot, Direction dir, Strategy.Type strat) throws GameActionException
+	public StratBuilding(RobotType robot, Direction dir, Strategy.Type strat) throws GameActionException
 	{
 		myStrat = strat;
+		buildType = robot;
 		rc.build(dir, robot);
 	}
 	

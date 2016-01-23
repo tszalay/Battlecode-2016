@@ -8,7 +8,7 @@ public class FastLocSet
     private static final int HASH = Math.max(GameConstants.MAP_MAX_WIDTH, GameConstants.MAP_MAX_HEIGHT);
     private int[][] value = new int[HASH][HASH];
     private List<MapLocation> locations = null;
-    private boolean isUsingList = false;
+    public boolean isUsingList = false;
     
     // default constructor, use the arrayList
     public FastLocSet()
@@ -25,48 +25,63 @@ public class FastLocSet
 
     public void add(MapLocation loc)
     {
-        int x = loc.x % HASH;
-        int y = loc.y % HASH;
-        if (value[x][y] == 0)
-        {
-            value[x][y] = 1;
-            if (isUsingList)
-            	locations.add(loc);
-        }
+        this.add(loc, 1);
     }
     
     public void add(MapLocation loc, int val)
     {
-        int x = loc.x % HASH;
-        int y = loc.y % HASH;
-        if (value[x][y] != val)
+    	if (loc == null)
+    		return;
+    	
+        int x = (loc.x+HASH) % HASH;
+        int y = (loc.y+HASH) % HASH;
+        if (value[x][y] == 0)
         {
             value[x][y] = val;
             if (isUsingList)
             	locations.add(loc);
         }
     }
+    
+    public void addOrSet(MapLocation loc, int val)
+    {
+    	if (loc == null)
+    		return;
+    	
+        int x = (loc.x+HASH) % HASH;
+        int y = (loc.y+HASH) % HASH;
+
+        if (isUsingList && value[x][y] <= 0)
+        	locations.add(loc);
+    
+        value[x][y] = val;
+    }
+    
+    public void set(MapLocation loc, int val)
+    {
+        value[(loc.x+HASH) % HASH][(loc.y+HASH) % HASH] = val;
+    }
+
+    public int get(MapLocation loc)
+    {
+    	return value[(loc.x+HASH) % HASH][(loc.y+HASH) % HASH];
+    }
 
     public void remove(MapLocation loc)
     {
-        int x = loc.x % HASH;
-        int y = loc.y % HASH;
+        int x = (loc.x+HASH) % HASH;
+        int y = (loc.y+HASH) % HASH;
         if (value[x][y] > 0)
         {
-            value[x][y] = 0;
+            value[x][y] = -1;
             if (isUsingList)
             	locations.remove(loc);
         }
     }
     
-    public int get(MapLocation loc)
-    {
-    	return value[loc.x%HASH][loc.y%HASH];
-    }
-
     public boolean contains(MapLocation loc)
     {
-        return value[loc.x % HASH][loc.y % HASH] > 0;
+        return value[(loc.x+HASH) % HASH][(loc.y+HASH) % HASH] > 0;
     }
     
     public void clear()

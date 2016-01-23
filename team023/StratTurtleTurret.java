@@ -2,15 +2,21 @@ package team023;
 
 import battlecode.common.*;
 
-public class TurtleTurretStrategy extends RobotPlayer implements Strategy
+public class StratTurtleTurret extends RobotPlayer implements Strategy
 {
 	// last round that a turret performed an action
 	// (unpacking or firing)
 	private int lastTurretRound = 0;
 
-	static final int PACK_DELAY = 100;
+	static final int PACK_DELAY = 50;
 	
 	public double myHealth = RobotType.TURRET.maxHealth;
+	
+	
+	public String getName()
+	{
+		return "Turtle turret";
+	}
 	
 	public boolean tryTurn() throws GameActionException
 	{

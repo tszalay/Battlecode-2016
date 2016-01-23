@@ -4,7 +4,7 @@ import battlecode.common.Clock;
 
 public class Debug extends RobotPlayer
 {
-	static final boolean DISPLAY_DEBUG = false;
+	static final boolean DISPLAY_DEBUG = true;
 	static String[] auStrings = new String[4];
 	static int timer_start;
 	
@@ -24,6 +24,15 @@ public class Debug extends RobotPlayer
 			dt += rc.getType().bytecodeLimit;
 		
 		System.out.println(s + " time:" + dt);
+	}
+	
+	public static int stopTiming()
+	{
+		int dt = Clock.getBytecodeNum() - timer_start;
+		if (dt < 0) // wrapped around
+			dt += rc.getType().bytecodeLimit;
+		
+		return dt;
 	}
 	
 	public static void setStringAK(String s)

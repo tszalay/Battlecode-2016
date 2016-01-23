@@ -5,9 +5,14 @@ import battlecode.common.*;
 import java.util.*;
 
 // turtle move tries to allow units to move around close to or inside a turtle ball
-public class TurtleMoveStrategy extends RobotPlayer implements Strategy
+public class StratTurtleMove extends RobotPlayer implements Strategy
 {
-	public TurtleMoveStrategy()
+	public String getName()
+	{
+		return "Turtle movement";
+	}	
+
+	public StratTurtleMove()
 	{
 	}
 	

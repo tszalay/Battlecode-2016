@@ -10,11 +10,18 @@ public interface Strategy
 		BALL_MOVE,
 		FREE_UNIT,
 		MOB_FIGHT,
-		HERDING
+		HERDING,
+		MOB_MOVE,
+		SHADOW_ARCHON,
+		SHADOW_SOLDIER,
+		EXPLORE,
+		DEFAULT
 	}
 	
 	// run the turn for this strategy
 	// returns false if we can't do this strategy no more, no more, no more
 	boolean tryTurn() throws GameActionException;
 	
+	// return the name of this strategys
+	String getName();
 }

@@ -6,7 +6,7 @@ import battlecode.common.*;
 
 public class Nav extends RobotPlayer
 {
-    private static MapLocation myDest;
+    public static MapLocation myDest;
     private static DirectionSet myDirs;
 
     private enum BugState
@@ -22,10 +22,12 @@ public class Nav extends RobotPlayer
     private static BugState bugState;
     public static WallSide bugWallSide = WallSide.LEFT;
     private static int bugStartDistSq;
-    private static Direction bugLastMoveDir;
+    public static Direction bugLastMoveDir;
     private static Direction bugLookStartDir;
     private static int bugRotationCount;
     private static int bugMovesSinceSeenObstacle = 0;
+    
+    private static final double RUBBLE_FAC = (100.0-GameConstants.RUBBLE_CLEAR_PERCENTAGE)/100;
 
     private static boolean tryMoveDirect() throws GameActionException
     {
@@ -190,6 +192,38 @@ public class Nav extends RobotPlayer
     	
     	return false;
     }
+    
+    public static int roundsToDigThrough() throws GameActionException
+    {
+    	int rounds = 0;
+    	MapLocation loc = here;
+    	
+    	for (int i=0; i<3; i++)
+    	{
+    		MapLocation next = loc.add(loc.directionTo(myDest));
+    		
+    		if (!rc.onTheMap(next))
+    			return 10000; // shouldn't happen
+    		
+    		if (next.equals(myDest))
+    			return rounds;
+    		
+    		double rubble = rc.senseRubble(next);
+    		// clear square, we're done
+    		if (rubble < GameConstants.RUBBLE_OBSTRUCTION_THRESH)
+    			return rounds;
+    		
+    		while (rubble > GameConstants.RUBBLE_OBSTRUCTION_THRESH)
+    		{
+    			rubble = rubble*RUBBLE_FAC - GameConstants.RUBBLE_CLEAR_FLAT_AMOUNT;
+    			rounds += rc.getType().movementDelay;
+    		}
+    		
+    		loc = next;
+    	}
+    	// couldn't get through it
+    	return 10000;
+    }
 
     private static boolean bugMove() throws GameActionException
     {
@@ -209,17 +243,17 @@ public class Nav extends RobotPlayer
             	// succeeded
             	return true;
             }
-            else if (isBlockedByObstacle())
+/*            else if (roundsToDigThrough() < 200 && Rubble.tryClearRubble(myDest))
+            {
+            	System.out.println("Tried to dig");
+            	return true;
+            }*/
+            else
             {
             	// failed, do bugging only if running into an actual wall
             	// (or a turret!)
                 bugState = BugState.BUG;
-                startBug();            	
-            }
-            else
-            {
-            	// don't move at all
-            	return false;
+                startBug();
             }
         }
 
@@ -232,45 +266,6 @@ public class Nav extends RobotPlayer
         // shouldn't be here, w/e
         return false;
     }
-
-    /*public static boolean tryAdjacentSafeMove(Direction dir, DirectionSet safeDirs) throws GameActionException
-    {
-    	if (!rc.isCoreReady() || dir == null || !safeDirs.any())
-    		return false;
-    	
-    	// get direction set that is all moves not away from dir
-    	DirectionSet towardDir = new DirectionSet();
-    	towardDir.add(dir);
-    	towardDir.add(dir.rotateLeft());
-    	towardDir.add(dir.rotateRight());
-    	towardDir.add(dir.rotateLeft().rotateLeft());
-    	towardDir.add(dir.rotateRight().rotateRight());
-    	
-    	// get safe dirs not away from dir
-    	ArrayList<Direction> goodDirs = towardDir.and(safeDirs).getDirections();
-    	
-    	if (goodDirs == null || goodDirs.size() == 0)
-    		return false;
-    	
-    	// best safe dir not away from dir
-    	Direction bestDir = null;
-    	MapLocation tempHere = new MapLocation(0,0);
-    	MapLocation tempTarget = tempHere.add(dir);
-    	for (Direction d : goodDirs)
-    	{
-    		if ( bestDir == null || tempHere.add(d).distanceSquaredTo(tempTarget) < tempHere.add(bestDir).distanceSquaredTo(tempTarget) )
-    			bestDir = d;
-    	}
-    	
-    	if (bestDir != null && rc.canMove(bestDir))
-    	{
-    		rc.move(bestDir);
-    		return true;
-    	}
-    	
-        return false;
-    }
-    */
     
     public static boolean tryGoTo(MapLocation dest, DirectionSet dirs) throws GameActionException
     {
@@ -285,8 +280,12 @@ public class Nav extends RobotPlayer
             bugState = BugState.DIRECT;
         }
         
-        if (here.equals(dest))
+        if (Rubble.tryClearRubbleInPathIfClearBeyondAndAlliesAround(myDest))
         	return true;
+        
+        // technically, can't move
+        if (here.equals(dest))
+        	return false;
 
         return bugMove();
     }

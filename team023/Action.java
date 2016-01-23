@@ -75,7 +75,6 @@ public class Action extends RobotPlayer
 		int roundsUntilDanger = Micro.getRoundsUntilDanger();
 		int dangerThreshold = 2;
 		int roundsUntilShootAndMove = Micro.getRoundsUntilShootAndMove();
-		//Debug.setStringTS("DR: " + roundsUntilDanger + " SR: " + roundsUntilShootAndMove);
 		
 		// if we're in danger, try to retreat before we try to shoot
 		if (roundsUntilDanger <= dangerThreshold)
@@ -123,7 +122,7 @@ public class Action extends RobotPlayer
     		return false;
     	
     	// check safe moves
-    	DirectionSet safeMoveDirs = Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs());
+    	DirectionSet safeMoveDirs = Micro.getSafeMoveDirs();
     	if(!safeMoveDirs.any())
     		return false;
     	
@@ -148,9 +147,11 @@ public class Action extends RobotPlayer
 		}
 		
 		// double check!
-		if (d != null && rc.canMove(d) && rc.isCoreReady() && !rc.isLocationOccupied(here.add(d)))
+		if (d != null && rc.canMove(d) && rc.isCoreReady())
 		{
 			rc.move(d);
+			here = rc.getLocation();
+			lastMovedRound = rc.getRoundNum();
 			return true;
 		}
 //			else
@@ -188,7 +189,7 @@ public class Action extends RobotPlayer
 		
 		return false;
 	}
-
+	
 	public static boolean tryViperAttack() throws GameActionException
 	{
 		// attack someone in range if possible, low health first, prioritizing zombies

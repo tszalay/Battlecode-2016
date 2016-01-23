@@ -4,87 +4,32 @@ import battlecode.common.*;
 
 public class RoboSoldier extends RobotPlayer
 {
-	public static Strategy myStrategy;
-	public static double myHealth;
-	public static MapLocation lastBallLocation;
+	private static Strategy overrideStrategy = null;
 	
 	public static void init() throws GameActionException
 	{
-//		if (rand.nextBoolean())
-		myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 4, 10);
-//		else
-//			myStrategy = new MobFightStrat();
-		
-//		myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 2, 10);
-		
-		myHealth = rc.getType().maxHealth;
+		myStrategy = new StratUnitCombat();
 	}
 	
 	public static void turn() throws GameActionException
 	{
-//		if (!myStrategy.tryTurn())
-//			myStrategy = new FreeUnitStrategy();
-		if (rc.getHealth() < myHealth)
+		// check if we should dig out of rubble (one blocked square ahead, but clear two ahead)
+		if (overrideStrategy == null && StratDig.shouldDigThroughSingleBlockage())
 		{
-			myHealth = rc.getHealth();
-			Message.sendSignal(RobotType.SOLDIER.sensorRadiusSquared*2);
+			overrideStrategy = new StratDig(Nav.myDest);
 		}
 		
-		MapLocation closestDen = MapInfo.getClosestDen();
-		MapLocation visibleDen = visibleDen();
-		MapLocation closestAllyUnderAttack = Message.getClosestAllyUnderAttack(); // soldier reported
-		if (visibleDen != null && !visibleDen.equals(closestAllyUnderAttack) && !visibleDen.equals(closestDen) && Micro.getNearbyZombies().length < 1)
+		// do we have a strategy that takes precedence over this one?
+		if (overrideStrategy != null)
 		{
-			Action.tryAttackSomeone();
-			Message.sendSignal(RobotType.SOLDIER.sensorRadiusSquared*5);
-			closestDen = visibleDen;
+			if (!overrideStrategy.tryTurn())
+				overrideStrategy = null;
 		}
 		
-		if (closestDen != null && here.distanceSquaredTo(closestDen) < 400)
-		{
-			lastBallLocation = here;
-			myStrategy = new MobFightStrat(closestDen);
-		}
-		else if (closestAllyUnderAttack != null)
-		{
-			myStrategy = new MobFightStrat(closestAllyUnderAttack);
-		}
+		if (roundsSince(lastDamageRound) == 0)
+			Message.sendSignal(rc.getType().sensorRadiusSquared*2);
 		
-		if (!myStrategy.tryTurn())
-		{
-			myStrategy = new MobFightStrat();
-		}
-//			myStrategy = new BallMoveStrategy(RobotPlayer.myBuilderID, 8, 16);
-//			
-//			// if i see an archon, ball around it
-//			RobotInfo[] allies = Micro.getNearbyAllies();
-//			for (RobotInfo bot : allies)
-//			{
-//				if (bot.type == RobotType.ARCHON)
-//					myStrategy = new BallMoveStrategy(bot.ID, 8, 16);
-//			}
-//			
-//			// if i don't, go back to last ball location
-//			if (lastBallLocation != null && here.distanceSquaredTo(lastBallLocation) > RobotType.SOLDIER.sensorRadiusSquared)
-//				Action.tryGoToWithoutBeingShot(lastBallLocation, Micro.getSafeMoveDirs());
-//			else
-//				myStrategy = new MobFightStrat();
-//		}
-	}
-	
-	public static MapLocation visibleDen() throws GameActionException
-	{
-		RobotInfo[] zombies = Micro.getNearbyZombies();
-		
-		if (zombies == null || zombies.length == 0)
-			return null;
-		
-		for (RobotInfo ri : zombies)
-		{
-			if (ri.type == RobotType.ZOMBIEDEN)
-				return ri.location;
-		}
-		return null;
+		myStrategy.tryTurn();
 	}
 }
 	

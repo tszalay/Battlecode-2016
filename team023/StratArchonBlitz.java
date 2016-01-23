@@ -4,12 +4,20 @@ import battlecode.common.*;
 
 import java.util.*;
 
-public class BlitzTeamStrat extends RobotPlayer implements Strategy
+public class StratArchonBlitz extends RobotPlayer implements Strategy
 {
+	private Strategy overrideStrategy = null;
+
 	private RobotInfo myArchon = null;
-	private String stratName;
 	private MapLocation dest = null;
-	private MapLocation symLoc = null;
+
+	public String getName()
+	{
+		if (overrideStrategy != null)
+			return overrideStrategy.getName();
+
+		return "Blitzing";
+	}
 	
 	public static boolean shouldBlitz()
 	{
@@ -48,18 +56,15 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 	}
 	
 	
-	public BlitzTeamStrat(RobotInfo myArchon) throws GameActionException
+	public StratArchonBlitz(RobotInfo myArchon) throws GameActionException
 	{
 		this.myArchon = myArchon;
-		this.stratName = "BlitzTeamStrat";	
 		
 		tryBuild(RobotType.VIPER);
 	}
 	
-	public BlitzTeamStrat(MapLocation dest) throws GameActionException
+	public StratArchonBlitz(MapLocation dest) throws GameActionException
 	{
-		this.myArchon = myArchon;
-		this.stratName = "BlitzTeamStrat";	
 		this.dest = dest;
 	}
 	
@@ -115,8 +120,7 @@ public class BlitzTeamStrat extends RobotPlayer implements Strategy
 				
 				else if (here.distanceSquaredTo(MapInfo.getSymmetricLocation(here)) > 100)
 				{
-					if (symLoc == null)
-						symLoc = MapInfo.getSymmetricLocation(here);
+					MapLocation symLoc = MapInfo.getSymmetricLocation(here);
 					Action.tryGoToWithoutBeingShot(symLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
 					Debug.setStringRR("going to mapsymmetry loc at " + MapInfo.getSymmetricLocation(here).toString());
 				}
