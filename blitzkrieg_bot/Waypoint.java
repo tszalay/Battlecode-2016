@@ -33,8 +33,8 @@ public class Waypoint extends RobotPlayer
 		
 		public void add(TargetInfo ti)
 		{
-			// invalid
-			if (ti.location == null)
+			// invalid values for stuff (0 for zombies)
+			if (ti.location == null || ti.value == 0)
 				return;
 			
 			int oldestInd = 0;
@@ -88,7 +88,8 @@ public class Waypoint extends RobotPlayer
 			{
 				if (targets[i] == null)
 					continue;
-				if (loc == null || here.distanceSquaredTo(targets[i].location) < here.distanceSquaredTo(loc))
+				if (roundsSince(targets[i].round)<timelimit &&
+						(loc == null || here.distanceSquaredTo(targets[i].location) < here.distanceSquaredTo(loc)))
 					loc = targets[i].location;
 			}
 			return loc;
@@ -135,6 +136,6 @@ public class Waypoint extends RobotPlayer
 	
 	public static MapLocation getBestEnemyLocation()
 	{
-		return null;
+		return enemyTargetStore.getClosestRecent(200);
 	}
 }

@@ -78,7 +78,8 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 		if (lastDest == null)
 		{
 			myTask = "enemy";
-			lastDest = Sighting.getClosestTurret();
+			//lastDest = Sighting.getClosestTurret();
+			lastDest = Waypoint.getBestEnemyLocation();
 		}
 		if (lastDest == null)
 		{

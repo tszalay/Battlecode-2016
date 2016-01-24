@@ -171,10 +171,11 @@ public class Message extends RobotPlayer
 			case SIGHT_TARGET:
 				MapLocation loc0 = readLocation(vals[0]);
 				MapLocation loc1 = readLocation(vals[1]);
+				int val = readShort(vals[1],1);
 				Sighting.addSightedTarget(loc0,loc1);
 				
-				Waypoint.enemyTargetStore.add(new Waypoint.TargetInfo(loc0,readByte(vals[0],2)));
-				Waypoint.enemyTargetStore.add(new Waypoint.TargetInfo(loc1,readByte(vals[1],2)));
+				Waypoint.enemyTargetStore.add(new Waypoint.TargetInfo(loc0,val));
+				Waypoint.enemyTargetStore.add(new Waypoint.TargetInfo(loc1,val));
 				break;
 			case ZOMBIE_DEN:
 				MapInfo.updateZombieDens(readLocation(vals[0]), readLocation(vals[1]), readByte(vals[1],3)==0);

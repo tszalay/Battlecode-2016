@@ -59,7 +59,11 @@ public class Sighting extends RobotPlayer
 			if (Micro.getRoundsUntilDanger() > 12 && farBroadcastSignal.canSend())
 				broadcast_dist = MapInfo.fullMapDistanceSq();
 			
-			Message.sendMessageSignal(broadcast_dist,Message.Type.SIGHT_TARGET,targetloc,turretloc);
+			// also count up nearby combat units to set value
+			UnitCounts units = Micro.getEnemyUnits();
+			int val = 100*units.Archons + units.Guards + units.Soldiers + 3*units.TurrTTMs + units.Vipers;
+			
+			Message.sendMessageSignal(broadcast_dist,Message.Type.SIGHT_TARGET,targetloc,turretloc,val);
 		}
 		
 		trySendFriendlyMessage();
