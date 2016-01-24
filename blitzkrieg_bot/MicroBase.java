@@ -855,6 +855,9 @@ public class MicroBase extends RobotPlayer
 	{
 		RobotInfo target = null;
 		
+		if (bots == null)
+			return null;
+		
 		for (RobotInfo ri : bots)
 		{
 			// can't attack this dude
@@ -868,10 +871,13 @@ public class MicroBase extends RobotPlayer
 				continue;
 			}
 			
-			if (ri.viperInfectedTurns < target.viperInfectedTurns)
+			if (ri.viperInfectedTurns < target.viperInfectedTurns && ri.type != RobotType.ARCHON)
 				target = ri;
 				
 		}
+		
+		if (target == null && bots.length > 0) // if there's only an archon, shoot it anyway
+			target = bots[0];
 		
 		return target;
 	}
