@@ -75,7 +75,7 @@ public class StratViperRush extends RobotPlayer implements Strategy
         		}
         	}
         	if (enemyturretloc != null)
-        		Nav.tryGoTo(enemyturretloc, Micro.getBestAnyDirs());
+        		Nav.tryGoTo(enemyturretloc, Micro.getCanMoveDirs());
         }
         
         // try to have only one enemy in attack range at a time
@@ -90,14 +90,14 @@ public class StratViperRush extends RobotPlayer implements Strategy
         		Action.tryViperAttack();
         	else
         	{
-        		if (!Nav.tryGoTo(here.add(retreatDir), Micro.getBestAnyDirs()))
+        		if (!Nav.tryGoTo(here.add(retreatDir), Micro.getCanMoveDirs()))
         			Action.tryViperAttack();
         	}
         }
-        else if (enemies != null && enemies.length > 0)
+        else if (enemies != null && enemies.length > 0 && here.distanceSquaredTo(enemyLoc) < here.distanceSquaredTo(startingLoc))
         {
         	Debug.setStringRR("trying to go to enemy COM");
-        	Nav.tryGoTo(Micro.getEnemyCOM(),Micro.getBestSafeDirs());
+        	Nav.tryGoTo(Micro.getEnemyCOM(),Micro.getCanMoveDirs());
         }
         else if (here.distanceSquaredTo(enemyLoc) < 10 && (enemies == null || enemies.length == 0))
         {

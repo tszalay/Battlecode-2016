@@ -94,7 +94,7 @@ public class Rubble extends RobotPlayer
 		
 		// probabilities
 		double g = rand.nextGaussian();
-		if ((rubble - 2*100) > g*1000+2000 || Micro.getNearbyAllies().length < 3+g*3)
+		if ((rubble - 2*100) > g*1000+2000 || (Micro.getNearbyAllies().length < 3+g*3 && (rubble - 2*100) > GameConstants.RUBBLE_OBSTRUCTION_THRESH*5))
 			return false;
 		
 		// DIG to target
