@@ -34,6 +34,9 @@ public class RoboArchon extends RobotPlayer
 				rc.setIndicatorLine(here, loc, 255,255,255);
 			for (MapLocation loc : MapInfo.neutralArchonLocations.elements())
 				rc.setIndicatorLine(here, loc, 255,0,255);
+			MapLocation loc = Message.getRecentFriendlyLocation();
+			if (loc != null)
+				rc.setIndicatorLine(here,loc,0,255,0);
 		}
 
 		// if we haven't finished initial set build order

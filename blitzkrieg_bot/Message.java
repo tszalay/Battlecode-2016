@@ -120,7 +120,10 @@ public class Message extends RobotPlayer
 	
 	private static SignalRound	recentAllyAttacked = new SignalRound(20);
 	private static SignalRound	recentArchonAttacked = new SignalRound(50);
-	private static SignalRound	recentFriendlySignal = new SignalRound(300);
+	
+	private static Signal recentFriendlySignal;
+	private static int recentFriendlyRound = -100000;
+	private static int recentFriendlyVal = 0;
 	
 	private static ArrayList<ArchonLocation> recentArchonLocations = new ArrayList<ArchonLocation>();
 	private static SignalDelay archonLocationTimer = new SignalDelay(20);
@@ -179,7 +182,12 @@ public class Message extends RobotPlayer
 				recentStrategySignal = Strategy.Type.values()[vals[1]];
 				break;
 			case LOTSA_FRIENDLIES:
-				recentFriendlySignal.update(sig);
+				if (vals[1] > recentFriendlyVal || roundsSince(recentFriendlyRound) > 50)
+				{
+					recentFriendlyVal = vals[1];
+					recentFriendlyRound = rc.getRoundNum();
+					recentFriendlySignal = sig;
+				}
 				break;
 			case NEUTRAL_ARCHON:
 				MapInfo.updateNeutralArchons(readLocation(vals[0]), readLocation(vals[1]), readByte(vals[1],3)==0);
@@ -278,8 +286,8 @@ public class Message extends RobotPlayer
 	// Have we heard from any friendly units close by recently?
 	public static MapLocation getRecentFriendlyLocation()
 	{
-		if (recentFriendlySignal.sig != null)
-			return recentFriendlySignal.sig.getLocation();
+		if (roundsSince(recentFriendlyRound) < 150)
+			return recentFriendlySignal.getLocation();
 		return null;
 	}
 	
