@@ -10,7 +10,6 @@ public class RoboArchon extends RobotPlayer
 	public static final int SCOUT_SHADOW_ROUND = 200;
 	private static int botsBuiltFromSetBuildOrder = 0;
 	private static RobotType[] buildOrder;
-	public static Strategy myStrategy;
 
 	public static void init() throws GameActionException
 	{

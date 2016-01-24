@@ -193,6 +193,8 @@ public class RobotPlayer
 				// let's see what we're doing
 				if (myStrategy != null)
 					Debug.setStringAK(myStrategy.getName());
+				else
+					Debug.setStringAK("null strategy???");
 				
 				Debug.setStringTS("D:" + MapInfo.zombieDenLocations.elements().size()
 						+ " A:" + MapInfo.neutralArchonLocations.elements().size()

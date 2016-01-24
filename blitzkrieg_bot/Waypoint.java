@@ -9,7 +9,7 @@ public class Waypoint extends RobotPlayer
 	private static MapLocation randomDest = null;
 	private static int randomDestRound = -10000;
 	
-	public static MapLocation getRetreatWaypoint()
+	public static MapLocation getRandomRetreatWaypoint()
 	{
 		// we haven't changed it in a while, or we're there
 		if (roundsSince(randomDestRound) > 300 || here.distanceSquaredTo(randomDest) < 24)
@@ -18,16 +18,26 @@ public class Waypoint extends RobotPlayer
 		return randomDest;
 	}
 	
-	
 	public static MapLocation getBestRetreatLocation()
 	{
 		// try retreating to nearby archons first
-		MapLocation loc = Message.getClosestArchon();
+		MapLocation loc = getClosestFriendlyWaypoint();
 		if (loc == null)
-			loc = Message.getRecentFriendlyLocation();
-		if (loc == null)
-			loc = getRetreatWaypoint();
+			loc = getRandomRetreatWaypoint();
 		
 		return loc;
+	}
+	
+	public static MapLocation getClosestFriendlyWaypoint()
+	{
+		MapLocation loc1 = Message.getClosestArchon();
+		MapLocation loc2 = Message.getRecentFriendlyLocation();
+		
+		if (loc1 == null)
+			return loc2;
+		if (loc2 == null)
+			return loc1;
+		
+		return here.distanceSquaredTo(loc1) < here.distanceSquaredTo(loc2) ? loc1 : loc2;
 	}
 }

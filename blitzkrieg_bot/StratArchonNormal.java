@@ -14,7 +14,8 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (overrideStrategy != null)
 			return overrideStrategy.getName();
 
-		return "Normal Archon " + Message.getClosestArchon();
+		MapLocation loc = Waypoint.getClosestFriendlyWaypoint();
+		return "Normal Archon " + (loc==null?"":here.distanceSquaredTo(loc));
 	}
 	
 	public boolean tryTurn() throws GameActionException
@@ -59,34 +60,22 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (tryBuild())
 			return true;
 
-		// look for waypoint
+		// look for local waypoint
 		MapLocation dest = senseClosestNeutral();
 		if (dest == null)
 			dest = senseClosestPart();
+		// if we've got nothing to grab and we've found ourselves far from friendlies
+		MapLocation closestFriendly = Waypoint.getClosestFriendlyWaypoint();
+		if (dest == null && closestFriendly != null && here.distanceSquaredTo(closestFriendly) > 250)
+			dest = closestFriendly;
+		// if we've still got nowhere to go, check for nearby archon
 		if (dest == null)
-			dest = Micro.getAllyCOM();
-		if (dest == null)
-			dest = MapInfo.farthestArchonLoc;
+			dest = MapInfo.getClosestNeutralArchon();
+		// otherwise, just chill
 		
-		// look for waypoint
-		/*dest =  MapInfo.getClosestNeutralArchon();
-		if (dest == null || here.distanceSquaredTo(dest) < 1)
-		{
-			MapLocation closestPart = senseClosestPart();
-			MapLocation closestNeutral = senseClosestNeutral();
-			if (closestNeutral != null)
-				dest = closestNeutral;
-			else
-				dest = closestPart;
-			if (closestNeutral != null && closestPart != null && here.distanceSquaredTo(closestPart) < here.distanceSquaredTo(closestNeutral))
-				dest = closestPart;
-		}
-		if (dest == null || here.distanceSquaredTo(dest) < 1)
-			dest = MapInfo.getClosestPart();
-		if (dest == null)
-			return true;*/
-		
-		Nav.tryGoTo(dest, Micro.getSafeMoveDirs());
+		// we don't always have to move...
+		if (dest != null)
+			Nav.tryGoTo(dest, Micro.getBestSafeDirs());
 		
 		return true;
 	}
