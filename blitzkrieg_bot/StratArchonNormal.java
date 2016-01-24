@@ -106,12 +106,6 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		RobotType robotToBuild = null;
 		Strategy.Type buildStrat = null;
 		
-		for (int i=0; i<buildOrder.length; i++)
-		{
-			System.out.println(buildOrder[i].toString());
-		}
-		System.out.println(numBuilds);
-		
 		// the initial build order
 		if (numBuilds < buildOrder.length)
 		{
