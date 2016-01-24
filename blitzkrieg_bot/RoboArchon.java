@@ -140,18 +140,6 @@ public class RoboArchon extends RobotPlayer
 			return buildOrder;
 		}
 
-		// if we are the closest of multiple archons, rush
-		if (myDist == shortestDist)
-		{
-			buildOrder = new RobotType[5];
-			buildOrder[0] = RobotType.VIPER;
-			buildOrder[1] = RobotType.SOLDIER;
-			buildOrder[2] = RobotType.SOLDIER;
-			buildOrder[3] = RobotType.GUARD;
-			buildOrder[4] = RobotType.SCOUT;
-			return buildOrder;
-		}
-
 		// we are not the closest. look at zombie spawns. if too bad, change build order
 		Zombie z = new Zombie(200);
 		int bigZombies = z.getNumEarlyBigZombies();
@@ -159,10 +147,10 @@ public class RoboArchon extends RobotPlayer
 		int rangedZombies = z.getNumEarlyRangedZombies();
 		int stdZombies = z.getNumEarlyStdZombies();
 
-//		System.out.println(bigZombies + " big zombies");
-//		System.out.println(fastZombies + " fast zombies");
-//		System.out.println(rangedZombies + " ranged zombies");
-//		System.out.println(stdZombies + " std zombies");
+		System.out.println(bigZombies + " big zombies");
+		System.out.println(fastZombies + " fast zombies");
+		System.out.println(rangedZombies + " ranged zombies");
+		System.out.println(stdZombies + " std zombies");
 
 		if (rangedZombies > 3 || bigZombies > 1)
 		{
@@ -176,11 +164,12 @@ public class RoboArchon extends RobotPlayer
 
 		if (fastZombies > 10)
 		{
-			buildOrder = new RobotType[4];
+			buildOrder = new RobotType[5];
 			buildOrder[0] = RobotType.GUARD;
 			buildOrder[1] = RobotType.GUARD;
 			buildOrder[2] = RobotType.GUARD;
 			buildOrder[3] = RobotType.SOLDIER;
+			buildOrder[4] = RobotType.SCOUT;
 			return buildOrder;
 		}
 
@@ -191,6 +180,18 @@ public class RoboArchon extends RobotPlayer
 			buildOrder[1] = RobotType.GUARD;
 			buildOrder[2] = RobotType.SOLDIER;
 			buildOrder[3] = RobotType.SOLDIER;
+			buildOrder[4] = RobotType.SCOUT;
+			return buildOrder;
+		}
+		
+		// if we are the closest of multiple archons, rush
+		if (myDist == shortestDist)
+		{
+			buildOrder = new RobotType[5];
+			buildOrder[0] = RobotType.VIPER;
+			buildOrder[1] = RobotType.SOLDIER;
+			buildOrder[2] = RobotType.SOLDIER;
+			buildOrder[3] = RobotType.GUARD;
 			buildOrder[4] = RobotType.SCOUT;
 			return buildOrder;
 		}
