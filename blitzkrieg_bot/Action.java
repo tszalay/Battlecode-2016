@@ -16,13 +16,14 @@ public class Action extends RobotPlayer
 		//RobotInfo zombieTarget = Micro.getLowestHealthInMyRange(Micro.getNearbyZombies());
 		//RobotInfo enemyTarget = Micro.getLowestHealthInMyRange(Micro.getNearbyEnemies());
 		RobotInfo zombieTarget = Micro.getHighestPriorityTarget(Micro.getNearbyZombies());
-		RobotInfo enemyTarget = Micro.getHighestPriorityTarget(Micro.getNearbyEnemies());
 		
 		if (zombieTarget != null && rc.canAttackLocation(zombieTarget.location))
 		{
 			rc.attackLocation(zombieTarget.location);
 			return true;
 		}
+		
+		RobotInfo enemyTarget = Micro.getHighestPriorityTarget(Micro.getNearbyEnemies());
 		
 		if (enemyTarget != null && rc.canAttackLocation(enemyTarget.location))
 		{
@@ -76,6 +77,15 @@ public class Action extends RobotPlayer
 			return tryAttackSomeone();
 		else
 			return tryMove(escapeDir);
+	}
+	
+	public static boolean tryGoToSafestOrRetreat(MapLocation target) throws GameActionException
+	{
+		DirectionSet safestDirs = Micro.getBestSafeDirs();
+		if (!safestDirs.any())
+			return tryRetreatOrShootIfStuck();
+		else
+			return Nav.tryGoTo(target, safestDirs);
 	}
 	
 	public static boolean tryGoToWithoutBeingShot(MapLocation target, DirectionSet dirSet) throws GameActionException

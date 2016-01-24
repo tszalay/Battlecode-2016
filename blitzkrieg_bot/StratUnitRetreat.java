@@ -40,13 +40,7 @@ public class StratUnitRetreat extends RobotPlayer implements Strategy
 		if (myDest == null)
 			myDest = myBuilderLocation;
 		
-		DirectionSet bufferDirs = Micro.getBufferDirs();
-		bufferDirs = bufferDirs.and(Micro.getTurretSafeDirs());
-		
-		if (bufferDirs.any())
-			Nav.tryGoTo(myDest, bufferDirs);
-		else
-			Nav.tryGoTo(myDest, Micro.getCanMoveDirs());
+		Nav.tryGoTo(myDest, Micro.getBestAnyDirs());
 		
 		// should we shoot here? probably
 		Action.tryAttackSomeone();

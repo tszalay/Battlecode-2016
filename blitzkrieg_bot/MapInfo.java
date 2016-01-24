@@ -7,7 +7,6 @@ import java.util.*;
 public class MapInfo extends RobotPlayer
 {
 	public static FastLocSet zombieDenLocations = new FastLocSet();
-	public static FastLocSet goodPartsLocations = new FastLocSet();
 	public static FastLocSet neutralArchonLocations = new FastLocSet();
 	public static FastLocSet formerDenLocations = new FastLocSet();
 	
@@ -53,11 +52,6 @@ public class MapInfo extends RobotPlayer
 		// this one should get transmitted to a scout
 		return new MapLocation(rand.nextInt(mapMax.x - mapMin.x) + mapMin.x,
 							   rand.nextInt(mapMax.y - mapMin.y) + mapMin.y);
-	}
-	
-	public static MapLocation getClosestPart()
-	{
-		return Micro.getClosestLocationTo(goodPartsLocations.elements(), here);
 	}
 	
 	public static MapLocation getClosestDen()

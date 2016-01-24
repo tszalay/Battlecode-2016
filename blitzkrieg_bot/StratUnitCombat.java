@@ -85,7 +85,7 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 			myTask = "rally";
 			lastDest = MapInfo.ourArchonCenter;
 		}
-			
+		
 		DirectionSet bufferDirs = Micro.getBufferDirs();
 		bufferDirs = bufferDirs.and(Micro.getTurretSafeDirs());
 		
@@ -116,37 +116,22 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 			lastDest = Message.getClosestArchon();
 			if (lastDest == null)
 				lastDest = MapInfo.farthestArchonLoc;
-			Nav.tryGoTo(lastDest, Micro.getSafeMoveDirs());
+			Action.tryGoToSafestOrRetreat(lastDest);
 		}
 		
 		// or shoot if we couldn't move
-		if (!Action.tryAttackSomeone())
+		if (!Action.tryAttackSomeone() && rc.isCoreReady())
 		{
-			MapLocation[] parts = rc.sensePartLocations(rc.getType().sensorRadiusSquared);
+			MapLocation[] parts = Micro.getNearbyParts();
 			if (parts != null && parts.length > 0)
 			{
-				MapLocation closestLocalPart = null;
-				for (MapLocation part : parts)
-				{
-					if (closestLocalPart == null || here.distanceSquaredTo(part) < here.distanceSquaredTo(closestLocalPart))
-						closestLocalPart = part;
-				}
+				MapLocation closestLocalPart = Micro.getClosestLocationTo(parts, here);
 				if (closestLocalPart != null)
-				{
 					Rubble.doClearRubble(here.directionTo(closestLocalPart));
-				}
 			}
 			else
 			{
-				MapLocation mapPart = MapInfo.getClosestPart();
-				if (mapPart != null)
-				{
-					Rubble.doClearRubble(here.directionTo(mapPart));
-				}
-				else
-				{
-					Rubble.doClearRubble(Rubble.getRandomAdjacentRubble());
-				}
+				Rubble.doClearRubble(Rubble.getRandomAdjacentRubble());
 			}
 		}
 		

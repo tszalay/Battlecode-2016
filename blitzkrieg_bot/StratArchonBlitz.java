@@ -80,7 +80,6 @@ public class StratArchonBlitz extends RobotPlayer implements Strategy
 			{
 				MapLocation partLoc = senseClosestPart();
 				MapLocation neutralLoc = senseClosestNeutral();
-				MapLocation mapPartLoc = MapInfo.getClosestPart();
 				RobotInfo[] hostiles = Micro.getNearbyHostiles();
 				
 				// avoid all hostiles
@@ -90,8 +89,7 @@ public class StratArchonBlitz extends RobotPlayer implements Strategy
 					{
 						if (!Action.tryRetreatTowards(partLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs())))
 						{
-							if (!Action.tryRetreatTowards(mapPartLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs())))
-								Action.tryRetreatOrShootIfStuck();
+							Action.tryRetreatOrShootIfStuck();
 						}
 					}
 					return false;
@@ -111,13 +109,7 @@ public class StratArchonBlitz extends RobotPlayer implements Strategy
 					Action.tryGoToWithoutBeingShot(partLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
 					Debug.setStringRR("going to partLoc at " + partLoc.toString());
 				}
-				
-				else if (mapPartLoc != null)
-				{
-					Action.tryGoToWithoutBeingShot(mapPartLoc, Micro.getSafeMoveDirs().and(Micro.getTurretSafeDirs()));
-					Debug.setStringRR("going to partLoc at " + mapPartLoc.toString());
-				}
-				
+						
 				else if (here.distanceSquaredTo(MapInfo.getSymmetricLocation(here)) > 100)
 				{
 					MapLocation symLoc = MapInfo.getSymmetricLocation(here);

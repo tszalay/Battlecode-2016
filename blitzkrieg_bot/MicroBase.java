@@ -10,6 +10,7 @@ public class MicroBase extends RobotPlayer
 	private RobotInfo[] nearbyZombies = null;
 	private RobotInfo[] nearbyHostiles = null;
 	private RobotInfo[] nearbyAllies = null;
+	private MapLocation[] nearbyParts = null;
 	
 	private DirectionSet canMoveDirs = null;
 	private DirectionSet fastMoveDirs = null;
@@ -157,6 +158,15 @@ public class MicroBase extends RobotPlayer
 		nearbyHostiles = rc.senseHostileRobots(here, rc.getType().sensorRadiusSquared);
 		return nearbyHostiles;
 	}
+	
+	public MapLocation[] getNearbyParts()
+	{
+		if (nearbyParts != null)
+			return nearbyParts;
+		
+		nearbyParts = rc.sensePartLocations(rc.getType().sensorRadiusSquared);
+		return nearbyParts;
+	}
 		
 	// this gets called by other functions to compile various stats and info
 	// before they return the computed values
@@ -232,6 +242,10 @@ public class MicroBase extends RobotPlayer
 			if (isThisSquareSafer)
 				saferMoveDirs.add(d);
 		}
+		
+		// scouts can go anywhere
+		if (rc.getType() == RobotType.SCOUT)
+			fastMoveDirs = canMoveDirs.clone();
 		// obviously, if either is in turret range, it is neither
 		// safe nor safer
 		safeMoveDirs = safeMoveDirs.and(turretSafeDirs);
@@ -259,7 +273,7 @@ public class MicroBase extends RobotPlayer
 				break;
 				
 			case TTM:
-				dangerTime = (int) Math.floor(ri.coreDelay) + GameConstants.TURRET_TRANSFORM_DELAY;
+				dangerTime = (int)ri.coreDelay + GameConstants.TURRET_TRANSFORM_DELAY;
 				break;
 				
 			// ranged units
@@ -301,13 +315,13 @@ public class MicroBase extends RobotPlayer
 				// scaling of movement delay to get here
 				double effDistanceTo = Math.min(dx, dy)*0.4 + Math.max(dx, dy); // verified
 				
-				dangerTime = (int)Math.floor(ri.coreDelay + ri.type.movementDelay*(effDistanceTo-1) + ri.type.cooldownDelay);
+				dangerTime = (int)(ri.coreDelay + ri.type.movementDelay*(effDistanceTo-1) + ri.type.cooldownDelay);
 				
 				break;
 				
 			case TURRET:
 				if (here.distanceSquaredTo(ri.location) <= ri.type.attackRadiusSquared)
-					dangerTime = (int)Math.floor(ri.weaponDelay);
+					dangerTime = (int)(ri.weaponDelay);
 				break;
 			}
 			
@@ -323,7 +337,7 @@ public class MicroBase extends RobotPlayer
 		
 		if (!Micro.getTurretSafeDirs().isValid(Direction.NONE))
 			roundsUntilDanger = 0;
-
+		
 		return roundsUntilDanger;
 	}
 	
@@ -634,6 +648,7 @@ public class MicroBase extends RobotPlayer
 	{
 		return getUnitCOM(this.getNearbyZombies());
 	}
+	
 	public MapLocation getUnitCOM(RobotInfo[] nearby)
 	{
 		int xtot = 0;
@@ -669,6 +684,24 @@ public class MicroBase extends RobotPlayer
 			{
 				closest = ri;
 				closestDistSq = distSq;
+			}
+		}
+		
+		return closest;
+	}
+	
+	public MapLocation getClosestLocationTo(MapLocation[] locs, MapLocation center)
+	{
+		int minDistSq = 1000000;
+		MapLocation closest = null;
+		
+		for (MapLocation ml : locs)
+		{
+			int dsq = ml.distanceSquaredTo(center);
+			if (dsq < minDistSq)
+			{
+				minDistSq = dsq;
+				closest = ml;
 			}
 		}
 		
