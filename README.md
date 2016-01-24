@@ -5,6 +5,22 @@
 
 ## Master TODO
 
+### For Qualifier Submission
+- Have a very clear HARD CODED flow chart for early game builds, scouts out way to late on 1 archon maps like barricade
+- Not all dens seen on goodies - leads to our loss vs jene, due to not enough exploring scouts
+- Not enough early action on caverns before dens seen. Need more agressive default soldier behavior.
+- Barricade: scouts see
+
+
+
+
+
+
+
+
+
+
+
 ### For Seeding Submission
 
 - soldiers switching back from mob to do ball get lost and sit around.
