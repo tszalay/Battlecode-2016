@@ -110,7 +110,7 @@ public class StratViperRush extends RobotPlayer implements Strategy
         	{
         		enemyLoc = Message.recentEnemySignal;
         		if (enemyLoc == null)
-        			enemyLoc = MapInfo.getExplorationWaypoint();
+        			enemyLoc = MapInfo.getRandomLocation();
         	}
         	else
         	{
