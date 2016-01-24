@@ -6,20 +6,12 @@
 ## Master TODO
 
 ### For Qualifier Submission
-- Have a very clear HARD CODED flow chart for early game builds, scouts out way to late on 1 archon maps like barricade
-- Not all dens seen on goodies - leads to our loss vs jene, due to not enough exploring scouts
-- Not enough early action on caverns before dens seen. Need more agressive default soldier behavior.
-- Barricade: scouts see
-
-
-
-
-
-
-
-
-
-
+- Hard code early game builds. Scouts out way to late on 1 archon maps like barricade.
+- Scouts can't miss dens on edge of map. See goodies, caverns, we lose on goodies because of it
+- Soldiers search for dens or surround even if no dens seen. Not enough early action on caverns before dens seen.
+- Avoid units stuck at rubble for 1000 rounds.
+--*Rubble never cleared at thick 10000 rubble barrier on barricade or presents even though soldiers stay there for 1000 rounds.
+--*Den Reapers takes care of rubble on presents well: Round 4 Losers B DenReapers (#222) vs. Protoss (#237)
 
 ### For Seeding Submission
 
