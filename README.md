@@ -6,16 +6,15 @@
 ## Master TODO
 
 ### For Qualifier Submission
-- Hard code early game builds. Scouts out way to late on 1 archon maps like barricade.
-- Build 1 explore scout per archon before shadow scouts.
-- Scouts can't miss dens on edge of map. See goodies, caverns, we lose on goodies because of it
-- Make soldiers search for dens or surround even before dens seen. Not enough early action on caverns. We lose ~200 rounds on scouts waiting for a scout.
-- Avoid units stuck at rubble for 1000 rounds. See Barricade and presents. DenReapers does well on presents: Round 4 Losers B DenReapers (#222) vs. Protoss (#237)
-- Fix surround/zday bug. On scouts surround is never joined by one archon timid, no Zday.
-- GTFO for archons. See endgame on swamp, diffusion.
-- Add a few midgame vipers. They devastate us on swamp, the_duck adds 2 around round 300 too.
-
-We suck on diffusion. clutch Queen sacrifice by jene after we viper her brood takes us out in the end. GTFO archon would help.
+- Debug z-day. Watch scrimmage vs vvphys and turing_it_up on the 24th, somewhat testable on scouting vs jene
+- GTFO Archons. See scrimmage vs vvphys on space, from the 24th, somewhat testable on on swamp, diffusion vs jene
+- Archons must run to allies. Watch channels vs Team Sheep scrimmage on the 24th
+- Hard code early game builds. Scouts out way to late on 1 archon maps like barricade. Build 1 explore scout per archon before shadow scouts.
+- Make scouts see dens on edge of map. See goodies, caverns, we lose on goodies to jene because of it
+- Make soldiers search for dens or surround dens seen. Not enough early action on caverns vs jene. We lose ~200 rounds on scouting waiting for a scout
+- Shadow lone enemy archons and waypoint rage them. See scrimmage with return win on helloworld on 24th
+- Avoid units stuck at rubble for 1000 rounds. See Barricade and presents vs jene. DenReapers does well on presents: Round 4 Losers B DenReapers (#222) vs. Protoss (#237)
+- Have a few midgame vipers. They devastate us on swamp, the_duck adds 2 around round 300 too
 
 ### For Seeding Submission
 

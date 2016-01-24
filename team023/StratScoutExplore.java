@@ -27,7 +27,7 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 			return overrideStrategy.getName();
 
 		return "Explored Q" + myExploringQuadrant + " "
-				+ (64-myExploringTargets.elements().size()) + "/64";
+				+ myExploringTargets.elements().size() + " left";
 	}
 	
 	public int getQuadrant(MapLocation loc)
@@ -129,12 +129,10 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 		}
 		
 		// now do we need to update my target?
+		// if it's off the map, re-initialize
 		if (!MapInfo.isOnMap(myExploringTarget))
 		{
-			// remove the target
-			myExploringTargets.remove(myExploringTarget);
-			// set it to update in if statement below
-			myExploringTarget = null;
+			resetTargets();
 		}
 
 		// no targets for me? reset all of them
@@ -173,13 +171,9 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 		
 		// update all of our targets, visited and otherwise
 		updateTargets();
-		
-		DirectionSet goodDirs = Micro.getSafeMoveDirs();
-		
-		if (goodDirs.any())
-			Nav.tryGoTo(myExploringTarget, goodDirs);
-		else
-			Action.tryRetreatOrShootIfStuck();
+
+		// try to go to the target with the best dirs possible
+		Nav.tryGoTo(myExploringTarget, Micro.getBestAnyDirs());
 
 		return true;
 	}

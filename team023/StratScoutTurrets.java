@@ -7,8 +7,9 @@ public class StratScoutTurrets extends RobotPlayer implements Strategy
 {	
 	private Strategy overrideStrategy = null;
 	
-	private Direction lastMoveDir = Direction.NORTH;
 	private boolean isClockwise = true;
+	private int lastNotCrowdedRound = 0;
+	private MapLocation lastTurretLocation = null;
 
 	public String getName()
 	{
@@ -51,11 +52,27 @@ public class StratScoutTurrets extends RobotPlayer implements Strategy
 		
 		// if there's nothing to go to nearby, do something else
 		if (loc == null)
+		{
+			if (lastTurretLocation == null)
+				return false;
+			else
+				loc = lastTurretLocation;
+		}
+		else
+		{
+			lastTurretLocation = loc;
+		}
+		
+		if (new UnitCounts(rc.senseNearbyRobots(24, ourTeam)).Scouts < 3)
+			lastNotCrowdedRound = rc.getRoundNum();
+		
+		// get back to exploring if there are too many scouts around
+		if (roundsSince(lastNotCrowdedRound) > 100)
 			return false;
 		
 		// otherwise go towards nearest turret
 		Direction dir = here.directionTo(loc);
-		DirectionSet dirs = Micro.getSafeMoveDirs();
+		DirectionSet dirs = Micro.getBufferDirs();
 
 		for (int i=0; i<5; i++)
 		{

@@ -9,6 +9,7 @@ public class MapInfo extends RobotPlayer
 	public static FastLocSet zombieDenLocations = new FastLocSet();
 	public static FastLocSet goodPartsLocations = new FastLocSet();
 	public static FastLocSet neutralArchonLocations = new FastLocSet();
+	public static FastLocSet formerDenLocations = new FastLocSet();
 	
 	public static MapLocation mapMin = new MapLocation(-18000,-18000);
 	public static MapLocation mapMax = new MapLocation(18001,18001);
@@ -49,11 +50,6 @@ public class MapInfo extends RobotPlayer
 	// just do something random for now
 	public static MapLocation getExplorationWaypoint()
 	{
-		if (rand.nextInt(4) == 2)
-		{
-			return new MapLocation(rand.nextBoolean() ? mapMin.x+1 : mapMax.x-1,
-							rand.nextBoolean() ? mapMin.y+1 : mapMax.y-1);
-		}
 		// this one should get transmitted to a scout
 		return new MapLocation(rand.nextInt(mapMax.x - mapMin.x) + mapMin.x,
 							   rand.nextInt(mapMax.y - mapMin.y) + mapMin.y);
@@ -185,7 +181,10 @@ public class MapInfo extends RobotPlayer
 				zombieDenLocations.add(getSymmetricLocation(add_loc), DEN_SENT_ADD);
 		}
 		if (!del_loc.equals(nullLocation))
+		{
 			zombieDenLocations.remove(del_loc);
+			formerDenLocations.add(del_loc);
+		}
 	}
 	/*
 	public static void updateParts(MapLocation loc, boolean sendUpdate)
@@ -213,9 +212,12 @@ public class MapInfo extends RobotPlayer
 	}
 	
 	// function to send updated info as a scout
-	public static boolean doScoutSendUpdates() throws GameActionException
+	public static boolean tryScoutSendUpdates() throws GameActionException
 	{
-		if (Micro.isInDanger() || rc.getCoreDelay() > 5)
+		// if our health is low, always check if we have anything to send
+		// parent function checks this by calling it multiple times; in normal situations
+		// the core delay should trip it
+		if (rc.getHealth() > 5 && (Micro.isInDanger() || rc.getCoreDelay() > 5))
 			return false;
 		
 		// only send one at a time
@@ -245,6 +247,7 @@ public class MapInfo extends RobotPlayer
 				Message.sendMessageSignal(fullMapDistanceSq(), Message.Type.ZOMBIE_DEN, nullLocation, loc);
 				// and actually remove it from the array
 				zombieDenLocations.remove(loc);
+				formerDenLocations.add(loc);
 				// and don't do any more this round
 				return true;
 			}
@@ -326,9 +329,14 @@ public class MapInfo extends RobotPlayer
 				// if we're a scout, flag it so we send the removal message
 				// otherwise just straight up remove it
 				if (rc.getType() == RobotType.SCOUT)
+				{
 					zombieDenLocations.set(closestDen, DEN_SEND_DEL);
+				}
 				else
+				{
 					zombieDenLocations.remove(closestDen);
+					formerDenLocations.remove(closestDen);
+				}
 			}
 		}
 		
@@ -497,5 +505,19 @@ public class MapInfo extends RobotPlayer
     	}
     	
     	return loc_sym;
+    }
+    
+    
+    public static ArrayList<MapLocation> getBunkerLocations()
+    {
+    	ArrayList<MapLocation> locations = new ArrayList<MapLocation>();
+    	
+    	for (MapLocation loc : rc.getInitialArchonLocations(ourTeam))
+    		locations.add(loc);
+    	
+    	
+    	locations.addAll(formerDenLocations.elements());
+    	
+    	return locations;
     }
 }

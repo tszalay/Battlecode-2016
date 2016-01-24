@@ -50,6 +50,23 @@ public class Action extends RobotPlayer
 		return false;
 	}
 	
+	public static boolean tryAttackEnemy() throws GameActionException
+	{
+		// attack someone in range if possible, low health first, prioritizing zombies
+		if (!rc.isWeaponReady())
+			return false;
+		
+		RobotInfo enemyTarget = Micro.getHighestPriorityTarget(Micro.getNearbyEnemies());
+		
+		if (enemyTarget != null && rc.canAttackLocation(enemyTarget.location))
+		{
+			rc.attackLocation(enemyTarget.location);
+			return true;
+		}
+		
+		return false;
+	}
+	
 	// this function always runs away, no matta whats
 	public static boolean tryRetreatOrShootIfStuck() throws GameActionException
 	{
@@ -198,6 +215,24 @@ public class Action extends RobotPlayer
 			return false;
 
 		RobotInfo enemyTarget = Micro.getViperTarget(Micro.getNearbyEnemies());
+
+		if (enemyTarget != null && rc.canAttackLocation(enemyTarget.location))
+		{
+			rc.attackLocation(enemyTarget.location);
+			return true;
+		}
+
+		return false;
+	}
+	
+	public static boolean tryFriendlyViperAttack() throws GameActionException
+	{
+		// attack someone in range if possible, low health first, prioritizing zombies
+
+		if (!rc.isWeaponReady())
+			return false;
+
+		RobotInfo enemyTarget = Micro.getViperTarget(Micro.getNearbyAllies());
 
 		if (enemyTarget != null && rc.canAttackLocation(enemyTarget.location))
 		{

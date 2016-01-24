@@ -56,7 +56,7 @@ public class Sighting extends RobotPlayer
 				broadcast_dist = 121;
 			if (Micro.getRoundsUntilDanger() < 10)
 				broadcast_dist = 400;
-			if (farBroadcastSignal.canSend())
+			if (Micro.getRoundsUntilDanger() > 12 && farBroadcastSignal.canSend())
 				broadcast_dist = MapInfo.fullMapDistanceSq();
 			
 			Message.sendMessageSignal(broadcast_dist,Message.Type.SIGHT_TARGET,targetloc,turretloc);
@@ -116,11 +116,11 @@ public class Sighting extends RobotPlayer
 		// find out which directions are safe vis-a-vis enemy turrets
 		DirectionSet dirs = DirectionSet.makeAll();
 		
-		if (Debug.DISPLAY_DEBUG && rc.getHealth() < 30)
+		/*if (Debug.DISPLAY_DEBUG && rc.getHealth() < 30)
 		{
 			for (MapLocation ml : enemySightedTurrets.elements())
 				rc.setIndicatorLine(here, ml, 0, 255, 255);
-		}
+		}*/
 		
 		// any turrets need removin'?
 		MapLocation remove_turret = null;

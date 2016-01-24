@@ -43,6 +43,8 @@ public class RobotPlayer
 		Debug.setStringSJF("Stephen J. Fry");
 		Debug.setStringRR("Ryan");
 		
+		
+		
 		// look for an archon close by, if we aren't an Archon
 		if (rc.getType() != RobotType.ARCHON)
 		{
@@ -147,6 +149,9 @@ public class RobotPlayer
 				Debug.startTiming();
 				MapInfo.doAnalyzeSurroundings();
 				lastSurroundingsTime = Debug.stopTiming();
+				
+				if (StratZDay.shouldActivate())
+					myStrategy = new StratZDay();
 				
 				Debug.startTiming();
 				

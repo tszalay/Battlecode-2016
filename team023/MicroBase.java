@@ -12,10 +12,12 @@ public class MicroBase extends RobotPlayer
 	private RobotInfo[] nearbyAllies = null;
 	
 	private DirectionSet canMoveDirs = null;
+	private DirectionSet fastMoveDirs = null;
 	private DirectionSet safeMoveDirs = null;
-	private DirectionSet noPartsDirs = null;
+
 	private DirectionSet turretSafeDirs = null;
 	private DirectionSet bufferDirs = null;
+	private DirectionSet saferMoveDirs = null;
 	
 	private static final int DIST_MAX = 1000;
 	private int[] distToClosestHostile = null;
@@ -48,7 +50,7 @@ public class MicroBase extends RobotPlayer
 			8	//11: TTM
 		};
 	
-	private static final int[] bufferDist = 
+	private static int[] bufferDist = 
 		{
 			2,	//0: ZOMBIEDEN
 			8,	//1: STANDARDZOMBIE
@@ -63,6 +65,62 @@ public class MicroBase extends RobotPlayer
 			2,	//10: TURRET
 			2	//11: TTM
 		};
+	
+	private static int[] saferDist = 
+		{
+			0,	//0: ZOMBIEDEN
+			8,	//1: STANDARDZOMBIE
+			24,	//2: RANGEDZOMBIE
+			13,	//3: FASTZOMBIE
+			8,	//4: BIGZOMBIE
+			0,	//5: ARCHON
+			0,	//6: SCOUT
+			24,	//7: SOLDIER
+			13,	//8: GUARD
+			24,	//9: VIPER
+			24,	//10: TURRET
+			0	//11: TTM
+		};
+
+	private final static int[] archonSaferDist = 
+		{
+			0,	//0: ZOMBIEDEN
+			8,	//1: STANDARDZOMBIE
+			24,	//2: RANGEDZOMBIE
+			35,	//3: FASTZOMBIE
+			8,	//4: BIGZOMBIE
+			0,	//5: ARCHON
+			0,	//6: SCOUT
+			24,	//7: SOLDIER
+			13,	//8: GUARD
+			24,	//9: VIPER
+			35,	//10: TURRET
+			0	//11: TTM
+		};
+	
+	private static final int[] scoutSaferDist = 
+		{
+			0,	//0: ZOMBIEDEN
+			8,	//1: STANDARDZOMBIE
+			24,	//2: RANGEDZOMBIE
+			48,	//3: FASTZOMBIE
+			8,	//4: BIGZOMBIE
+			0,	//5: ARCHON
+			0,	//6: SCOUT
+			24,	//7: SOLDIER
+			13,	//8: GUARD
+			35,	//9: VIPER
+			40,	//10: TURRET
+			0	//11: TTM
+		};
+	
+	public MicroBase()
+	{
+		if (rc.getType() == RobotType.SCOUT)
+			saferDist = scoutSaferDist;
+		else if (rc.getType() == RobotType.ARCHON)
+			saferDist = archonSaferDist;
+	}
 	
 	public RobotInfo[] getNearbyEnemies()
 	{
@@ -114,11 +172,12 @@ public class MicroBase extends RobotPlayer
 		distToClosestHostile = new int[9];
 		
 		safeMoveDirs = new DirectionSet();
-		noPartsDirs = new DirectionSet();
+		saferMoveDirs = new DirectionSet();
 		bufferDirs = new DirectionSet();
 
 		turretSafeDirs = Sighting.getTurretSafeDirs();
 		getCanMoveDirs();
+		getCanFastMoveDirs();
 				
 		for (Direction d : Direction.values())
 		{
@@ -130,6 +189,7 @@ public class MicroBase extends RobotPlayer
 			
 			int closestDistSq = DIST_MAX;
 			boolean isThisSquareSafe = true;
+			boolean isThisSquareSafer = true;
 			boolean isThisSquareBuffer = true;
 			
 			for (RobotInfo ri : nearby)
@@ -138,6 +198,9 @@ public class MicroBase extends RobotPlayer
 
 				if (distSq <= bufferDist[ri.type.ordinal()])
 					isThisSquareBuffer = false;
+				
+				if (distSq <= saferDist[ri.type.ordinal()])
+					isThisSquareSafer = false;
 				
 				if (ri.attackPower == 0)
 					continue;
@@ -160,10 +223,13 @@ public class MicroBase extends RobotPlayer
 			if (isThisSquareSafe)
 				safeMoveDirs.add(d);
 			
-			// keep track of directions without parts
-			if (rc.senseParts(testloc) == 0)
-				noPartsDirs.add(d);
+			if (isThisSquareSafer)
+				saferMoveDirs.add(d);
 		}
+		// obviously, if either is in turret range, it is neither
+		// safe nor safer
+		safeMoveDirs = safeMoveDirs.and(turretSafeDirs);
+		saferMoveDirs = saferMoveDirs.and(turretSafeDirs);
 	}
 	
 	// get number of rounds until we are in danger
@@ -319,17 +385,16 @@ public class MicroBase extends RobotPlayer
 		return turretSafeDirs;
 	}
 
-	public DirectionSet getNoPartsDirs()
-	{
-		computeSafetyStats();
-		return noPartsDirs;
-	}
-	
 	public DirectionSet getSafeMoveDirs()
 	{
 		computeSafetyStats();
-		// AK safe should always include turretSafe
-		return safeMoveDirs.and(getTurretSafeDirs());
+		return safeMoveDirs;
+	}
+	
+	public DirectionSet getSaferMoveDirs()
+	{
+		computeSafetyStats();
+		return saferMoveDirs;
 	}
 	
 	// get directions we can move in
@@ -347,15 +412,18 @@ public class MicroBase extends RobotPlayer
 		return canMoveDirs;
 	}
 	
-	public DirectionSet getCanFastMoveDirs() throws GameActionException
+	public DirectionSet getCanFastMoveDirs()
 	{
 		// returns moves without any rubble
 		// (except for scout who cares)
-		
-		// also we don't need to save it
+		if (fastMoveDirs != null)
+			return fastMoveDirs;
 		
 		if (rc.getType() == RobotType.SCOUT)
+		{
+			fastMoveDirs = canMoveDirs;
 			return getCanMoveDirs();
+		}
 
 		DirectionSet dirs = new DirectionSet();
 		
@@ -363,8 +431,76 @@ public class MicroBase extends RobotPlayer
 			dirs.add(Direction.NONE);
 		
 		for (Direction d : Direction.values())
-			if (rc.canMove(d) && rc.senseRubble(here.add(d)) < GameConstants.RUBBLE_SLOW_THRESH)
+			if (d != Direction.OMNI && rc.canMove(d) && rc.senseRubble(here.add(d)) < GameConstants.RUBBLE_SLOW_THRESH)
 				dirs.add(d);
+		
+		fastMoveDirs = dirs;
+		
+		return dirs;
+	}
+	
+	// tries to return the best directions we can go that are safe
+	public DirectionSet getBestSafeDirs()
+	{
+		Micro.computeSafetyStats();
+		
+		// start with safer, then safe, then just good ol' dirs
+		DirectionSet dirs = saferMoveDirs.and(fastMoveDirs);
+		if (dirs.any())
+			return dirs;
+		dirs = saferMoveDirs;
+		if (dirs.any())
+			return dirs;
+		dirs = safeMoveDirs.and(fastMoveDirs);
+		if (dirs.any())
+			return dirs;
+
+		dirs = safeMoveDirs;
+		
+		return dirs;
+	}
+	
+	public DirectionSet getBestBufferDirs()
+	{
+		Micro.computeSafetyStats();
+		// buffer dirs with fast move, then with regular move
+		DirectionSet dirs = bufferDirs.and(fastMoveDirs).and(turretSafeDirs);
+		if (dirs.any())
+			return dirs;
+		dirs = bufferDirs.and(turretSafeDirs);
+		if (dirs.any())
+			return dirs;
+		
+		return bufferDirs;
+	}
+	
+	public DirectionSet getBestAnyDirs()
+	{
+		Micro.computeSafetyStats();
+		
+		// start with safer, then safe, then just good ol' dirs
+		DirectionSet dirs = saferMoveDirs.and(fastMoveDirs);
+		if (dirs.any())
+			return dirs;
+		dirs = saferMoveDirs;
+		if (dirs.any())
+			return dirs;
+		dirs = safeMoveDirs.and(fastMoveDirs);
+		if (dirs.any())
+			return dirs;
+		dirs = safeMoveDirs;
+		if (dirs.any())
+			return dirs;
+		// out of safe moves, make it as non-dangerous as possible
+		// by staying out of turret range
+		dirs = turretSafeDirs.and(fastMoveDirs);
+		if (dirs.any())
+			return dirs;
+		dirs = fastMoveDirs;
+		if (dirs.any())
+			return dirs;
+		
+		dirs = canMoveDirs;
 		
 		return dirs;
 	}
@@ -730,13 +866,6 @@ public class MicroBase extends RobotPlayer
 			{
 				target = ri;
 				continue;
-			}
-			
-			// archon targets take priority over ALL
-			if (ri.type == RobotType.ARCHON)
-			{
-				target = ri;
-				return target;
 			}
 			
 			if (ri.viperInfectedTurns < target.viperInfectedTurns)

@@ -29,22 +29,26 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 				overrideStrategy = null;
 		}
 		
-		/*if (rc.getRoundNum() > 2500)
-		{
-			if (Micro.getNearbyHostiles().length > 0)
-				Nav.tryGoTo(Micro.getUnitCOM(Micro.getNearbyHostiles()), Micro.getCanMoveDirs());
-			else
-				Nav.tryGoTo(MapInfo.getSymmetricLocation(MapInfo.farthestArchonLoc), Micro.getCanMoveDirs());
-			Action.tryAttackSomeone();
-			return true;
-		}*/
-		
 		// retreat to the archon?
-		if (rc.getHealth() < 20)
+		if (rc.getHealth() < 20 && Micro.getFriendlyUnits().Archons == 0)
 		{
 			overrideStrategy = new StratUnitRetreat();
 			overrideStrategy.tryTurn();
 			return true;
+		}
+		
+		// any vipers or turrets? rush 'em
+		if (Micro.getEnemyUnits().TurrTTMs > 0 || Micro.getEnemyUnits().Vipers > 0)
+		{
+			for (RobotInfo ri : Micro.getNearbyEnemies())
+			{
+				if (ri.type == RobotType.TURRET || ri.type == RobotType.TTM || (ri.type == RobotType.VIPER && rc.getViperInfectedTurns() > 0))
+				{
+					overrideStrategy = new StratTempRush(ri.ID);
+					overrideStrategy.tryTurn();
+					return true;
+				}
+			}
 		}
 		
 		// target priority: nearby enemy > nearby ally > zombie den > our archon stuff
@@ -61,6 +65,11 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 			myTask = "ally";
 			lastDest = Message.getClosestAllyUnderAttack();
 		}
+/*		if (lastDest == null)
+		{
+			myTask = "archon";
+			lastDest = MapInfo.getClosestNeutralArchon();
+		}*/
 		if (lastDest == null)
 		{
 			myTask = "den";
@@ -113,23 +122,6 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 		// or shoot if we couldn't move
 		Action.tryAttackSomeone();
 		//Rubble.doClearRubble(Rubble.getRandomAdjacentRubble());
-		// GTFO
-		
-		/*
-		MapLocation allyAttacked = Message.getClosestAllyUnderAttack();
-		if (allyAttacked != null)
-		{
-			if (here.distanceSquaredTo(allyAttacked) > 200)
-			{
-				Nav.tryGoTo(allyAttacked, Micro.getSafeMoveDirs());
-				return true;
-			}
-			overrideStrategy = new StratMobFight(Message.getClosestAllyUnderAttack());
-			overrideStrategy.tryTurn();
-			return true;
-		}
-		
-*/
 		
 		return true;
 	}

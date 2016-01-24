@@ -35,9 +35,10 @@ public class RoboScout extends RobotPlayer
 		// Free unit if everything else breaks
 		if (!myStrategy.tryTurn())
 			myStrategy = new StratScoutExplore();
-		//myStrategy.tryTurn();
 		
 		Sighting.doSendSightingMessage();
-		MapInfo.doScoutSendUpdates();
+		// keep sending, only continues if scout is near death
+		while (MapInfo.tryScoutSendUpdates())
+			continue;
 	}
 }

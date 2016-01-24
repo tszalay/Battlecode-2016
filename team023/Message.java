@@ -118,8 +118,8 @@ public class Message extends RobotPlayer
 	public static int MAP_OFF_X = 0;
 	public static int MAP_OFF_Y = 0;
 	
-	private static SignalRound	recentAllyAttacked = new SignalRound(30);
-	private static SignalRound	recentArchonAttacked = new SignalRound(80);
+	private static SignalRound	recentAllyAttacked = new SignalRound(20);
+	private static SignalRound	recentArchonAttacked = new SignalRound(50);
 	private static SignalRound	recentFriendlySignal = new SignalRound(300);
 	
 	private static ArrayList<ArchonLocation> recentArchonLocations = new ArrayList<ArchonLocation>();
@@ -223,15 +223,26 @@ public class Message extends RobotPlayer
 	// who is the closest to meeeeeeee
 	public static MapLocation getClosestArchon()
 	{
-		MapLocation closest = null;
+		ArchonLocation closest = null;
 		
 		for (ArchonLocation al : recentArchonLocations)
 		{
-			if (closest == null || al.loc.distanceSquaredTo(here) < closest.distanceSquaredTo(here))
-				closest = al.loc;
+			if (closest == null || al.loc.distanceSquaredTo(here) < closest.loc.distanceSquaredTo(here))
+				closest = al;
 		}
 		
-		return closest;
+		// if we're there, get rid of it
+		if (closest != null && here.distanceSquaredTo(closest.loc) <= 24)
+		{
+			// and recurse to find another good one
+			recentArchonLocations.remove(closest);
+			return getClosestArchon();
+		}
+		
+		if (closest == null)
+			return null;
+		
+		return closest.loc;
 	}
 	
 	// to be called by Archon
