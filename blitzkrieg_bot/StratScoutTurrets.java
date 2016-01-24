@@ -63,7 +63,7 @@ public class StratScoutTurrets extends RobotPlayer implements Strategy
 			lastTurretLocation = loc;
 		}
 		
-		if (Micro.getFriendlyUnits().Scouts < 4)
+		if (new UnitCounts(rc.senseNearbyRobots(24, ourTeam)).Scouts < 3)
 			lastNotCrowdedRound = rc.getRoundNum();
 		
 		
