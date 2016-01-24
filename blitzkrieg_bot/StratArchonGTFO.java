@@ -63,7 +63,7 @@ public class StratArchonGTFO extends RoboArchon implements Strategy
 			if ((rc.getRoundNum()%5) == 0)
 				Message.sendMessageSignal(400,Message.Type.UNDER_ATTACK,0);
 			
-			
+			Nav.tryGoTo(gtfoDest, Micro.getBestAnyDirs());
 		}
 		
 		if (Micro.getRoundsUntilDanger() < 20 && (rc.getRoundNum() > 200 || (Micro.getNearbyAllies() != null && Micro.getNearbyAllies().length > 5) ))

@@ -66,7 +66,6 @@ public class StratScoutTurrets extends RobotPlayer implements Strategy
 		if (new UnitCounts(rc.senseNearbyRobots(24, ourTeam)).Scouts < 3)
 			lastNotCrowdedRound = rc.getRoundNum();
 		
-		
 		// get back to exploring if there are too many scouts around
 		if (roundsSince(lastNotCrowdedRound) > 100)
 			return false;

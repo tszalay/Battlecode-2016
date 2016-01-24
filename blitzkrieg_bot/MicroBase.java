@@ -226,6 +226,10 @@ public class MicroBase extends RobotPlayer
 			if (isThisSquareSafer)
 				saferMoveDirs.add(d);
 		}
+		// obviously, if either is in turret range, it is neither
+		// safe nor safer
+		safeMoveDirs = safeMoveDirs.and(turretSafeDirs);
+		saferMoveDirs = saferMoveDirs.and(turretSafeDirs);
 	}
 	
 	// get number of rounds until we are in danger
@@ -384,8 +388,7 @@ public class MicroBase extends RobotPlayer
 	public DirectionSet getSafeMoveDirs()
 	{
 		computeSafetyStats();
-		// AK safe should always include turretSafe
-		return safeMoveDirs.and(getTurretSafeDirs());
+		return safeMoveDirs;
 	}
 	
 	public DirectionSet getSaferMoveDirs()
@@ -441,11 +444,20 @@ public class MicroBase extends RobotPlayer
 	{
 		Micro.computeSafetyStats();
 		
-		DirectionSet dirs = safeMoveDirs.and(fastMoveDirs);
+		// start with safer, then safe, then just good ol' dirs
+		DirectionSet dirs = saferMoveDirs.and(fastMoveDirs);
 		if (dirs.any())
 			return dirs;
+		dirs = saferMoveDirs;
+		if (dirs.any())
+			return dirs;
+		dirs = safeMoveDirs.and(fastMoveDirs);
+		if (dirs.any())
+			return dirs;
+
+		dirs = safeMoveDirs;
 		
-		return safeMoveDirs;
+		return dirs;
 	}
 	
 	public DirectionSet getBestBufferDirs()
@@ -465,17 +477,32 @@ public class MicroBase extends RobotPlayer
 	public DirectionSet getBestAnyDirs()
 	{
 		Micro.computeSafetyStats();
-		// start with safest dirs
-		DirectionSet dirs = safeMoveDirs.and(fastMoveDirs);
+		
+		// start with safer, then safe, then just good ol' dirs
+		DirectionSet dirs = saferMoveDirs.and(fastMoveDirs);
+		if (dirs.any())
+			return dirs;
+		dirs = saferMoveDirs;
+		if (dirs.any())
+			return dirs;
+		dirs = safeMoveDirs.and(fastMoveDirs);
 		if (dirs.any())
 			return dirs;
 		dirs = safeMoveDirs;
 		if (dirs.any())
 			return dirs;
+		// out of safe moves, make it as non-dangerous as possible
+		// by staying out of turret range
+		dirs = turretSafeDirs.and(fastMoveDirs);
+		if (dirs.any())
+			return dirs;
 		dirs = fastMoveDirs;
 		if (dirs.any())
 			return dirs;
-		return canMoveDirs;
+		
+		dirs = canMoveDirs;
+		
+		return dirs;
 	}
 	
 	public double getAllyTotalDamagePerTurn() throws GameActionException
