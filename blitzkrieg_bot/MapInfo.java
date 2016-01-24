@@ -50,11 +50,6 @@ public class MapInfo extends RobotPlayer
 	// just do something random for now
 	public static MapLocation getExplorationWaypoint()
 	{
-		if (rand.nextInt(4) == 2)
-		{
-			return new MapLocation(rand.nextBoolean() ? mapMin.x+1 : mapMax.x-1,
-							rand.nextBoolean() ? mapMin.y+1 : mapMax.y-1);
-		}
 		// this one should get transmitted to a scout
 		return new MapLocation(rand.nextInt(mapMax.x - mapMin.x) + mapMin.x,
 							   rand.nextInt(mapMax.y - mapMin.y) + mapMin.y);

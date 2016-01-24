@@ -223,15 +223,26 @@ public class Message extends RobotPlayer
 	// who is the closest to meeeeeeee
 	public static MapLocation getClosestArchon()
 	{
-		MapLocation closest = null;
+		ArchonLocation closest = null;
 		
 		for (ArchonLocation al : recentArchonLocations)
 		{
-			if (closest == null || al.loc.distanceSquaredTo(here) < closest.distanceSquaredTo(here))
-				closest = al.loc;
+			if (closest == null || al.loc.distanceSquaredTo(here) < closest.loc.distanceSquaredTo(here))
+				closest = al;
 		}
 		
-		return closest;
+		// if we're there, get rid of it
+		if (closest != null && here.distanceSquaredTo(closest.loc) <= 24)
+		{
+			// and recurse to find another good one
+			recentArchonLocations.remove(closest);
+			return getClosestArchon();
+		}
+		
+		if (closest == null)
+			return null;
+		
+		return closest.loc;
 	}
 	
 	// to be called by Archon
