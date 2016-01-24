@@ -7,11 +7,15 @@
 
 ### For Qualifier Submission
 - Hard code early game builds. Scouts out way to late on 1 archon maps like barricade.
+- Build 1 explore scout per archon before shadow scouts.
 - Scouts can't miss dens on edge of map. See goodies, caverns, we lose on goodies because of it
-- Soldiers search for dens or surround even if no dens seen. Not enough early action on caverns before dens seen.
-- Avoid units stuck at rubble for 1000 rounds.
---*Rubble never cleared at thick 10000 rubble barrier on barricade or presents even though soldiers stay there for 1000 rounds.
---*Den Reapers takes care of rubble on presents well: Round 4 Losers B DenReapers (#222) vs. Protoss (#237)
+- Make soldiers search for dens or surround even before dens seen. Not enough early action on caverns. We lose ~200 rounds on scouts waiting for a scout.
+- Avoid units stuck at rubble for 1000 rounds. See Barricade and presents. DenReapers does well on presents: Round 4 Losers B DenReapers (#222) vs. Protoss (#237)
+- Fix surround/zday bug. On scouts surround is never joined by one archon timid, no Zday.
+- GTFO for archons. See endgame on swamp, diffusion.
+- Add a few midgame vipers. They devastate us on swamp, the_duck adds 2 around round 300 too.
+
+We suck on diffusion. clutch Queen sacrifice by jene after we viper her brood takes us out in the end. GTFO archon would help.
 
 ### For Seeding Submission
 
