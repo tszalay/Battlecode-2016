@@ -9,7 +9,7 @@ public class StratViperRush extends RobotPlayer implements Strategy
 	private Strategy overrideStrategy = null;
 	
 	private MapLocation lastDest = null;
-
+	private MapLocation startingLoc = null;
 	private MapLocation enemyLoc = null;
 	private MapLocation farArchon = null;
 	private MapLocation[] enemyArchonLocs = null;
@@ -27,6 +27,7 @@ public class StratViperRush extends RobotPlayer implements Strategy
 		enemyArchonLocs = rc.getInitialArchonLocations(theirTeam);
 		enemyLoc = enemyArchonLocs[0];
 		farArchon = enemyArchonLocs[0];
+		startingLoc = here;
 		for (MapLocation loc : enemyArchonLocs)
 		{
 			if (here.distanceSquaredTo(loc) < here.distanceSquaredTo(enemyLoc))
@@ -55,7 +56,8 @@ public class StratViperRush extends RobotPlayer implements Strategy
 		}
 		
 		// attack
-        Action.tryViperAttack();
+		if (here.distanceSquaredTo(enemyLoc) < here.distanceSquaredTo(startingLoc))
+			Action.tryViperAttack();
         
         RobotInfo[] enemies = Micro.getNearbyEnemies();
         
@@ -73,7 +75,7 @@ public class StratViperRush extends RobotPlayer implements Strategy
         		}
         	}
         	if (enemyturretloc != null)
-        		Nav.tryGoTo(enemyturretloc, Micro.getCanMoveDirs());
+        		Nav.tryGoTo(enemyturretloc, Micro.getBestAnyDirs());
         }
         
         // try to have only one enemy in attack range at a time
@@ -88,14 +90,14 @@ public class StratViperRush extends RobotPlayer implements Strategy
         		Action.tryViperAttack();
         	else
         	{
-        		if (!Nav.tryGoTo(here.add(retreatDir), Micro.getCanMoveDirs()))
+        		if (!Nav.tryGoTo(here.add(retreatDir), Micro.getBestAnyDirs()))
         			Action.tryViperAttack();
         	}
         }
         else if (enemies != null && enemies.length > 0)
         {
         	Debug.setStringRR("trying to go to enemy COM");
-        	Nav.tryGoTo(Micro.getEnemyCOM(),Micro.getSafeMoveDirs());
+        	Nav.tryGoTo(Micro.getEnemyCOM(),Micro.getBestSafeDirs());
         }
         else if (here.distanceSquaredTo(enemyLoc) < 10 && (enemies == null || enemies.length == 0))
         {
@@ -121,7 +123,7 @@ public class StratViperRush extends RobotPlayer implements Strategy
         if (Micro.getNearbyZombies() != null && Micro.getNearbyZombies().length > 0)
         {
         	Debug.setStringRR("zombie retreat toward enemy loc");
-        	Action.tryRetreatTowards(enemyLoc, Micro.getCanMoveDirs());
+        	Action.tryRetreatTowards(enemyLoc, Micro.getBestAnyDirs());
         }
         
         // try to go to enemy (will dig if necessary)

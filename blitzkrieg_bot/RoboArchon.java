@@ -133,7 +133,7 @@ public class RoboArchon extends RobotPlayer
 		}
 		
 		// if we are the only archon, and close to enemy
-		if (ourArchons.length == 1 && shortestDist < 800)
+		if (ourArchons.length == 1 && shortestDist < 1000)
 		{
 			buildOrder = new RobotType[5];
 			buildOrder[0] = RobotType.SOLDIER;
