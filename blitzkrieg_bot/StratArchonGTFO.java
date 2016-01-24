@@ -9,7 +9,6 @@ public class StratArchonGTFO extends RoboArchon implements Strategy
 
 	private int lastSafeRound = 0;
 	private int lastDangerRound = 0;
-	private int lastDestUpdateRound = 0;
 	private int lastBuiltRound = 0;
 	
 	private MapLocation gtfoDest = null;
@@ -25,7 +24,6 @@ public class StratArchonGTFO extends RoboArchon implements Strategy
 	
 	public StratArchonGTFO()
 	{
-		lastDestUpdateRound = rc.getRoundNum();
 		lastSafeRound = rc.getRoundNum();
 	}
 	
@@ -54,6 +52,15 @@ public class StratArchonGTFO extends RoboArchon implements Strategy
 		else
 			gtfoDest = closestArchon;
 		
+		// look for neutral robots, will help us retreat
+		MapLocation neutDest = senseClosestNeutral();
+		if (neutDest != null)
+			gtfoDest = neutDest;
+
+		// this is not your normal building, this is our oh-shit building
+		if (tryBuild())
+			return true;
+		
 		// are we in danger? then run
 		if (Micro.getRoundsUntilDanger() < 10)
 		{
@@ -65,56 +72,12 @@ public class StratArchonGTFO extends RoboArchon implements Strategy
 			
 			Nav.tryGoTo(gtfoDest, Micro.getBestAnyDirs());
 		}
-		
-		if (Micro.getRoundsUntilDanger() < 20 && (rc.getRoundNum() > 200 || (Micro.getNearbyAllies() != null && Micro.getNearbyAllies().length > 5) ))
+		else if (Micro.getRoundsUntilDanger() > 20)
 		{
-			Message.sendSignal(120);
-			MapLocation retreatloc = MapInfo.farthestArchonLoc;
-			if (retreatloc == null)
-			{
-				Action.tryRetreatOrShootIfStuck();
-				return true;
-			}
-			else if (here.distanceSquaredTo(retreatloc) > 9)
-			{
-				Action.tryGoToWithoutBeingShot(retreatloc, Micro.getSafeMoveDirs());
-				return true;
-			}
+			// update that we were safe
+			lastSafeRound = rc.getRoundNum();
 		}
-		
-		// next, try doing some building
-		if (tryBuild())
-			return true;
-
-		// look for waypoint
-		MapLocation dest = senseClosestNeutral();
-		if (dest == null)
-			dest = senseClosestPart();
-		if (dest == null)
-			dest = Micro.getAllyCOM();
-		if (dest == null)
-			dest = MapInfo.farthestArchonLoc;
-		
-		// look for waypoint
-		/*dest =  MapInfo.getClosestNeutralArchon();
-		if (dest == null || here.distanceSquaredTo(dest) < 1)
-		{
-			MapLocation closestPart = senseClosestPart();
-			MapLocation closestNeutral = senseClosestNeutral();
-			if (closestNeutral != null)
-				dest = closestNeutral;
-			else
-				dest = closestPart;
-			if (closestNeutral != null && closestPart != null && here.distanceSquaredTo(closestPart) < here.distanceSquaredTo(closestNeutral))
-				dest = closestPart;
-		}
-		if (dest == null || here.distanceSquaredTo(dest) < 1)
-			dest = MapInfo.getClosestPart();
-		if (dest == null)
-			return true;*/
-		
-		Nav.tryGoTo(dest, Micro.getSafeMoveDirs());
-		
+				
 		return true;
 	}
 
@@ -123,54 +86,16 @@ public class StratArchonGTFO extends RoboArchon implements Strategy
 		if (!rc.isCoreReady())
 			return false;
 		
-		// AK wait a few rounds so we can move
-		if ((rc.getRoundNum()+rc.getID())%3 != 0)
+		if (rc.getHealth() > 200 || roundsSince(lastSafeRound)<200 || roundsSince(lastBuiltRound) < 40)
 			return false;
-		
-		// figure out what robot to try and build
-		//UnitCounts units = new UnitCounts(Micro.getNearbyAllies());
 		
 		RobotType robotToBuild = null;
 		Strategy.Type buildStrat = null;
 		
-		int buildPriority = RobotType.TURRET.partCost;
-		
-		// need to build a shadow scout, top priority
-		if (roundsSince(RoboArchon.lastAdjacentScoutRound) > 20 && rc.getRoundNum() > SCOUT_SHADOW_ROUND)
-		{
-			buildPriority += 0;
-			robotToBuild = RobotType.SCOUT;
-			buildStrat = Strategy.Type.SHADOW_ARCHON;
-		}
-		else if (rand.nextInt() % 8 == 0 && rc.getRobotCount() > 40)
-		{
-			// build viper!
-			buildPriority += Math.min(0,50-roundsSince(lastBuiltRound));
-			//robotToBuild = rand.nextBoolean() ? RobotType.GUARD : RobotType.SOLDIER;
-			robotToBuild = RobotType.VIPER;
-			buildStrat = Strategy.Type.MOB_MOVE;
-		}
-		else if (rand.nextInt() % 8 < 6)
-		{
-			buildPriority += Math.min(0,50-roundsSince(lastBuiltRound));
-			//robotToBuild = rand.nextBoolean() ? RobotType.GUARD : RobotType.SOLDIER;
-			robotToBuild = RobotType.SOLDIER;
-			buildStrat = Strategy.Type.MOB_MOVE;
-		}
-		else if (rand.nextBoolean())
-		{
-			buildPriority += Math.min(0,50-roundsSince(lastBuiltRound));
-			robotToBuild = RobotType.SCOUT;
-			buildStrat = Strategy.Type.SHADOW_SOLDIER;
-		}
-		else
-		{
-			Math.min(0,50-roundsSince(lastBuiltRound));
-			robotToBuild = RobotType.SCOUT;
-			buildStrat = Strategy.Type.EXPLORE;
-		}
-		
-		if (rc.getTeamParts() < buildPriority)
+		robotToBuild = RobotType.GUARD;
+		buildStrat = Strategy.Type.DEFAULT;
+
+		if (rc.getTeamParts() < robotToBuild.partCost)
 			return false;
 
 		if (!rc.hasBuildRequirements(robotToBuild))

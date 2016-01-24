@@ -171,15 +171,9 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 		
 		// update all of our targets, visited and otherwise
 		updateTargets();
-		
-		DirectionSet goodDirs = Micro.getBufferDirs();
-		if (!goodDirs.any())
-			goodDirs = Micro.getSafeMoveDirs();
-		if (!goodDirs.any())
-			goodDirs = Micro.getCanMoveDirs();
 
 		// try to go to the target with the best dirs possible
-		Nav.tryGoTo(myExploringTarget, goodDirs);
+		Nav.tryGoTo(myExploringTarget, Micro.getBestAnyDirs());
 
 		return true;
 	}
