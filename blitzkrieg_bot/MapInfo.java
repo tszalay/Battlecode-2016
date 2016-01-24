@@ -44,10 +44,7 @@ public class MapInfo extends RobotPlayer
 
 	
 	
-	// the following functions are to be called mainly by Archons to set destinations
-	
-	// just do something random for now
-	public static MapLocation getExplorationWaypoint()
+	public static MapLocation getRandomLocation()
 	{
 		// this one should get transmitted to a scout
 		return new MapLocation(rand.nextInt(mapMax.x - mapMin.x) + mapMin.x,

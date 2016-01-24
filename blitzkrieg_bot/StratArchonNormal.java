@@ -31,32 +31,25 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		// first priority, avoid stuff
 		if (Micro.getRoundsUntilDanger() < 5)
 		{
+			// broadcast a long-range "i need help" signal
 			if ((rc.getRoundNum()%5) == 0)
 				Message.sendMessageSignal(400,Message.Type.UNDER_ATTACK,0);
+			
 			if (rc.getRoundNum() > 100 || (Micro.getNearbyAllies() != null && Micro.getNearbyAllies().length > 5))
 			{
-				MapLocation dest = Message.getClosestArchon();
-				if (dest == null)
-					dest = MapInfo.farthestArchonLoc;
-	
-				Nav.tryGoTo(dest, Micro.getCanMoveDirs());
+				MapLocation dest = Waypoint.getBestRetreatLocation();	
+				Action.tryGoToSafestOrRetreat(dest);
 				return true;
 			}
 		}
-		if (Micro.getRoundsUntilDanger() < 20 && (rc.getRoundNum() > 200 || (Micro.getNearbyAllies() != null && Micro.getNearbyAllies().length > 5) ))
+		// if we're relatively safe , only retreat a bit
+		if (Micro.getRoundsUntilDanger() < 20 && (rc.getRoundNum() > 200 || Micro.getNearbyAllies().length > 5))
 		{
+			// send a normal, less-serious signal over a smaller range
 			Message.sendSignal(120);
-			MapLocation retreatloc = MapInfo.farthestArchonLoc;
-			if (retreatloc == null)
-			{
-				Action.tryRetreatOrShootIfStuck();
-				return true;
-			}
-			else if (here.distanceSquaredTo(retreatloc) > 9)
-			{
-				Action.tryGoToWithoutBeingShot(retreatloc, Micro.getSafeMoveDirs());
-				return true;
-			}
+
+			MapLocation dest = Waypoint.getBestRetreatLocation();	
+			Action.tryGoToSafestOrRetreat(dest);
 		}
 		
 		if (rc.getRoundNum() < SCOUT_SHADOW_ROUND)

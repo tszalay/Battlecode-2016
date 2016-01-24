@@ -43,7 +43,7 @@ public class StratArchonGTFO extends RoboArchon implements Strategy
 			return false;
 		
 		if (randomDest == null || here.distanceSquaredTo(randomDest) < 35)
-			randomDest = MapInfo.getExplorationWaypoint();
+			randomDest = MapInfo.getRandomLocation();
 		
 		MapLocation closestArchon = Message.getClosestArchon();
 		
