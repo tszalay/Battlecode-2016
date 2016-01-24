@@ -93,6 +93,12 @@ public class RoboArchon extends RobotPlayer
 		}
 		return false;
 	}
+	
+	public static void doCallSoldierBackup() throws GameActionException
+	{
+		if (Micro.getFriendlyUnits().Soldiers < 5)
+			Message.sendSignal(120);
+	}
 
 	public static RobotType[] getSetBuildOrder()
 	{

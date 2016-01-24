@@ -4,7 +4,7 @@ import battlecode.common.*;
 
 import java.util.*;
 
-public class StratArchonBlitz extends RobotPlayer implements Strategy
+public class StratArchonBlitz extends RoboArchon implements Strategy
 {
 	private Strategy overrideStrategy = null;
 
@@ -61,6 +61,10 @@ public class StratArchonBlitz extends RobotPlayer implements Strategy
 			}
 		}
 		
+		doCallSoldierBackup(); // from RoboArchon.java
+		if (Micro.getFriendlyUnits().Soldiers < 3)
+			return false;
+			
 		Action.tryGoToSafestOrRetreat(dest);
 		return true;
 	}

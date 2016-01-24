@@ -67,8 +67,6 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (neutralArchonLoc != null)
 		{
 			overrideStrategy = new StratArchonBlitz(neutralArchonLoc);
-			Action.tryGoToSafestOrRetreat(neutralArchonLoc);
-			return true;
 		}
 		
 		if (rc.getRoundNum() < SCOUT_SHADOW_ROUND)
@@ -79,7 +77,9 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 			return true;
 
 		// look for local waypoint
-		MapLocation dest = senseClosestNeutral();
+		MapLocation dest = neutralArchonLoc;
+		if (dest ==  null)
+			dest = senseClosestNeutral();
 		if (dest == null)
 			dest = senseClosestPart();
 		// if we've got nothing to grab and we've found ourselves far from friendlies
