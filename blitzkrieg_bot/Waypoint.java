@@ -40,4 +40,9 @@ public class Waypoint extends RobotPlayer
 		
 		return here.distanceSquaredTo(loc1) < here.distanceSquaredTo(loc2) ? loc1 : loc2;
 	}
+	
+	public static MapLocation getBestEnemyLocation()
+	{
+		return null;
+	}
 }

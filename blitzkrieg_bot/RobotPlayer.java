@@ -199,7 +199,8 @@ public class RobotPlayer
 				Debug.setStringTS("D:" + MapInfo.zombieDenLocations.elements().size()
 						+ " A:" + MapInfo.neutralArchonLocations.elements().size()
 						+ " M:" + MapInfo.mapSymmetry
-						+ " T:" + Sighting.enemySightedTurrets.elements().size());
+						+ " T:" + Sighting.enemySightedTurrets.elements().size()
+						+ " S:" + Sighting.enemySightedTargets.elements().size());
 				
 				Debug.setStringSJF(lastMicroTime + "/" + lastSignalsTime + "/" +
 									lastSurroundingsTime + "/" + lastTurnTime);
