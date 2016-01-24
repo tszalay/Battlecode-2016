@@ -120,8 +120,35 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 		}
 		
 		// or shoot if we couldn't move
-		Action.tryAttackSomeone();
-		//Rubble.doClearRubble(Rubble.getRandomAdjacentRubble());
+		if (!Action.tryAttackSomeone())
+		{
+			MapLocation[] parts = rc.sensePartLocations(rc.getType().sensorRadiusSquared);
+			if (parts != null && parts.length > 0)
+			{
+				MapLocation closestLocalPart = null;
+				for (MapLocation part : parts)
+				{
+					if (closestLocalPart == null || here.distanceSquaredTo(part) < here.distanceSquaredTo(closestLocalPart))
+						closestLocalPart = part;
+				}
+				if (closestLocalPart != null)
+				{
+					Rubble.doClearRubble(here.directionTo(closestLocalPart));
+				}
+			}
+			else
+			{
+				MapLocation mapPart = MapInfo.getClosestPart();
+				if (mapPart != null)
+				{
+					Rubble.doClearRubble(here.directionTo(mapPart));
+				}
+				else
+				{
+					Rubble.doClearRubble(Rubble.getRandomAdjacentRubble());
+				}
+			}
+		}
 		
 		return true;
 	}

@@ -281,7 +281,7 @@ public class Nav extends RobotPlayer
         }
         
         // TTMs cannot clear rubble apparently
-        if (rc.getType() != RobotType.TTM && Rubble.tryClearRubbleInPathIfClearBeyondAndAlliesAround(myDest))
+        if (rc.getType() != RobotType.TTM && rc.getType() != RobotType.SCOUT && Rubble.tryClearRubbleInPathIfClearBeyondAndAlliesAround(myDest))
         	return true;
         
         // technically, can't move

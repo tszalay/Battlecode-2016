@@ -8,20 +8,16 @@ public class RoboArchon extends RobotPlayer
 {
 	public static int lastAdjacentScoutRound = 0;
 	public static final int SCOUT_SHADOW_ROUND = 200;
+	private static int botsBuiltFromSetBuildOrder = 0;
+	private static RobotType[] buildOrder = new RobotType[3];
+	public static Strategy myStrategy;
 	
 	public static void init() throws GameActionException
 	{
-		//if (StratArchonBlitz.shouldBlitz())
-			//myStrategy = new StratArchonBlitz(rc.senseRobot(rc.getID()));
-//		else if (here.equals(MapInfo.farthestArchonLoc) && MapInfo.numInitialArchons > 1)
-//			myStrategy = new StratTurtleArchon();
-		//else
-			myStrategy = new StratArchonNormal();
-		
-		if (shouldBuildViper())
-			StratArchonBlitz.tryBuild(RobotType.VIPER);
-		else
-			StratArchonBlitz.tryBuild(RobotType.SCOUT);
+		myStrategy = new StratArchonNormal();
+		buildOrder = getSetBuildOrder();
+		if (StratArchonBlitz.tryBuild(buildOrder[0]))
+			botsBuiltFromSetBuildOrder ++;
 	}
 	
 	public static void turn() throws GameActionException
@@ -38,6 +34,14 @@ public class RoboArchon extends RobotPlayer
 				rc.setIndicatorLine(here, loc, 255,255,255);
 			for (MapLocation loc : MapInfo.neutralArchonLocations.elements())
 				rc.setIndicatorLine(here, loc, 255,0,255);
+		}
+		
+		// if we haven't finished initial set build order
+		if (botsBuiltFromSetBuildOrder < buildOrder.length)
+		{
+			// build next in build order
+			if (StratArchonBlitz.tryBuild(buildOrder[botsBuiltFromSetBuildOrder]))
+				botsBuiltFromSetBuildOrder ++;
 		}
 		
 		// for now, all archons just blitz all the time
@@ -99,13 +103,57 @@ public class RoboArchon extends RobotPlayer
 		return false;
 	}
 	
-	public static boolean shouldBuildViper()
+	public static RobotType[] getSetBuildOrder()
 	{
+		RobotType[] buildOrder = new RobotType[3];
+		
+		// look at zombie spawns. if too bad, change build order
+		Zombie z = new Zombie(200);
+		int bigZombies = z.getNumEarlyBigZombies();
+		int fastZombies = z.getNumEarlyFastZombies();
+		int rangedZombies = z.getNumEarlyRangedZombies();
+		int stdZombies = z.getNumEarlyStdZombies();
+		
+		if (rangedZombies > 3 || bigZombies > 1)
+		{
+			buildOrder[0] = RobotType.SOLDIER;
+			buildOrder[1] = RobotType.SOLDIER;
+			buildOrder[2] = RobotType.SOLDIER;
+			return buildOrder;
+		}
+		
+		if (fastZombies > 10)
+		{
+			buildOrder[0] = RobotType.GUARD;
+			buildOrder[1] = RobotType.GUARD;
+			buildOrder[2] = RobotType.GUARD;
+			return buildOrder;
+		}
+		
+		if (bigZombies + fastZombies + rangedZombies + stdZombies > 10)
+		{
+			buildOrder[0] = RobotType.SOLDIER;
+			buildOrder[1] = RobotType.SOLDIER;
+			buildOrder[2] = RobotType.GUARD;
+			return buildOrder;
+		}
+		
+//		System.out.println(bigZombies + " big zombies");
+//		System.out.println(fastZombies + " fast zombies");
+//		System.out.println(rangedZombies + " ranged zombies");
+//		System.out.println(stdZombies + " std zombies");
+		
+		// otherwise look at our position and decide if we should build a viper, etc.
 		MapLocation[] theirArchons = rc.getInitialArchonLocations(theirTeam);
 		MapLocation[] ourArchons = rc.getInitialArchonLocations(ourTeam);
 		
-		if (ourArchons.length < 2)
-			return true;
+		if (ourArchons.length == 1)
+		{
+			buildOrder[0] = RobotType.SOLDIER;
+			buildOrder[1] = RobotType.VIPER;
+			buildOrder[2] = RobotType.SCOUT;
+			return buildOrder;
+		}
 		
 		int x = 0;
 		int y = 0;
@@ -126,9 +174,19 @@ public class RoboArchon extends RobotPlayer
 				shortestDist = us.distanceSquaredTo(theirCOM);
 		}
 		
+		// closest archon builds a viper first
 		if (myDist == shortestDist)
-			return true;
+		{
+			buildOrder[0] = RobotType.VIPER;
+			buildOrder[1] = RobotType.SCOUT;
+			buildOrder[2] = RobotType.SOLDIER;
+			return buildOrder;
+		}
 		
-		return false;
+		// otherwise, the default
+		buildOrder[0] = RobotType.SCOUT;
+		buildOrder[1] = RobotType.SOLDIER;
+		buildOrder[2] = RobotType.SOLDIER;
+		return buildOrder;
 	}
 }
