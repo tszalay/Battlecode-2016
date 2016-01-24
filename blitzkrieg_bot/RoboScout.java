@@ -38,6 +38,8 @@ public class RoboScout extends RobotPlayer
 		//myStrategy.tryTurn();
 		
 		Sighting.doSendSightingMessage();
-		MapInfo.doScoutSendUpdates();
+		// keep sending, only continues if scout is near death
+		while (MapInfo.tryScoutSendUpdates())
+			continue;
 	}
 }

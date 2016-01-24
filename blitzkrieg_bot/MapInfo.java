@@ -217,9 +217,12 @@ public class MapInfo extends RobotPlayer
 	}
 	
 	// function to send updated info as a scout
-	public static boolean doScoutSendUpdates() throws GameActionException
+	public static boolean tryScoutSendUpdates() throws GameActionException
 	{
-		if (Micro.isInDanger() || rc.getCoreDelay() > 5)
+		// if our health is low, always check if we have anything to send
+		// parent function checks this by calling it multiple times; in normal situations
+		// the core delay should trip it
+		if (rc.getHealth() > 5 && (Micro.isInDanger() || rc.getCoreDelay() > 5))
 			return false;
 		
 		// only send one at a time
