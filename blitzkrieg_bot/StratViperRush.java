@@ -123,12 +123,13 @@ public class StratViperRush extends RobotPlayer implements Strategy
         if (Micro.getNearbyZombies() != null && Micro.getNearbyZombies().length > 0)
         {
         	Debug.setStringRR("zombie retreat toward enemy loc");
-        	Action.tryRetreatTowards(enemyLoc, Micro.getBestAnyDirs());
+        	Nav.tryGoTo(enemyLoc, Micro.getBestAnyDirs());
+        	return true;
         }
         
         // try to go to enemy (will dig if necessary)
-        //Debug.setStringRR("going to enemy loc");
-        Nav.tryGoTo(enemyLoc, Micro.getCanMoveDirs());
+        Debug.setStringRR("naving toward enemy loc");
+        Nav.tryGoTo(enemyLoc, Micro.getBestAnyDirs());
         
         return true;
 

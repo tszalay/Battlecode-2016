@@ -6,6 +6,8 @@ import java.util.*;
 public class StratArchonNormal extends RoboArchon implements Strategy
 {
 	private Strategy overrideStrategy = null;
+	private RobotType[] buildOrder;
+	private int numBuilds;
 
 	static int lastBuiltRound = 0;
 	
@@ -13,6 +15,9 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 	{
 		if (overrideStrategy != null)
 			return overrideStrategy.getName();
+		
+		buildOrder = getSetBuildOrder(); // from RoboArchon.java
+		numBuilds = 0;
 
 		MapLocation loc = Waypoint.getClosestFriendlyWaypoint();
 		return "Normal Archon " + (loc==null?"":here.distanceSquaredTo(loc));
@@ -85,15 +90,23 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (!rc.isCoreReady())
 			return false;
 		
-		// AK wait a few rounds so we can move
-		if ((rc.getRoundNum()+rc.getID())%3 != 0)
-			return false;
+		RobotType robotToBuild = null;
+		Strategy.Type buildStrat = null;
+		
+		// the initial build order
+		if (numBuilds < buildOrder.length)
+		{
+			robotToBuild = buildOrder[numBuilds];
+		}
+		else
+		{
+			// AK wait a few rounds so we can move
+//			if ((rc.getRoundNum()+rc.getID())%3 != 0)
+//				return false;
+		}
 		
 		// figure out what robot to try and build
 		//UnitCounts units = new UnitCounts(Micro.getNearbyAllies());
-		
-		RobotType robotToBuild = null;
-		Strategy.Type buildStrat = null;
 		
 		int buildPriority = RobotType.TURRET.partCost;
 		
@@ -142,6 +155,7 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (buildDir != null)
 		{
 			overrideStrategy = new StratBuilding(robotToBuild, buildDir, buildStrat);
+			numBuilds ++;
 			lastBuiltRound = rc.getRoundNum();
 			return true;
 		}
