@@ -49,32 +49,57 @@ public class StratViperRush extends RobotPlayer implements Strategy
 		}
 		
 		// shoot self if almost dead
-		if (rc.isWeaponReady() && rc.getHealth() <= 12 && Micro.getNearbyAllies().length == 0)
+		if (rc.isWeaponReady() && rc.getHealth() <= Micro.getNearbyAllies().length * 13 * rc.getWeaponDelay() && rc.getInfectedTurns() < rc.getHealth()/(13*Micro.getNearbyAllies().length))
 		{
 			rc.attackLocation(here);
 		}
 		
-		// run from zombies
-//		if (Micro.getNearbyZombies() != null && Micro.getNearbyZombies().length > 0)
-//		{
-//			Action.tryRetreatTowards(enemyLoc, Micro.getCanMoveDirs());
-//		}
-		
 		// attack
         Action.tryViperAttack();
         
-        // try to have only one enemy in attack range at a time
         RobotInfo[] enemies = Micro.getNearbyEnemies();
+        
+        // rush turrets to get so close they can't shoot
+        UnitCounts count = new UnitCounts(enemies);
+        if (count.TurrTTMs > 0)
+        {
+        	MapLocation enemyturretloc = null;
+        	for (RobotInfo ri : enemies)
+        	{
+        		if (ri.type == RobotType.TURRET || ri.type == RobotType.TTM)
+        		{
+        			enemyturretloc = ri.location;
+        			continue;
+        		}
+        	}
+        	if (enemyturretloc != null)
+        		Nav.tryGoTo(enemyturretloc, Micro.getCanMoveDirs());
+        }
+        
+        // try to have only one enemy in attack range at a time
         if (enemies != null && enemies.length > 1)
         {
-        	Action.tryRetreatOrShootIfStuck();
+        	//Action.tryRetreatOrShootIfStuck();
+        	Debug.setStringRR("retreating");
+        	Direction retreatDir = Micro.getBestRetreatDir();
+        	if (retreatDir == null)
+        		retreatDir = Micro.getBestEscapeDir();
+        	if (retreatDir == null)
+        		Action.tryViperAttack();
+        	else
+        	{
+        		if (!Nav.tryGoTo(here.add(retreatDir), Micro.getCanMoveDirs()))
+        			Action.tryViperAttack();
+        	}
         }
         else if (enemies != null && enemies.length > 0)
         {
+        	Debug.setStringRR("trying to go to enemy COM");
         	Nav.tryGoTo(Micro.getEnemyCOM(),Micro.getSafeMoveDirs());
         }
         else if (here.distanceSquaredTo(enemyLoc) < 10 && (enemies == null || enemies.length == 0))
         {
+        	Debug.setStringRR("close to enemy loc and no enemies");
         	if (enemyLoc.equals(farArchon))
         	{
         		farArchon = null;
@@ -92,7 +117,15 @@ public class StratViperRush extends RobotPlayer implements Strategy
         	Debug.setStringSJF("target = " + enemyLoc.toString() + ", enemies = " + enemies.length);
         }
         
+        // if there are zombies, try to retreat towards enemy
+        if (Micro.getNearbyZombies() != null && Micro.getNearbyZombies().length > 0)
+        {
+        	Debug.setStringRR("zombie retreat toward enemy loc");
+        	Action.tryRetreatTowards(enemyLoc, Micro.getCanMoveDirs());
+        }
+        
         // try to go to enemy (will dig if necessary)
+        //Debug.setStringRR("going to enemy loc");
         Nav.tryGoTo(enemyLoc, Micro.getCanMoveDirs());
         
         return true;
