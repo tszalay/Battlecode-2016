@@ -200,7 +200,7 @@ public class RobotPlayer
 						+ " A:" + MapInfo.neutralArchonLocations.elements().size()
 						+ " M:" + MapInfo.mapSymmetry
 						+ " T:" + Sighting.enemySightedTurrets.elements().size()
-						+ " S:" + Sighting.enemySightedTargets.elements().size());
+						+ " E:" + Waypoint.enemyTargetStore.size());
 				
 				Debug.setStringSJF(lastMicroTime + "/" + lastSignalsTime + "/" +
 									lastSurroundingsTime + "/" + lastTurnTime);

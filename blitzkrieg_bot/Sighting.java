@@ -81,10 +81,10 @@ public class Sighting extends RobotPlayer
 	public static void addSightedTarget(MapLocation sight_loc, MapLocation turret_loc)
 	{
 		// only use sighting target list if we're a turret
-		if ((rc.getType() == RobotType.TURRET || rc.getType() == RobotType.TTM) &&!sight_loc.equals(MapInfo.nullLocation))
+		if (sight_loc != null && (rc.getType() == RobotType.TURRET || rc.getType() == RobotType.TTM))
 			enemySightedTargets.add(sight_loc);
 		// but everyone has to know about turrets, kinda importante
-		if (!turret_loc.equals(MapInfo.nullLocation))
+		if (turret_loc != null)
 			enemySightedTurrets.addOrSet(turret_loc, rc.getRoundNum());
 	}
 	

@@ -7,7 +7,7 @@ import java.util.*;
 public class Waypoint extends RobotPlayer
 {
 	// subclass for target round info
-	private static class TargetInfo
+	public static class TargetInfo
 	{
 		public int 			round;
 		public int 			value;
@@ -21,7 +21,7 @@ public class Waypoint extends RobotPlayer
 		}
 	}
 	
-	private static class TargetStore
+	public static class TargetStore
 	{
 		public TargetInfo[] targets = new TargetInfo[5];
 		private final int timeout;
@@ -33,6 +33,10 @@ public class Waypoint extends RobotPlayer
 		
 		public void add(TargetInfo ti)
 		{
+			// invalid
+			if (ti.location == null)
+				return;
+			
 			int oldestInd = 0;
 			int lowestInd = 0;
 			
@@ -61,6 +65,15 @@ public class Waypoint extends RobotPlayer
 				return;
 			}
 		}
+		
+		public int size()
+		{
+			int sz = 0;
+			for (int i=0; i<targets.length; i++)
+				if (targets[i] != null && roundsSince(targets[i].round) < timeout)
+					sz++;
+			return sz;
+		}
 
 		public MapLocation getClosestRecent()
 		{
@@ -81,6 +94,9 @@ public class Waypoint extends RobotPlayer
 			return loc;
 		}
 	}
+	
+	public static TargetStore enemyTargetStore = new TargetStore(50);
+	//private static TargetStore friendlyTargetStore = new TargetStore(50);
 	
 	private static MapLocation randomDest = null;
 	private static int randomDestRound = -10000;

@@ -169,8 +169,12 @@ public class Message extends RobotPlayer
 			case SPAM:
 				break;
 			case SIGHT_TARGET:
-				Sighting.addSightedTarget(readLocation(vals[0]),
-										  readLocation(vals[1]));
+				MapLocation loc0 = readLocation(vals[0]);
+				MapLocation loc1 = readLocation(vals[1]);
+				Sighting.addSightedTarget(loc0,loc1);
+				
+				Waypoint.enemyTargetStore.add(new Waypoint.TargetInfo(loc0,readByte(vals[0],2)));
+				Waypoint.enemyTargetStore.add(new Waypoint.TargetInfo(loc1,readByte(vals[1],2)));
 				break;
 			case ZOMBIE_DEN:
 				MapInfo.updateZombieDens(readLocation(vals[0]), readLocation(vals[1]), readByte(vals[1],3)==0);
@@ -305,7 +309,10 @@ public class Message extends RobotPlayer
 	
 	private static MapLocation readLocation(int val)
 	{
-		return new MapLocation(readByte(val,0)+MAP_OFF_X, readByte(val,1)+MAP_OFF_Y);
+		MapLocation loc = new MapLocation(readByte(val,0)+MAP_OFF_X, readByte(val,1)+MAP_OFF_Y);
+		if (loc.equals(MapInfo.nullLocation))
+			return null;
+		return loc;
 	}
 	
 	public static int writeShort(int val, int ind)

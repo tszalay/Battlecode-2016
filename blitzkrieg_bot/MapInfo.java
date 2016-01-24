@@ -165,13 +165,13 @@ public class MapInfo extends RobotPlayer
 	{
 		// if we already reported it, or we already have one queued to send,
 		// don't do anything
-		if (!add_loc.equals(nullLocation))
+		if (add_loc != null)
 		{
 			zombieDenLocations.add(add_loc, DEN_SENT_ADD);
 			if (add_symmetric)
 				zombieDenLocations.add(getSymmetricLocation(add_loc), DEN_SENT_ADD);
 		}
-		if (!del_loc.equals(nullLocation))
+		if (del_loc != null)
 		{
 			zombieDenLocations.remove(del_loc);
 			formerDenLocations.add(del_loc);
@@ -192,13 +192,13 @@ public class MapInfo extends RobotPlayer
 	
 	public static void updateNeutralArchons(MapLocation add_loc, MapLocation del_loc, boolean add_symmetric)
 	{
-		if (!add_loc.equals(nullLocation))
+		if (add_loc != null)
 		{
 			neutralArchonLocations.add(add_loc);
 			if (add_symmetric)
 				neutralArchonLocations.add(getSymmetricLocation(add_loc));
 		}
-		if (!del_loc.equals(nullLocation))
+		if (del_loc != null)
 			neutralArchonLocations.remove(del_loc);
 	}
 	
