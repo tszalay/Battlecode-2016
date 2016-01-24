@@ -83,12 +83,13 @@ public class RoboArchon extends RobotPlayer
 
 	public static boolean tryRepair() throws GameActionException
 	{
-		RobotInfo[] nearbyFriends = rc.senseNearbyRobots(rc.getType().attackRadiusSquared, ourTeam);
 		RobotInfo minBot = null;
 
-		for (RobotInfo ri : nearbyFriends)
+		for (RobotInfo ri : Micro.getNearbyAllies())
 		{
 			if (ri.type == RobotType.ARCHON)
+				continue;
+			if (here.distanceSquaredTo(ri.location) > rc.getType().attackRadiusSquared)
 				continue;
 
 			if (minBot == null || (ri.maxHealth - ri.health) > (minBot.maxHealth - minBot.health) || minBot.zombieInfectedTurns < ri.zombieInfectedTurns)

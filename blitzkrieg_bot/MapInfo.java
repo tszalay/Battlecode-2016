@@ -256,18 +256,27 @@ public class MapInfo extends RobotPlayer
 		return false;
 	}
 	
-	// function to quickly look around us and see what's new or what's changed
+	// function to "quickly" look around us and see what's new or what's changed
+	private static int lastSurroundingsRound = 0;
+	
 	public static void doAnalyzeSurroundings() throws GameActionException
 	{
-		// map symmetry check
+		// if we can move, and we have recently looked around, whatever
+		if (rc.isCoreReady() && roundsSince(lastSurroundingsRound) < 4)
+			return;
 		
+		// otherwise, do it
+		lastSurroundingsRound = rc.getRoundNum();
 		
-		// neutral robot check
-		RobotInfo[] neutralRobots = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.NEUTRAL);
-		for (RobotInfo ri : neutralRobots)
+		// neutral robot check, only scouts and archons need to add
+		if (rc.getType() == RobotType.SCOUT || rc.getType() == RobotType.ARCHON)
 		{
-			if (ri.type == RobotType.ARCHON)
+			RobotInfo[] neutralRobots = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.NEUTRAL);
+			for (RobotInfo ri : neutralRobots)
 			{
+				if (ri.type != RobotType.ARCHON)
+					continue;
+				
 				if (neutralArchonLocations.contains(ri.location))
 					continue;
 				
@@ -281,7 +290,6 @@ public class MapInfo extends RobotPlayer
 					// and don't really do any more this turn
 					return;
 				}
-					
 			}
 		}
 		

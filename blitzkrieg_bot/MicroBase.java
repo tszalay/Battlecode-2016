@@ -174,16 +174,22 @@ public class MicroBase extends RobotPlayer
 		safeMoveDirs = new DirectionSet();
 		saferMoveDirs = new DirectionSet();
 		bufferDirs = new DirectionSet();
-
+		canMoveDirs = new DirectionSet();
+		fastMoveDirs = new DirectionSet();
 		turretSafeDirs = Sighting.getTurretSafeDirs();
-		getCanMoveDirs();
-		getCanFastMoveDirs();
-				
+		
 		for (Direction d : Direction.values())
 		{
-			// only check directions we can actually move
-			if (!canMoveDirs.isValid(d))
+			if (d == Direction.OMNI)
 				continue;
+			
+			// skip can't move directions, except keep none
+			if (d != Direction.NONE && !rc.canMove(d))
+				continue;
+			
+			canMoveDirs.add(d);
+			if (rc.senseRubble(here.add(d)) < GameConstants.RUBBLE_SLOW_THRESH)
+				fastMoveDirs.add(d);
 			
 			MapLocation testloc = here.add(d);
 			
@@ -400,43 +406,14 @@ public class MicroBase extends RobotPlayer
 	// get directions we can move in
 	public DirectionSet getCanMoveDirs()
 	{
-		if (canMoveDirs != null)
-			return canMoveDirs;
-		
-		canMoveDirs = DirectionSet.makeStay();
-		
-		for (Direction d : Direction.values())
-			if (rc.canMove(d))
-				canMoveDirs.add(d);
-		
+		computeSafetyStats();
 		return canMoveDirs;
 	}
 	
 	public DirectionSet getCanFastMoveDirs()
 	{
-		// returns moves without any rubble
-		// (except for scout who cares)
-		if (fastMoveDirs != null)
-			return fastMoveDirs;
-		
-		if (rc.getType() == RobotType.SCOUT)
-		{
-			fastMoveDirs = canMoveDirs;
-			return getCanMoveDirs();
-		}
-
-		DirectionSet dirs = new DirectionSet();
-		
-		if (rc.senseRubble(here) < GameConstants.RUBBLE_SLOW_THRESH)
-			dirs.add(Direction.NONE);
-		
-		for (Direction d : Direction.values())
-			if (d != Direction.OMNI && rc.canMove(d) && rc.senseRubble(here.add(d)) < GameConstants.RUBBLE_SLOW_THRESH)
-				dirs.add(d);
-		
-		fastMoveDirs = dirs;
-		
-		return dirs;
+		computeSafetyStats();
+		return fastMoveDirs;
 	}
 	
 	// tries to return the best directions we can go that are safe
