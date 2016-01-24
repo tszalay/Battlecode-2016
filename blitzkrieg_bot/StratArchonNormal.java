@@ -1,6 +1,7 @@
 package blitzkrieg_bot;
 
 import battlecode.common.*;
+
 import java.util.*;
 
 public class StratArchonNormal extends RoboArchon implements Strategy
@@ -15,12 +16,15 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 	{
 		if (overrideStrategy != null)
 			return overrideStrategy.getName();
-		
-		buildOrder = getSetBuildOrder(); // from RoboArchon.java
-		numBuilds = 0;
 
 		MapLocation loc = Waypoint.getClosestFriendlyWaypoint();
 		return "Normal Archon " + (loc==null?"":here.distanceSquaredTo(loc));
+	}
+	
+	public StratArchonNormal()
+	{
+		buildOrder = getSetBuildOrder(); // from RoboArchon.java
+		numBuilds = 0;
 	}
 	
 	public boolean tryTurn() throws GameActionException
@@ -58,6 +62,15 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 			Action.tryGoToSafestOrRetreat(dest);
 		}
 		
+		// go to neutral archons
+		MapLocation neutralArchonLoc = MapInfo.getClosestNeutralArchon();
+		if (neutralArchonLoc != null)
+		{
+			overrideStrategy = new StratArchonBlitz(neutralArchonLoc);
+			Action.tryGoToSafestOrRetreat(neutralArchonLoc);
+			return true;
+		}
+		
 		if (rc.getRoundNum() < SCOUT_SHADOW_ROUND)
 			Message.sendArchonLocation(rc.senseRobot(rc.getID()));
 
@@ -93,10 +106,32 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		RobotType robotToBuild = null;
 		Strategy.Type buildStrat = null;
 		
+		for (int i=0; i<buildOrder.length; i++)
+		{
+			System.out.println(buildOrder[i].toString());
+		}
+		System.out.println(numBuilds);
+		
 		// the initial build order
 		if (numBuilds < buildOrder.length)
 		{
 			robotToBuild = buildOrder[numBuilds];
+			if (robotToBuild == RobotType.SCOUT)
+				buildStrat = Strategy.Type.EXPLORE;
+			else
+				buildStrat = Strategy.Type.MOB_MOVE;
+			
+			if (!rc.hasBuildRequirements(robotToBuild))
+				return false;
+
+			Direction buildDir = Micro.getCanBuildDirectionSet(robotToBuild).getRandomValid();
+			if (buildDir != null)
+			{
+				overrideStrategy = new StratBuilding(robotToBuild, buildDir, buildStrat);
+				numBuilds ++;
+				lastBuiltRound = rc.getRoundNum();
+				return true;
+			}
 		}
 		else
 		{

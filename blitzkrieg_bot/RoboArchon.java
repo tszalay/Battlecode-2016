@@ -8,15 +8,11 @@ public class RoboArchon extends RobotPlayer
 {
 	public static int lastAdjacentScoutRound = 0;
 	public static final int SCOUT_SHADOW_ROUND = 200;
-	private static int botsBuiltFromSetBuildOrder = 0;
 	private static RobotType[] buildOrder;
 
 	public static void init() throws GameActionException
 	{
 		myStrategy = new StratArchonNormal();
-		buildOrder = getSetBuildOrder();
-		if (StratArchonBlitz.tryBuild(buildOrder[0]))
-			botsBuiltFromSetBuildOrder ++;
 	}
 
 	public static void turn() throws GameActionException
@@ -36,14 +32,6 @@ public class RoboArchon extends RobotPlayer
 			MapLocation loc = Message.getRecentFriendlyLocation();
 			if (loc != null)
 				rc.setIndicatorLine(here,loc,0,255,0);
-		}
-
-		// if we haven't finished initial set build order
-		if (botsBuiltFromSetBuildOrder < buildOrder.length)
-		{
-			// build next in build order
-			if (StratArchonBlitz.tryBuild(buildOrder[botsBuiltFromSetBuildOrder]))
-				botsBuiltFromSetBuildOrder ++;
 		}
 
 		// for now, all archons just blitz all the time
