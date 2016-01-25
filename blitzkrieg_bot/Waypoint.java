@@ -74,44 +74,42 @@ public class Waypoint extends RobotPlayer
 					sz++;
 			return sz;
 		}
-
+		
 		public MapLocation getClosestRecent()
 		{
-			return getClosestRecent(timeout);
+			return getClosestRecent(0);
 		}
-		
-		public MapLocation getClosestRecent(int timelimit)
+
+		// attempts to find one larger than min_thresh
+		// if it can't, returns closest one
+		public MapLocation getClosestRecent(int min_thresh)
 		{
 			TargetInfo ti = null;
+			TargetInfo ti_above = null;
 			
 			for (int i=0; i<targets.length; i++)
 			{
 				if (targets[i] == null)
 					continue;
 				
-				if (roundsSince(targets[i].round)<timelimit &&
-						(ti == null || here.distanceSquaredTo(targets[i].location) < here.distanceSquaredTo(ti.location)))
+				if (roundsSince(targets[i].round) > timeout)
+					continue;
+				
+				if (ti == null || here.distanceSquaredTo(targets[i].location) < here.distanceSquaredTo(ti.location))
 					ti = targets[i];
+
+				if (targets[i].value >= min_thresh &&
+						(ti_above == null || 
+						here.distanceSquaredTo(targets[i].location) < here.distanceSquaredTo(ti_above.location)))
+					ti_above = targets[i];
 			}
 			
-			if (ti == null)
-				return null;
+			if (ti_above != null)
+				return ti_above.location;
+			if (ti != null)
+				return ti.location;
 			
-			// if the closest has a value of 1, try to find a better one
-			// (so we don't chase scouts everywheres)
-			if (ti.value == 1)
-			{
-				for (int i=0; i<targets.length; i++)
-				{
-					if (targets[i] == null)
-						continue;
-					if (targets[i].value > 1 && roundsSince(targets[i].round)<timelimit &&
-							here.distanceSquaredTo(targets[i].location) < here.distanceSquaredTo(ti.location))
-						ti = targets[i];
-				}
-			}
-			
-			return ti.location;
+			return null;
 		}
 	}
 	
@@ -147,11 +145,11 @@ public class Waypoint extends RobotPlayer
 	
 	public static MapLocation getClosestFriendlyWaypoint()
 	{
-		return friendlyTargetStore.getClosestRecent();
+		return friendlyTargetStore.getClosestRecent(6);
 	}
 	
 	public static MapLocation getBestEnemyLocation()
 	{
-		return enemyTargetStore.getClosestRecent();
+		return enemyTargetStore.getClosestRecent(1);
 	}
 }
