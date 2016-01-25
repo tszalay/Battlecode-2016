@@ -15,5 +15,9 @@ public class RoboGuard extends RobotPlayer
 			Message.sendSignal(rc.getType().sensorRadiusSquared*2);
 		
 		myStrategy.tryTurn();
+		
+		// did we fire? try to send a short ping
+		if (!rc.isWeaponReady())
+			Message.trySendSignal(rc.getType().sensorRadiusSquared*2);
 	}
 }

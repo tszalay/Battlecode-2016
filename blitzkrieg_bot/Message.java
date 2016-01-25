@@ -91,6 +91,11 @@ class SignalDelay extends RobotPlayer
 		}
 		return false;
 	}
+	
+	public boolean reset()
+	{
+		this.round = rc.getRoundNum();
+	}
 }
 
 public class Message extends RobotPlayer
@@ -127,6 +132,8 @@ public class Message extends RobotPlayer
 	
 	private static ArrayList<ArchonLocation> recentArchonLocations = new ArrayList<ArchonLocation>();
 	private static SignalDelay archonLocationTimer = new SignalDelay(20);
+	
+	private static SignalDelay	recentSignalTimer = new SignalDelay(5);
 	
 	private static final int LOCATION_NO_SYM = 1;
 	
@@ -384,9 +391,16 @@ public class Message extends RobotPlayer
 		rc.broadcastMessageSignal(v1,v2,sq_distance);
 	}
 	
+	public static void trySendSignal(int sq_distance) throws GameActionException
+	{
+		if (recentSignalTimer.canSend())
+			rc.broadcastSignal(sq_distance);
+	}
+	
 	// sends a message-free signal
 	public static void sendSignal(int sq_distance) throws GameActionException
 	{
+		recentSignalTimer.reset();
 		rc.broadcastSignal(sq_distance);
 	}
 }
