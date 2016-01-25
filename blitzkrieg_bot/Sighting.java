@@ -121,7 +121,7 @@ public class Sighting extends RobotPlayer
 		return Micro.getClosestLocationTo(enemySightedTurrets.elements(), here);
 	}
 	
-	public static DirectionSet getTurretSafeDirs()
+	public static DirectionSet getTurretSafeDirs(int[] distToClosest)
 	{
 		// find out which directions are safe vis-a-vis enemy turrets
 		DirectionSet dirs = DirectionSet.makeAll();
@@ -152,8 +152,13 @@ public class Sighting extends RobotPlayer
 				// loop through and remove directions that are still safe
 				for (Direction d : Direction.values())
 				{ 
-					if (d != Direction.OMNI && here.add(d).distanceSquaredTo(ml) <= turret_dist_sq)
+					int dist_sq = here.add(d).distanceSquaredTo(ml);
+					if (d != Direction.OMNI && dist_sq <= turret_dist_sq)
+					{
 						dirs.remove(d);
+						// just set it, doesn't matter if it's a bit fudged
+						distToClosest[d.ordinal()] = dist_sq;
+					}
 				}
 				if (roundsSince(enemySightedTurrets.get(ml)) > TURRET_TIMEOUT_ROUNDS)
 					remove_turret = ml;
@@ -165,7 +170,10 @@ public class Sighting extends RobotPlayer
 		
 		// hack, since scouts can see turrets, duh
 		if (rc.getType() == RobotType.SCOUT)
+		{
 			dirs = DirectionSet.makeAll();
+			Arrays.fill(distToClosest, 0);
+		}
 				
 		return dirs;
 	}

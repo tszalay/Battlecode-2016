@@ -186,7 +186,7 @@ public class MicroBase extends RobotPlayer
 		bufferDirs = new DirectionSet();
 		canMoveDirs = new DirectionSet();
 		fastMoveDirs = new DirectionSet();
-		turretSafeDirs = Sighting.getTurretSafeDirs();
+		turretSafeDirs = Sighting.getTurretSafeDirs(distToClosestHostile);
 		
 		for (Direction d : Direction.values())
 		{
@@ -203,7 +203,11 @@ public class MicroBase extends RobotPlayer
 			
 			MapLocation testloc = here.add(d);
 			
-			int closestDistSq = DIST_MAX;
+			int closestDistSq = distToClosestHostile[d.ordinal()];
+			// if it wasn't set by turretsafedirs
+			if (closestDistSq == 0)
+				closestDistSq = DIST_MAX;
+			
 			boolean isThisSquareSafe = true;
 			boolean isThisSquareSafer = true;
 			boolean isThisSquareBuffer = true;
