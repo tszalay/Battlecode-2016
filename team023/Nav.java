@@ -320,9 +320,10 @@ public class Nav extends RobotPlayer
             bugState = BugState.DIRECT;
         }
         
-        // TTMs cannot clear rubble apparently
+        // Try to clear rubble at random or if we're at a local distance minimum
         if (rc.getType() != RobotType.TTM && rc.getType() != RobotType.SCOUT
-        		&& numDugHere < Micro.getNearbyAllies().length 
+        		&& numDugHere < Micro.getNearbyAllies().length
+        		&& here.distanceSquaredTo(Nav.myDest) < 49
         		&& Rubble.tryRandomClearRubbleInPath(myDest))
         {
         	numDugHere++;

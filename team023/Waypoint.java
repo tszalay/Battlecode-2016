@@ -66,6 +66,18 @@ public class Waypoint extends RobotPlayer
 			}
 		}
 		
+		// removes location from store
+		public void remove(MapLocation loc)
+		{
+			for (int i=0; i<targets.length; i++)
+			{
+				if (targets[i] == null)
+					continue;
+				if (targets[i].location.equals(loc))
+					targets[i] = null;
+			}
+		}
+		
 		public int size()
 		{
 			int sz = 0;
@@ -155,6 +167,9 @@ public class Waypoint extends RobotPlayer
 	
 	public static MapLocation getBestEnemyLocation()
 	{
-		return enemyTargetStore.getClosestRecent(1);
+		MapLocation closest = enemyTargetStore.getClosestRecent(1);
+		if (closest != null && here.distanceSquaredTo(closest) <= 13)
+			enemyTargetStore.remove(closest);
+		return closest;
 	}
 }
