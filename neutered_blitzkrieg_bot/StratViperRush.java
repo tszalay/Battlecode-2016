@@ -1,4 +1,4 @@
-package blitzkrieg_bot;
+package neutered_blitzkrieg_bot;
 
 import battlecode.common.*;
 
