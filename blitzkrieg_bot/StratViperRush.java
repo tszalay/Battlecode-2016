@@ -86,7 +86,7 @@ public class StratViperRush extends RobotPlayer implements Strategy
 		
 		int numuninfected = 0;
 		int numcanattack = 0;
-		for (RobotInfo ri : Micro.getNearbyEnemies())
+		for (RobotInfo ri : rc.senseNearbyRobots(rc.getType().attackRadiusSquared, theirTeam))
 		{
 			if (ri.viperInfectedTurns < 3)
 				numuninfected++;
@@ -94,11 +94,12 @@ public class StratViperRush extends RobotPlayer implements Strategy
 				numcanattack++;
 		}
 		
-		// too many units or nobody to shoot
+		// too many units or nobody to shoot, try to move safely
 		if (numuninfected == 0 || numcanattack > 2 || !bufferDirs.any())
 		{
 			// try to move safely
-			Action.tryGoToSafestOrRetreat(lastDest);
+			if (Action.tryGoToSafestOrRetreat(lastDest))
+				return true;
 		}
 
 		// otherwise shoot
