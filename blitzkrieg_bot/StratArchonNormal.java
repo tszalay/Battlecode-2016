@@ -143,8 +143,7 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 			robotToBuild = RobotType.SCOUT;
 			buildStrat = Strategy.Type.SHADOW_ARCHON;
 		}
-		
-		else if (rand.nextInt() % 8 == 0 && rc.getRobotCount() > 40)
+		else if (rand.nextInt() % 5 == 0 && rc.getRobotCount() > 30)
 		{
 			// build viper!
 			buildPriority += Math.min(0,50-roundsSince(lastBuiltRound));
