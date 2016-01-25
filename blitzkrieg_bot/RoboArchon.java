@@ -131,19 +131,31 @@ public class RoboArchon extends RobotPlayer
 			return;
 		}
 
-		// we are not the closest. look at zombie spawns. if too bad, change build order
+		// look at zombie spawns. if too bad, change build order
 		Zombie z = new Zombie(200);
 		int bigZombies = z.getNumEarlyBigZombies();
 		int fastZombies = z.getNumEarlyFastZombies();
 		int rangedZombies = z.getNumEarlyRangedZombies();
 		int stdZombies = z.getNumEarlyStdZombies();
 
-		/*
+		
 		System.out.println(bigZombies + " big zombies");
 		System.out.println(fastZombies + " fast zombies");
 		System.out.println(rangedZombies + " ranged zombies");
 		System.out.println(stdZombies + " std zombies");
-	 	*/
+	 	
+		
+		if (myDist == shortestDist && (rangedZombies > 3 || bigZombies > 1))
+		{
+			buildOrder = new RobotType[]{
+					RobotType.SCOUT,
+					RobotType.VIPER,
+					RobotType.SOLDIER,
+					RobotType.SOLDIER,
+					RobotType.SOLDIER
+				};
+			return;
+		}
 		
 		if (rangedZombies > 3 || bigZombies > 1)
 		{

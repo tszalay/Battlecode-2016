@@ -44,16 +44,7 @@ public class StratViperRush extends RobotPlayer implements Strategy
 		// (after round 200, rushing vipers will shoot anything)
 		Action.tryViperAttack();
 		
-		// do we have a strategy that takes precedence over this one?
-		if (overrideStrategy != null)
-		{
-			if (overrideStrategy.tryTurn())
-				return true;
-			else
-				overrideStrategy = null;
-		}
-		
-		// any vipers or turrets? rush 'em
+		// any turrets? rush 'em
 		if (Micro.getEnemyUnits().TurrTTMs > 0)
 		{
 			for (RobotInfo ri : Micro.getNearbyEnemies())
@@ -84,29 +75,32 @@ public class StratViperRush extends RobotPlayer implements Strategy
 		DirectionSet bufferDirs = Micro.getBufferDirs();
 		bufferDirs = bufferDirs.and(Micro.getTurretSafeDirs());
 		
-		int numuninfected = 0;
-		int numcanattack = 0;
-		for (RobotInfo ri : rc.senseNearbyRobots(rc.getType().attackRadiusSquared, theirTeam))
-		{
-			if (ri.viperInfectedTurns < 3)
-				numuninfected++;
-			if (ri.type.canAttack())
-				numcanattack++;
-		}
+//		int numuninfected = 0;
+//		int numcanattack = 0;
+//		for (RobotInfo ri : rc.senseNearbyRobots(rc.getType().attackRadiusSquared, theirTeam))
+//		{
+//			if (ri.viperInfectedTurns < 3)
+//				numuninfected++;
+//			if (ri.type.canAttack())
+//				numcanattack++;
+//		}
 		
 		// too many units or nobody to shoot, try to move safely
-		if (numuninfected == 0 || numcanattack > 2 || !bufferDirs.any())
-		{
-			// try to move safely
-			if (Action.tryGoToSafestOrRetreat(lastDest))
-				return true;
-		}
+//		if (numuninfected == 0 || numcanattack > 2 || !bufferDirs.any())
+//		{
+//			// try to move safely
+//			if (Action.tryGoToSafestOrRetreat(lastDest))
+//				return true;
+//		}
 
 		// otherwise shoot
 		Action.tryViperAttack();
 		
 		// and then buffer move
-		Nav.tryGoTo(lastDest, bufferDirs);
+		if (Micro.getNearbyHostiles() != null && Micro.getNearbyHostiles().length > 0)
+			Nav.tryGoTo(lastDest, bufferDirs);
+		else
+			Nav.tryGoTo(lastDest, Micro.getCanMoveDirs()); // dig and move as fast as possible to enemy, don't bug like a jackass
 		
 		// if overpowered, kite back
 		//if (Micro.amOverpowered())
