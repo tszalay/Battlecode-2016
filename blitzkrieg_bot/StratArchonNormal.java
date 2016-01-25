@@ -43,7 +43,8 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 			if ((rc.getRoundNum()%5) == 0)
 				Message.sendMessageSignal(400,Message.Type.UNDER_ATTACK,0);
 			
-			if (rc.getRoundNum() > 100 || (Micro.getNearbyAllies() != null && Micro.getNearbyAllies().length > 5))
+			// don't over-retreat in the early game
+			if (rc.getRoundNum() > 100 || Micro.getNearbyAllies().length > 5)
 			{
 				MapLocation dest = Waypoint.getBestRetreatLocation();	
 				Action.tryGoToSafestOrRetreat(dest);
