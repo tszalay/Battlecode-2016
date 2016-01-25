@@ -2,7 +2,7 @@ package blitzkrieg_bot;
 
 import battlecode.common.*;
 
-public class StratTurtleTurret extends RobotPlayer implements Strategy
+public class StratTurretCombat extends RobotPlayer implements Strategy
 {
 	// last round that a turret performed an action
 	// (unpacking or firing)

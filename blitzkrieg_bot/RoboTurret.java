@@ -6,7 +6,7 @@ public class RoboTurret extends RobotPlayer
 {
 	public static void init() throws GameActionException
 	{
-		myStrategy = new StratTurtleTurret();
+		myStrategy = new StratTurretCombat();
 	}
 	
 	public static void turn() throws GameActionException
