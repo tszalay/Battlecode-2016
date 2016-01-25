@@ -6,14 +6,13 @@ import java.util.*;
 public class StratScoutSighting extends RobotPlayer implements Strategy
 {	
 	private Strategy overrideStrategy = null;
-	private int shadowTargetID = -1;
 
 	public String getName()
 	{
 		if (overrideStrategy != null)
 			return overrideStrategy.getName();
 
-		return "Shadowing unit " + shadowTargetID;
+		return "Looking for sighting unit";
 	}
 	
 	public boolean tryTurn() throws GameActionException
@@ -51,11 +50,14 @@ public class StratScoutSighting extends RobotPlayer implements Strategy
 			return true;
 		
 		// otherwise, go towards the waypoint
-		MapLocation closestDen = MapInfo.getClosestDen();
-		if (closestDen != null)
-			Action.tryGoToWithoutBeingShot(closestDen, Micro.getSafeMoveDirs());
+		MapLocation dest = MapInfo.getClosestDen();
+		if (dest == null)
+			dest = Waypoint.getBestEnemyLocation();
+		
+		if (dest != null)
+			Action.tryGoToSafestOrRetreat(dest);
 		else
-			Action.tryGoToWithoutBeingShot(rc.getInitialArchonLocations(theirTeam)[0], Micro.getSafeMoveDirs());
+			return false;
 
 		return true;
 	}
