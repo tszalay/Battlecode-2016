@@ -54,9 +54,10 @@ public class Sighting extends RobotPlayer
 			int broadcast_dist = 63;
 			if (Micro.getRoundsUntilDanger() < 5 && Micro.getRoundsUntilDanger() > 0)
 				broadcast_dist = 121;
-			if (Micro.getRoundsUntilDanger() < 10)
+			else if (Micro.getRoundsUntilDanger() < 10)
 				broadcast_dist = 400;
-			if (Micro.getRoundsUntilDanger() > 12 && farBroadcastSignal.canSend())
+			// or if we're really safe, really blast it
+			if (Micro.getRoundsUntilDanger() > 9 && farBroadcastSignal.canSend())
 				broadcast_dist = MapInfo.fullMapDistanceSq();
 			
 			// also count up nearby combat units to set value

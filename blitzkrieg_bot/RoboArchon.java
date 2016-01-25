@@ -32,6 +32,11 @@ public class RoboArchon extends RobotPlayer
 			MapLocation loc = Message.getRecentFriendlyLocation();
 			if (loc != null)
 				rc.setIndicatorLine(here,loc,0,255,0);
+			
+			for (int i=0; i<5; i++)
+				if (Waypoint.enemyTargetStore.targets[i] != null
+				&& roundsSince(Waypoint.enemyTargetStore.targets[i].round) < 500)
+					rc.setIndicatorLine(here,Waypoint.enemyTargetStore.targets[i].location,0,0,255);
 		}
 
 		// for now, all archons just blitz all the time
