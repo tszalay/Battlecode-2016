@@ -82,17 +82,36 @@ public class Waypoint extends RobotPlayer
 		
 		public MapLocation getClosestRecent(int timelimit)
 		{
-			MapLocation loc = null;
+			TargetInfo ti = null;
 			
 			for (int i=0; i<targets.length; i++)
 			{
 				if (targets[i] == null)
 					continue;
+				
 				if (roundsSince(targets[i].round)<timelimit &&
-						(loc == null || here.distanceSquaredTo(targets[i].location) < here.distanceSquaredTo(loc)))
-					loc = targets[i].location;
+						(ti == null || here.distanceSquaredTo(targets[i].location) < here.distanceSquaredTo(ti.location)))
+					ti = targets[i];
 			}
-			return loc;
+			
+			if (ti == null)
+				return null;
+			
+			// if the closest has a value of 1, try to find a better one
+			// (so we don't chase scouts everywheres)
+			if (ti.value == 1)
+			{
+				for (int i=0; i<targets.length; i++)
+				{
+					if (targets[i] == null)
+						continue;
+					if (targets[i].value > 1 && roundsSince(targets[i].round)<timelimit &&
+							here.distanceSquaredTo(targets[i].location) < here.distanceSquaredTo(ti.location))
+						ti = targets[i];
+				}
+			}
+			
+			return ti.location;
 		}
 	}
 	
