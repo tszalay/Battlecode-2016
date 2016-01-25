@@ -8,15 +8,15 @@
 ### For Qualifier Submission
 - Improve micro and run scrims. Probably get units to clump before attacking and get everyone to front line. Watch scrim on 24th vs trump, mid high diamond, felix
 - Debug z-day and surround. Watch scrimmage on 24th vs vvphys and turing_it_up, somewhat testable on scouting vs jene
+- More midgame vipers. Very good teams use them instead of mobile turrets. See scrim sunday 24th vs Mid High Diamonds, Felix (on swamp)
 - Activate nearby neutral archons robustly. Broken on goodies vs jene 11PM Sunday 24th.
 - (Fixed?) Archons must run to allies when threatened and away from enemies. Watch channels vs Team Sheep scrimmage on the 24th
 - Balance early game builds. Scouts earlier, more vipers.
 - Make scouts see dens on very edge of large maps. See goodies.
-- (Improved?) Make soldiers search for dens or surround enemy before dens waypointed. Not enough early action on caverns vs jene. We lose ~200 rounds on scouting waiting for a scout
+- (Fixed?) Make soldiers search for dens or surround enemy before dens waypointed. Not enough early action on caverns vs jene. We lose ~200 rounds on scouting waiting for a scout
 - Shadow lone enemy archons and waypoint rage them. See scrimmage with return win on helloworld on 24th
 - Avoid units stuck at rubble for 1000 rounds. See Barricade and presents vs jene. DenReapers does well on presents: Round 4 Losers B DenReapers (#222) vs. Protoss (#237)
-- Have a few midgame vipers. They devastate us on swamp vs jene, the_duck adds 2 around round 300 too
-- ~~GTFO Archons. See scrimmage on 24th vs vvphys on space, somewhat testable on on swamp, diffusion vs jene ~~
+- ~~GTFO Archons. See scrimmage on 24th vs vvphys on space, somewhat testable on on swamp, diffusion vs jene.~~
 - ~~Hard code early game builds. Scouts out way to late on 1 archon maps like barricade. Build 1 explore scout per archon before shadow scouts.~~
 
 ### For Seeding Submission
