@@ -62,10 +62,10 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		
 		// go to neutral archons
 		MapLocation neutralArchonLoc = MapInfo.getClosestNeutralArchon();
-		if (neutralArchonLoc != null)
-		{
-			overrideStrategy = new StratArchonBlitz(neutralArchonLoc);
-		}
+//		if (neutralArchonLoc != null)
+//		{
+//			overrideStrategy = new StratArchonBlitz(neutralArchonLoc);
+//		}
 		
 		if (rc.getRoundNum() < SCOUT_SHADOW_ROUND)
 			Message.sendArchonLocation(rc.senseRobot(rc.getID()));
