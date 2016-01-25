@@ -10,24 +10,33 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 	private Strategy overrideStrategy = null;
 
 	// linear distance of the spacing of exploration waypoints
-	private static final int EXPLORE_POINT_DIST = 7;
+	private static int EXPLORE_POINT_DIST = 7;
 	// square distance of how close we need to be as a scout to 'visit'
-	private static final int EXPLORE_VISIT_SQDIST = 8;
+	private static int EXPLORE_VISIT_SQDIST = 8;
+	
+	private static final int FULL_MAP_ROUND = 1000;
+	private static final int EXPLORING_MIN_ROUNDS = 500;
 	
 	private int			myExploringQuadrant;
 	private FastLocSet 	myExploringTargets;
 	private MapLocation myExploringTarget;
 	
 	private int lastNewTargetRound = 0;
-	
+	private int exploringStartRound = 0;
 	
 	public String getName()
 	{
 		if (overrideStrategy != null)
 			return overrideStrategy.getName();
 
-		return "Explored Q" + myExploringQuadrant + " "
+		if (rc.getRoundNum() > FULL_MAP_ROUND)
+			return "Exploring full map for " + roundsSince(exploringStartRound) 
 				+ myExploringTargets.elements().size() + " left";
+		else
+			return "Exploring for " + roundsSince(exploringStartRound) 
+			+ "  Q" + myExploringQuadrant + " "
+			+ myExploringTargets.elements().size() + " left";
+
 	}
 	
 	public int getQuadrant(MapLocation loc)
@@ -39,6 +48,16 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 	
 	public StratScoutExplore() throws GameActionException
 	{
+		exploringStartRound = rc.getRoundNum();
+		
+		// space the points farther apart if we're later in the game
+		// and explore the whole map
+		if (rc.getRoundNum() > FULL_MAP_ROUND)
+		{
+			EXPLORE_POINT_DIST = 13;
+			// random number, right here
+			EXPLORE_VISIT_SQDIST = 31;
+		}
 		// set the quadrant to my build location
 		myExploringQuadrant = rand.nextInt(4);
 
@@ -82,6 +101,13 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 	private void resetTargets()
 	{
 		myExploringTargets = new FastLocSet();
+
+		if (rc.getRoundNum() > FULL_MAP_ROUND)
+		{
+			resetTargetsFullMap();
+			return;
+		}
+		
 		// populate myExploringTargets with an array of locations
 		// in the specified map quadrant that the scout has to visit within
 		// EXPLORE_VISIT_SQDIST units to remove
@@ -111,7 +137,27 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 		
 		// tell it to go to the first target, which is the corner
 		myExploringTarget = myExploringTargets.elements().get(0);
-		lastNewTargetRound = rc.getRoundNum();		
+		lastNewTargetRound = rc.getRoundNum();
+	}
+	
+	private void resetTargetsFullMap()
+	{
+		MapLocation minpt = MapInfo.mapMin.add(EXPLORE_POINT_DIST/2,EXPLORE_POINT_DIST/2);
+		MapLocation maxpt = MapInfo.mapMax.add(-EXPLORE_POINT_DIST/2,-EXPLORE_POINT_DIST/2);
+		
+		for (int xl=minpt.x; xl<maxpt.x; xl += EXPLORE_POINT_DIST)
+		{
+			for (int yl=minpt.y; yl<maxpt.y; yl += EXPLORE_POINT_DIST)
+			{
+				// add the point
+				myExploringTargets.add(new MapLocation(xl,yl));
+			}
+		}
+		
+		// tell it to go to the first target, which is the corner
+		int ntargets = myExploringTargets.elements().size();
+		myExploringTarget = myExploringTargets.elements().get(rand.nextInt(ntargets));
+		lastNewTargetRound = rc.getRoundNum();
 	}
 	
 	private void updateTargets()
@@ -162,7 +208,7 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 				overrideStrategy = null;
 		}
 		
-		if (Micro.getEnemyUnits().Archons > 0)
+		if (roundsSince(exploringStartRound) > EXPLORING_MIN_ROUNDS && Micro.getEnemyUnits().Archons > 0)
 		{
 			for (RobotInfo ri : Micro.getNearbyEnemies())
 			{
@@ -176,7 +222,7 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 			}
 		}
 
-		if (StratScoutTurrets.shouldScoutTurrets())
+		if (roundsSince(exploringStartRound) > EXPLORING_MIN_ROUNDS && StratScoutTurrets.shouldScoutTurrets())
 		{
 			overrideStrategy = new StratScoutTurrets();
 			overrideStrategy.tryTurn();
@@ -187,7 +233,11 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 		updateTargets();
 
 		// try to go to the target with the best dirs possible
-		Nav.tryGoTo(myExploringTarget, Micro.getBestAnyDirs());
+		// (but also force turret avoidance)
+		if (!Micro.getTurretSafeDirs().isValid(Direction.NONE))
+			Action.tryGoToSafestOrRetreat(myExploringTarget);
+		else
+			Nav.tryGoTo(myExploringTarget, Micro.getBestAnyDirs());
 
 		return true;
 	}
