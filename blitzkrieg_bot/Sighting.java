@@ -135,15 +135,24 @@ public class Sighting extends RobotPlayer
 		// any turrets need removin'?
 		MapLocation remove_turret = null;
 		
+		int turret_check_sq = 81;
+		int turret_dist_sq = 64;
+		// archons stay farther away
+		if (rc.getType() == RobotType.ARCHON)
+		{
+			turret_check_sq = 121;
+			turret_dist_sq = 100;
+		}
+		
 		for (MapLocation ml : enemySightedTurrets.elements())
 		{
 			// is there any chance we're close to turret, and is it maybe still there?
-			if (here.distanceSquaredTo(ml) < 81)
+			if (here.distanceSquaredTo(ml) < turret_check_sq)
 			{
 				// loop through and remove directions that are still safe
 				for (Direction d : Direction.values())
 				{ 
-					if (d != Direction.OMNI && here.add(d).distanceSquaredTo(ml) <= RobotType.SCOUT.sensorRadiusSquared)
+					if (d != Direction.OMNI && here.add(d).distanceSquaredTo(ml) <= turret_dist_sq)
 						dirs.remove(d);
 				}
 				if (roundsSince(enemySightedTurrets.get(ml)) > TURRET_TIMEOUT_ROUNDS)
