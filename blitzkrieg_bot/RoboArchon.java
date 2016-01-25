@@ -148,10 +148,10 @@ public class RoboArchon extends RobotPlayer
 		if (rangedZombies > 3 || bigZombies > 1)
 		{
 			buildOrder = new RobotType[]{
+					RobotType.SCOUT,
 					RobotType.SOLDIER,
 					RobotType.SOLDIER,
-					RobotType.SOLDIER,
-					RobotType.SCOUT
+					RobotType.SOLDIER
 				};
 			return;
 		}
