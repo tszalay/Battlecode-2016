@@ -8,11 +8,12 @@ public class RoboArchon extends RobotPlayer
 {
 	public static int lastAdjacentScoutRound = 0;
 	public static final int SCOUT_SHADOW_ROUND = 200;
-	private static RobotType[] buildOrder;
+	public static RobotType[] buildOrder;
 
 	public static void init() throws GameActionException
 	{
 		myStrategy = new StratArchonNormal();
+		setBuildOrder();
 	}
 
 	public static void turn() throws GameActionException
@@ -105,41 +106,32 @@ public class RoboArchon extends RobotPlayer
 			Message.sendSignal(120);
 	}
 
-	public static RobotType[] getSetBuildOrder()
+	public static void setBuildOrder()
 	{
 		// look at our position and decide if we should build a viper, etc.
 		MapLocation[] theirArchons = rc.getInitialArchonLocations(theirTeam);
 		MapLocation[] ourArchons = rc.getInitialArchonLocations(ourTeam);
 		
-		int x = 0;
-		int y = 0;
-		for (MapLocation them : theirArchons)
-		{
-			x += them.x;
-			y += them.y;
-		}
-		x = x/theirArchons.length;
-		y = y/theirArchons.length;
-		MapLocation theirCOM = new MapLocation(x,y);
-		int myDist = here.distanceSquaredTo(theirCOM);
+		int myDist = here.distanceSquaredTo(MapInfo.theirArchonCenter);
 
 		int shortestDist = myDist;
 		for (MapLocation us : ourArchons)
 		{
-			if (us.distanceSquaredTo(theirCOM) < shortestDist)
-				shortestDist = us.distanceSquaredTo(theirCOM);
+			if (us.distanceSquaredTo(MapInfo.theirArchonCenter) < shortestDist)
+				shortestDist = us.distanceSquaredTo(MapInfo.theirArchonCenter);
 		}
 		
 		// if we are the only archon, and close to enemy
 		if (ourArchons.length == 1 && shortestDist < 1000)
 		{
-			buildOrder = new RobotType[5];
-			buildOrder[0] = RobotType.SOLDIER;
-			buildOrder[1] = RobotType.VIPER;
-			buildOrder[2] = RobotType.GUARD;
-			buildOrder[3] = RobotType.SOLDIER;
-			buildOrder[4] = RobotType.SCOUT;
-			return buildOrder;
+			buildOrder = new RobotType[]{
+							RobotType.SOLDIER,
+							RobotType.VIPER,
+							RobotType.GUARD,
+							RobotType.SOLDIER,
+							RobotType.SCOUT
+						};
+			return;
 		}
 
 		// we are not the closest. look at zombie spawns. if too bad, change build order
@@ -158,53 +150,58 @@ public class RoboArchon extends RobotPlayer
 		
 		if (rangedZombies > 3 || bigZombies > 1)
 		{
-			buildOrder = new RobotType[4];
-			buildOrder[0] = RobotType.SOLDIER;
-			buildOrder[1] = RobotType.SOLDIER;
-			buildOrder[2] = RobotType.SOLDIER;
-			buildOrder[3] = RobotType.SCOUT;
-			return buildOrder;
+			buildOrder = new RobotType[]{
+					RobotType.SOLDIER,
+					RobotType.SOLDIER,
+					RobotType.SOLDIER,
+					RobotType.SCOUT
+				};
+			return;
 		}
 
 		if (fastZombies > 10)
 		{
-			buildOrder = new RobotType[5];
-			buildOrder[0] = RobotType.GUARD;
-			buildOrder[1] = RobotType.GUARD;
-			buildOrder[2] = RobotType.GUARD;
-			buildOrder[3] = RobotType.SOLDIER;
-			buildOrder[4] = RobotType.SCOUT;
-			return buildOrder;
+			buildOrder = new RobotType[]{
+					RobotType.GUARD,
+					RobotType.GUARD,
+					RobotType.GUARD,
+					RobotType.SOLDIER,
+					RobotType.SCOUT
+				};
+			return;
 		}
 
 		if (bigZombies + fastZombies + rangedZombies + stdZombies > 10)
 		{
-			buildOrder = new RobotType[5];
-			buildOrder[0] = RobotType.SOLDIER;
-			buildOrder[1] = RobotType.GUARD;
-			buildOrder[2] = RobotType.SOLDIER;
-			buildOrder[3] = RobotType.SOLDIER;
-			buildOrder[4] = RobotType.SCOUT;
-			return buildOrder;
+			buildOrder = new RobotType[]{
+					RobotType.SOLDIER,
+					RobotType.GUARD,
+					RobotType.SOLDIER,
+					RobotType.SOLDIER,
+					RobotType.SCOUT
+				};
+			return;
 		}
 		
 		// if we are the closest of multiple archons, rush
 		if (myDist == shortestDist)
 		{
-			buildOrder = new RobotType[5];
-			buildOrder[0] = RobotType.VIPER;
-			buildOrder[1] = RobotType.SOLDIER;
-			buildOrder[2] = RobotType.SOLDIER;
-			buildOrder[3] = RobotType.GUARD;
-			buildOrder[4] = RobotType.SCOUT;
-			return buildOrder;
+			buildOrder = new RobotType[]{
+					RobotType.VIPER,
+					RobotType.SOLDIER,
+					RobotType.SOLDIER,
+					RobotType.GUARD,
+					RobotType.SCOUT
+				};
+			return;
 		}
 
 		// otherwise, the default
-		buildOrder = new RobotType[3];
-		buildOrder[0] = RobotType.SCOUT;
-		buildOrder[1] = RobotType.SOLDIER;
-		buildOrder[2] = RobotType.SOLDIER;
-		return buildOrder;
+		buildOrder = new RobotType[]{
+				RobotType.SCOUT,
+				RobotType.SOLDIER,
+				RobotType.SOLDIER
+			};
+		return;
 	}
 }
