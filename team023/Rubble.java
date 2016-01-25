@@ -49,7 +49,7 @@ public class Rubble extends RobotPlayer
 		return false;
 	}
 	
-	public static boolean tryClearRubbleInPathIfClearBeyondAndAlliesAround(MapLocation target) throws GameActionException
+	public static boolean tryRandomClearRubbleInPath(MapLocation target) throws GameActionException
 	{
 		if (target == null)
 			return false;
@@ -61,13 +61,18 @@ public class Rubble extends RobotPlayer
 		if (roundsSince(lastDamageRound) < 5)
 			return false;
 		
-		if (rc.canSense(target) && rc.senseRubble(here.add(here.directionTo(target))) < GameConstants.RUBBLE_SLOW_THRESH)
+		Direction towards = here.directionTo(target);
+		
+		if (Nav.isGoodDigLocation())
+			return tryClearLowestAdjacentRubble(towards);
+		
+		if (rc.canSense(target) && rc.senseRubble(here.add(towards)) < GameConstants.RUBBLE_SLOW_THRESH)
 			return false;
 		
 		// look for a direction where digging is minimal
 		
 		// straight ahead
-		double rubAhead = rc.senseRubble(here.add(here.directionTo(target))) + rc.senseRubble(here.add(here.directionTo(target)).add(here.directionTo(target)));
+		double rubAhead = rc.senseRubble(here.add(towards)) + rc.senseRubble(here.add(towards).add(towards));
 		
 		// ahead right
 		//double rubRight = rc.senseRubble(here.add(here.directionTo(target).rotateRight())) + rc.senseRubble(here.add(here.directionTo(target).rotateRight()).add(here.directionTo(target).rotateRight()));
@@ -77,7 +82,7 @@ public class Rubble extends RobotPlayer
 		
 		// get min rubble direction
 		double rubble = rubAhead;
-		Direction towards = here.directionTo(target);
+		
 //		if (rubRight < rubAhead)
 //		{
 //			rubble = rubRight;
@@ -114,6 +119,37 @@ public class Rubble extends RobotPlayer
 			return true;
 		}
 		
+		return false;
+	}
+	
+	public static boolean tryClearLowestAdjacentRubble(Direction dir) throws GameActionException
+	{
+		double r1 = rc.senseRubble(here.add(dir));
+		double r2 = rc.senseRubble(here.add(dir.rotateLeft()));
+		double r3 = rc.senseRubble(here.add(dir.rotateRight()));
+		
+		if (!rc.onTheMap(here.add(dir.rotateLeft())))
+			r2 = 1e100;
+		if (!rc.onTheMap(here.add(dir.rotateRight())))
+			r3 = 1e100;
+		
+		double r = Math.min(Math.min(r1, r2), r3);
+		
+		if (r == r1)
+		{
+			doClearRubble(dir);
+			return true;
+		}
+		if (r == r2)
+		{
+			doClearRubble(dir.rotateLeft());
+			return true;
+		}
+		if (r == r3)
+		{
+			doClearRubble(dir.rotateRight());
+			return true;
+		}
 		return false;
 	}
 	

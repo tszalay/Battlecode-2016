@@ -44,6 +44,23 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 			return true;
 		}
 		
+		// just took heavy mystery damage?
+		if (tookHeavyDamageLastRound && Micro.getRoundsUntilDanger() > 10)
+		{
+			MapLocation retreatDest = here.add(lastMovedDirection.opposite(),10);
+			overrideStrategy = new StratTempRetreat(retreatDest, 30);
+			overrideStrategy.tryTurn();
+			return true;
+		}
+		
+		// are we a viper and do we want to rush? answer: yes
+		if (rc.getType() == RobotType.VIPER && Zombie.isSpawnRound())
+		{
+			overrideStrategy = new StratViperRush();
+			overrideStrategy.tryTurn();
+			return true;
+		}
+		
 		// any vipers or turrets? rush 'em
 		if (Micro.getEnemyUnits().TurrTTMs > 0 || Micro.getEnemyUnits().Vipers > 0)
 		{

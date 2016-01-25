@@ -39,6 +39,15 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (earlyDangerRisk && rc.getRoundNum() < 200)
 			Message.trySendSignal(120);
 		
+		// just took heavy mystery damage?
+		if (tookHeavyDamageLastRound && Micro.getRoundsUntilDanger() > 10)
+		{
+			MapLocation retreatDest = here.add(lastMovedDirection.opposite(),10);
+			overrideStrategy = new StratTempRetreat(retreatDest, 30);
+			overrideStrategy.tryTurn();
+			return true;
+		}
+		
 		// first priority, avoid stuff
 		if (Micro.getRoundsUntilDanger() < 3)
 		{
@@ -85,8 +94,8 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (dest == null)
 			dest = senseClosestPart();
 		// if we've got nothing to grab and we've found ourselves far from friendlies
-		MapLocation closestFriendly = Waypoint.getClosestFriendlyWaypoint();
-		if (dest == null && closestFriendly != null && here.distanceSquaredTo(closestFriendly) > 250)
+		MapLocation closestFriendly = Waypoint.getClosestSafeWaypoint();
+		if (dest == null && closestFriendly != null && here.distanceSquaredTo(closestFriendly) > 200)
 			dest = closestFriendly;
 		// if we've still got nowhere to go, check for nearby archon
 		if (dest == null)
@@ -134,8 +143,7 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 			robotToBuild = RobotType.SCOUT;
 			buildStrat = Strategy.Type.SHADOW_ARCHON;
 		}
-		
-		else if (rand.nextInt() % 8 == 0 && rc.getRobotCount() > 40)
+		else if (rand.nextInt() % 5 == 0 && rc.getRobotCount() > 30)
 		{
 			// build viper!
 			buildPriority += Math.min(0,50-roundsSince(lastBuiltRound));
