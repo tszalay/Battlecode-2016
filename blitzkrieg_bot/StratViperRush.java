@@ -53,20 +53,12 @@ public class StratViperRush extends RobotPlayer implements Strategy
 				overrideStrategy = null;
 		}
 		
-		// are we a viper and do we want to rush? answer: yes
-		if (rc.getType() == RobotType.VIPER && Zombie.isSpawnRound())
-		{
-			overrideStrategy = new StratViperRush();
-			overrideStrategy.tryTurn();
-			return true;
-		}
-		
 		// any vipers or turrets? rush 'em
-		if (Micro.getEnemyUnits().TurrTTMs > 0 || Micro.getEnemyUnits().Vipers > 0)
+		if (Micro.getEnemyUnits().TurrTTMs > 0)
 		{
 			for (RobotInfo ri : Micro.getNearbyEnemies())
 			{
-				if (ri.type == RobotType.TURRET || ri.type == RobotType.TTM || (ri.type == RobotType.VIPER && rc.getViperInfectedTurns() > 0))
+				if (ri.type == RobotType.TURRET || ri.type == RobotType.TTM)
 				{
 					overrideStrategy = new StratTempRush(ri.ID);
 					overrideStrategy.tryTurn();
