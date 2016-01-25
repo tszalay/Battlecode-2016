@@ -52,16 +52,16 @@ public class Waypoint extends RobotPlayer
 				if (targets[i].value < targets[lowestInd].value)
 					lowestInd = i;
 			}
-			// if we have a value higher than the lowest value, automatically replace it
-			if (ti.value > targets[lowestInd].value)
-			{
-				targets[lowestInd] = ti;
-				return;
-			}
-			// or if the oldest one has timed out
+			// replace a "dead" one first, if we can
 			if (roundsSince(oldestInd) > timeout)
 			{
 				targets[oldestInd] = ti;
+				return;
+			}
+			// otherwise the one with the lowest value
+			if (ti.value > targets[lowestInd].value)
+			{
+				targets[lowestInd] = ti;
 				return;
 			}
 		}
@@ -96,7 +96,7 @@ public class Waypoint extends RobotPlayer
 		}
 	}
 	
-	public static TargetStore enemyTargetStore = new TargetStore(50);
+	public static TargetStore enemyTargetStore = new TargetStore(200);
 	//private static TargetStore friendlyTargetStore = new TargetStore(50);
 	
 	private static MapLocation randomDest = null;
@@ -136,6 +136,6 @@ public class Waypoint extends RobotPlayer
 	
 	public static MapLocation getBestEnemyLocation()
 	{
-		return enemyTargetStore.getClosestRecent(200);
+		return enemyTargetStore.getClosestRecent();
 	}
 }

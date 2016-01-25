@@ -140,12 +140,21 @@ public class Message extends RobotPlayer
 	{
 		Signal[] sigs = rc.emptySignalQueue();
 		
+		boolean didEnemyMessage = false;
+		
 		for (Signal sig : sigs)
 		{
 			// skip enemy signals for now
 			if (sig.getTeam() != ourTeam)
 			{
 				recentEnemySignal = sig.getLocation();
+				// only do this once per round to prevent getting spammed
+				// also ignore scout messages
+				if (!didEnemyMessage)
+				{
+					Waypoint.enemyTargetStore.add(new Waypoint.TargetInfo(sig.getLocation(),1));
+					didEnemyMessage = true;
+				}
 				continue;
 			}
 			
