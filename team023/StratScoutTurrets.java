@@ -22,7 +22,7 @@ public class StratScoutTurrets extends RobotPlayer implements Strategy
 	// we oughta scout turrets if there are turrets to scout
 	public static boolean shouldScoutTurrets()
 	{
-		return Micro.getFriendlyUnits().Turrets > 0 && Micro.getFriendlyUnits().Scouts == 0;
+		return Micro.getEnemyUnits().Turrets > 0 && Micro.getFriendlyUnits().Scouts < 2;
 	}
 	
 	public boolean tryTurn() throws GameActionException
@@ -63,7 +63,21 @@ public class StratScoutTurrets extends RobotPlayer implements Strategy
 			lastTurretLocation = loc;
 		}
 		
-		if (new UnitCounts(rc.senseNearbyRobots(24, ourTeam)).Scouts < 3)
+		RobotInfo[] closeFriends = rc.senseNearbyRobots(24, ourTeam);
+		int nscouts = 0;
+		MapLocation closestScout = null;
+		
+		for (RobotInfo ri : closeFriends)
+		{
+			if (ri.type != RobotType.SCOUT)
+				continue;
+			
+			nscouts++;
+			if (closestScout == null || here.distanceSquaredTo(ri.location) < here.distanceSquaredTo(closestScout))
+				closestScout = ri.location;
+		}
+		
+		if (nscouts < 3)
 			lastNotCrowdedRound = rc.getRoundNum();
 		
 		// get back to exploring if there are too many scouts around
@@ -72,9 +86,20 @@ public class StratScoutTurrets extends RobotPlayer implements Strategy
 		
 		// otherwise go towards nearest turret
 		Direction dir = here.directionTo(loc);
-		DirectionSet dirs = Micro.getBufferDirs();
+		DirectionSet dirs = Micro.getBestSafeDirs();
+		
+		MapLocation locleft = here.add(dir.rotateLeft().rotateLeft());
+		MapLocation locright = here.add(dir.rotateRight().rotateRight());
+		
+		if (closestScout != null)
+		{
+			if (locleft.distanceSquaredTo(closestScout) < locright.distanceSquaredTo(closestScout))
+				isClockwise = false;
+			else
+				isClockwise = true;
+		}
 
-		for (int i=0; i<5; i++)
+		for (int i=0; i<4; i++)
 		{
 			if (dirs.isValid(dir))
 			{

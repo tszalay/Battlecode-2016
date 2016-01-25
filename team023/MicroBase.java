@@ -186,7 +186,7 @@ public class MicroBase extends RobotPlayer
 		bufferDirs = new DirectionSet();
 		canMoveDirs = new DirectionSet();
 		fastMoveDirs = new DirectionSet();
-		turretSafeDirs = Sighting.getTurretSafeDirs();
+		turretSafeDirs = Sighting.getTurretSafeDirs(distToClosestHostile);
 		
 		for (Direction d : Direction.values())
 		{
@@ -203,7 +203,11 @@ public class MicroBase extends RobotPlayer
 			
 			MapLocation testloc = here.add(d);
 			
-			int closestDistSq = DIST_MAX;
+			int closestDistSq = distToClosestHostile[d.ordinal()];
+			// if it wasn't set by turretsafedirs
+			if (closestDistSq == 0)
+				closestDistSq = DIST_MAX;
+			
 			boolean isThisSquareSafe = true;
 			boolean isThisSquareSafer = true;
 			boolean isThisSquareBuffer = true;
@@ -338,6 +342,12 @@ public class MicroBase extends RobotPlayer
 		if (!Micro.getTurretSafeDirs().isValid(Direction.NONE))
 			roundsUntilDanger = 0;
 		
+		if (roundsUntilDanger < 5)
+			lastDangerRound = rc.getRoundNum();
+		if (roundsUntilDanger > 20)
+			lastSafeRound = rc.getRoundNum();
+			
+		
 		return roundsUntilDanger;
 	}
 	
@@ -351,18 +361,16 @@ public class MicroBase extends RobotPlayer
 	// (trying to use safe squares first)
 	public Direction getBestEscapeDir()
 	{
-		DirectionSet dirs = getSafeMoveDirs();
+		DirectionSet dirs = getSafeMoveDirs().clone();
 		
 		// if there are no safe moves, just do something
 		if (!dirs.any())
-		{
-			// first, check if there are any turret safe moves
 			dirs = getCanMoveDirs().clone();
-			dirs.remove(Direction.NONE);
-		}
+		
+		dirs.remove(Direction.NONE);
 		
 		if (!dirs.any())
-			return Direction.NONE;
+			return null;
 		
 		Direction bestDir = null;
 		int distToClosest = 0;

@@ -83,12 +83,12 @@ public class MapInfo extends RobotPlayer
 	}
 	
 	// distance to closest corner
-	public static int closestCornerDistanceSq()
+	public static int closestCornerDistanceSq(MapLocation loc)
 	{
-		int minDx = Math.abs(mapMin.x-here.x);
-		int minDy = Math.abs(mapMin.y-here.y);
-		minDx = Math.min(minDx, Math.abs(mapMax.x-here.x));
-		minDy = Math.min(minDy, Math.abs(mapMax.y-here.y));
+		int minDx = Math.abs(mapMin.x-loc.x);
+		int minDy = Math.abs(mapMin.y-loc.y);
+		minDx = Math.min(minDx, Math.abs(mapMax.x-loc.x));
+		minDy = Math.min(minDy, Math.abs(mapMax.y-loc.y));
 		
 		return minDx*minDx + minDy*minDy;
 	}

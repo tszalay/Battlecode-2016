@@ -18,5 +18,9 @@ public class RoboViper extends RobotPlayer
 			Message.sendSignal(rc.getType().sensorRadiusSquared*2);
 		
 		myStrategy.tryTurn();
+		
+		// did we fire? try to send a short ping
+		if (roundsSince(lastFiredRound) == 0)
+			Message.trySendSignal(rc.getType().sensorRadiusSquared*2);
 	}
 }

@@ -20,6 +20,7 @@ public class Action extends RobotPlayer
 		if (zombieTarget != null && rc.canAttackLocation(zombieTarget.location))
 		{
 			rc.attackLocation(zombieTarget.location);
+			lastFiredRound = rc.getRoundNum();
 			return true;
 		}
 		
@@ -28,6 +29,7 @@ public class Action extends RobotPlayer
 		if (enemyTarget != null && rc.canAttackLocation(enemyTarget.location))
 		{
 			rc.attackLocation(enemyTarget.location);
+			lastFiredRound = rc.getRoundNum();
 			return true;
 		}
 		
@@ -45,6 +47,7 @@ public class Action extends RobotPlayer
 		if (targetLoc != null && rc.canAttackLocation(targetLoc))
 		{
 			rc.attackLocation(targetLoc);
+			lastFiredRound = rc.getRoundNum();
 			return true;
 		}
 		
@@ -62,6 +65,7 @@ public class Action extends RobotPlayer
 		if (enemyTarget != null && rc.canAttackLocation(enemyTarget.location))
 		{
 			rc.attackLocation(enemyTarget.location);
+			lastFiredRound = rc.getRoundNum();
 			return true;
 		}
 		
@@ -74,7 +78,12 @@ public class Action extends RobotPlayer
 		Direction escapeDir = Micro.getBestEscapeDir();
 		// if we can't escape (we're stuck), try to shoot
 		if (escapeDir == null)
-			return tryAttackSomeone();
+		{
+			if (rc.getType().canAttack())
+				return tryAttackSomeone();
+			else
+				return Rubble.tryClearEscapeRubble();
+		}
 		else
 			return tryMove(escapeDir);
 	}
@@ -229,6 +238,7 @@ public class Action extends RobotPlayer
 		if (enemyTarget != null && rc.canAttackLocation(enemyTarget.location))
 		{
 			rc.attackLocation(enemyTarget.location);
+			lastFiredRound = rc.getRoundNum();
 			return true;
 		}
 
@@ -247,6 +257,7 @@ public class Action extends RobotPlayer
 		if (enemyTarget != null && rc.canAttackLocation(enemyTarget.location))
 		{
 			rc.attackLocation(enemyTarget.location);
+			lastFiredRound = rc.getRoundNum();
 			return true;
 		}
 

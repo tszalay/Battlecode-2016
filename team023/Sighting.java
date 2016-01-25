@@ -54,9 +54,10 @@ public class Sighting extends RobotPlayer
 			int broadcast_dist = 63;
 			if (Micro.getRoundsUntilDanger() < 5 && Micro.getRoundsUntilDanger() > 0)
 				broadcast_dist = 121;
-			if (Micro.getRoundsUntilDanger() < 10)
+			else if (Micro.getRoundsUntilDanger() < 10)
 				broadcast_dist = 400;
-			if (Micro.getRoundsUntilDanger() > 12 && farBroadcastSignal.canSend())
+			// or if we're really safe, really blast it
+			if (Micro.getRoundsUntilDanger() > 9 && farBroadcastSignal.canSend())
 				broadcast_dist = MapInfo.fullMapDistanceSq();
 			
 			// also count up nearby combat units to set value
@@ -78,7 +79,10 @@ public class Sighting extends RobotPlayer
 		if (Micro.getNearbyAllies().length > 8 && roundsSince(lastFriendlyBroadcastRound) > FRIENDLY_DELAY)
 		{
 			lastFriendlyBroadcastRound = rc.getRoundNum();
-			Message.sendMessageSignal(FRIENDLY_MESSAGE_RADIUS, Message.Type.LOTSA_FRIENDLIES, Micro.getNearbyAllies().length);
+			int send_dist = FRIENDLY_MESSAGE_RADIUS;
+			if (Micro.getRoundsUntilDanger() > 15)
+				send_dist = MapInfo.fullMapDistanceSq();
+			Message.sendMessageSignal(send_dist, Message.Type.LOTSA_FRIENDLIES, Micro.getNearbyAllies().length);
 		}
 	}
 	
@@ -117,7 +121,7 @@ public class Sighting extends RobotPlayer
 		return Micro.getClosestLocationTo(enemySightedTurrets.elements(), here);
 	}
 	
-	public static DirectionSet getTurretSafeDirs()
+	public static DirectionSet getTurretSafeDirs(int[] distToClosest)
 	{
 		// find out which directions are safe vis-a-vis enemy turrets
 		DirectionSet dirs = DirectionSet.makeAll();
@@ -131,16 +135,30 @@ public class Sighting extends RobotPlayer
 		// any turrets need removin'?
 		MapLocation remove_turret = null;
 		
+		int turret_check_sq = 81;
+		int turret_dist_sq = 64;
+		// archons stay farther away
+		if (rc.getType() == RobotType.ARCHON)
+		{
+			turret_check_sq = 121;
+			turret_dist_sq = 100;
+		}
+		
 		for (MapLocation ml : enemySightedTurrets.elements())
 		{
 			// is there any chance we're close to turret, and is it maybe still there?
-			if (here.distanceSquaredTo(ml) < 81)
+			if (here.distanceSquaredTo(ml) < turret_check_sq)
 			{
 				// loop through and remove directions that are still safe
 				for (Direction d : Direction.values())
 				{ 
-					if (d != Direction.OMNI && here.add(d).distanceSquaredTo(ml) <= RobotType.SCOUT.sensorRadiusSquared)
+					int dist_sq = here.add(d).distanceSquaredTo(ml);
+					if (d != Direction.OMNI && dist_sq <= turret_dist_sq)
+					{
 						dirs.remove(d);
+						// just set it, doesn't matter if it's a bit fudged
+						distToClosest[d.ordinal()] = dist_sq;
+					}
 				}
 				if (roundsSince(enemySightedTurrets.get(ml)) > TURRET_TIMEOUT_ROUNDS)
 					remove_turret = ml;
@@ -152,7 +170,10 @@ public class Sighting extends RobotPlayer
 		
 		// hack, since scouts can see turrets, duh
 		if (rc.getType() == RobotType.SCOUT)
+		{
 			dirs = DirectionSet.makeAll();
+			Arrays.fill(distToClosest, 0);
+		}
 				
 		return dirs;
 	}

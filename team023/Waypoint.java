@@ -52,16 +52,16 @@ public class Waypoint extends RobotPlayer
 				if (targets[i].value < targets[lowestInd].value)
 					lowestInd = i;
 			}
-			// if we have a value higher than the lowest value, automatically replace it
-			if (ti.value > targets[lowestInd].value)
-			{
-				targets[lowestInd] = ti;
-				return;
-			}
-			// or if the oldest one has timed out
+			// replace a "dead" one first, if we can
 			if (roundsSince(oldestInd) > timeout)
 			{
 				targets[oldestInd] = ti;
+				return;
+			}
+			// otherwise the one with the lowest value
+			if (ti.value > targets[lowestInd].value)
+			{
+				targets[lowestInd] = ti;
 				return;
 			}
 		}
@@ -74,30 +74,47 @@ public class Waypoint extends RobotPlayer
 					sz++;
 			return sz;
 		}
-
+		
 		public MapLocation getClosestRecent()
 		{
-			return getClosestRecent(timeout);
+			return getClosestRecent(0);
 		}
-		
-		public MapLocation getClosestRecent(int timelimit)
+
+		// attempts to find one larger than min_thresh
+		// if it can't, returns closest one
+		public MapLocation getClosestRecent(int min_thresh)
 		{
-			MapLocation loc = null;
+			TargetInfo ti = null;
+			TargetInfo ti_above = null;
 			
 			for (int i=0; i<targets.length; i++)
 			{
 				if (targets[i] == null)
 					continue;
-				if (roundsSince(targets[i].round)<timelimit &&
-						(loc == null || here.distanceSquaredTo(targets[i].location) < here.distanceSquaredTo(loc)))
-					loc = targets[i].location;
+				
+				if (roundsSince(targets[i].round) > timeout)
+					continue;
+				
+				if (ti == null || here.distanceSquaredTo(targets[i].location) < here.distanceSquaredTo(ti.location))
+					ti = targets[i];
+
+				if (targets[i].value >= min_thresh &&
+						(ti_above == null || 
+						here.distanceSquaredTo(targets[i].location) < here.distanceSquaredTo(ti_above.location)))
+					ti_above = targets[i];
 			}
-			return loc;
+			
+			if (ti_above != null)
+				return ti_above.location;
+			if (ti != null)
+				return ti.location;
+			
+			return null;
 		}
 	}
 	
-	public static TargetStore enemyTargetStore = new TargetStore(50);
-	//private static TargetStore friendlyTargetStore = new TargetStore(50);
+	public static TargetStore enemyTargetStore = new TargetStore(200);
+	public static TargetStore friendlyTargetStore = new TargetStore(200);
 	
 	private static MapLocation randomDest = null;
 	private static int randomDestRound = -10000;
@@ -106,7 +123,12 @@ public class Waypoint extends RobotPlayer
 	{
 		// we haven't changed it in a while, or we're there
 		if (roundsSince(randomDestRound) > 300 || here.distanceSquaredTo(randomDest) < 24)
+		{
 			randomDest = MapInfo.getRandomLocation();
+			// make sure it's not too close to a corner...
+			while (MapInfo.closestCornerDistanceSq(randomDest) < 81)
+				randomDest = MapInfo.getRandomLocation();
+		}
 		
 		return randomDest;
 	}
@@ -123,19 +145,11 @@ public class Waypoint extends RobotPlayer
 	
 	public static MapLocation getClosestFriendlyWaypoint()
 	{
-		MapLocation loc1 = Message.getClosestArchon();
-		MapLocation loc2 = Message.getRecentFriendlyLocation();
-		
-		if (loc1 == null)
-			return loc2;
-		if (loc2 == null)
-			return loc1;
-		
-		return here.distanceSquaredTo(loc1) < here.distanceSquaredTo(loc2) ? loc1 : loc2;
+		return friendlyTargetStore.getClosestRecent(6);
 	}
 	
 	public static MapLocation getBestEnemyLocation()
 	{
-		return enemyTargetStore.getClosestRecent(200);
+		return enemyTargetStore.getClosestRecent(1);
 	}
 }

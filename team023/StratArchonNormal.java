@@ -7,7 +7,6 @@ import java.util.*;
 public class StratArchonNormal extends RoboArchon implements Strategy
 {
 	private Strategy overrideStrategy = null;
-	private RobotType[] buildOrder;
 	private int numBuilds;
 
 	static int lastBuiltRound = 0;
@@ -23,7 +22,6 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 	
 	public StratArchonNormal()
 	{
-		buildOrder = getSetBuildOrder(); // from RoboArchon.java
 		numBuilds = 0;
 	}
 	
@@ -38,14 +36,18 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 				overrideStrategy = null;
 		}
 		
+		if (earlyDangerRisk && rc.getRoundNum() < 200)
+			Message.trySendSignal(120);
+		
 		// first priority, avoid stuff
-		if (Micro.getRoundsUntilDanger() < 5)
+		if (Micro.getRoundsUntilDanger() < 3)
 		{
 			// broadcast a long-range "i need help" signal
 			if ((rc.getRoundNum()%5) == 0)
 				Message.sendMessageSignal(400,Message.Type.UNDER_ATTACK,0);
 			
-			if (rc.getRoundNum() > 100 || (Micro.getNearbyAllies() != null && Micro.getNearbyAllies().length > 5))
+			// don't over-retreat in the early game
+			if (rc.getRoundNum() > 100 || Micro.getNearbyAllies().length > 5)
 			{
 				MapLocation dest = Waypoint.getBestRetreatLocation();	
 				Action.tryGoToSafestOrRetreat(dest);
@@ -53,10 +55,10 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 			}
 		}
 		// if we're relatively safe , only retreat a bit
-		if (Micro.getRoundsUntilDanger() < 20 && (rc.getRoundNum() > 200 || Micro.getNearbyAllies().length > 5))
+		if (Micro.getRoundsUntilDanger() < 15 && Micro.getNearbyAllies().length < 5)
 		{
 			// send a normal, less-serious signal over a smaller range
-			Message.sendSignal(120);
+			Message.trySendSignal(120);
 
 			MapLocation dest = Waypoint.getBestRetreatLocation();	
 			Action.tryGoToSafestOrRetreat(dest);
@@ -64,10 +66,10 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		
 		// go to neutral archons
 		MapLocation neutralArchonLoc = MapInfo.getClosestNeutralArchon();
-		if (neutralArchonLoc != null)
-		{
-			overrideStrategy = new StratArchonBlitz(neutralArchonLoc);
-		}
+//		if (neutralArchonLoc != null)
+//		{
+//			overrideStrategy = new StratArchonBlitz(neutralArchonLoc);
+//		}
 		
 		if (rc.getRoundNum() < SCOUT_SHADOW_ROUND)
 			Message.sendArchonLocation(rc.senseRobot(rc.getID()));
@@ -106,46 +108,33 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		RobotType robotToBuild = null;
 		Strategy.Type buildStrat = null;
 		
+		int buildPriority = RobotType.TURRET.partCost;
+
+		// gtfo emergency guard override
+		if (roundsSince(lastSafeRound) > 200 && roundsSince(lastBuiltRound) > 40 && rc.getHealth() < 200)
+		{
+			robotToBuild = RobotType.GUARD;
+			buildStrat = Strategy.Type.DEFAULT;
+			buildPriority = 0;
+		}
 		// the initial build order
-		if (numBuilds < buildOrder.length)
+		else if (numBuilds < buildOrder.length)
 		{
 			robotToBuild = buildOrder[numBuilds];
 			if (robotToBuild == RobotType.SCOUT)
 				buildStrat = Strategy.Type.EXPLORE;
 			else
 				buildStrat = Strategy.Type.MOB_MOVE;
-			
-			if (!rc.hasBuildRequirements(robotToBuild))
-				return false;
-
-			Direction buildDir = Micro.getCanBuildDirectionSet(robotToBuild).getRandomValid();
-			if (buildDir != null)
-			{
-				overrideStrategy = new StratBuilding(robotToBuild, buildDir, buildStrat);
-				numBuilds ++;
-				lastBuiltRound = rc.getRoundNum();
-				return true;
-			}
+			buildPriority += Math.min(0,50-roundsSince(lastBuiltRound));			
 		}
-		else
-		{
-			// AK wait a few rounds so we can move
-//			if ((rc.getRoundNum()+rc.getID())%3 != 0)
-//				return false;
-		}
-		
-		// figure out what robot to try and build
-		//UnitCounts units = new UnitCounts(Micro.getNearbyAllies());
-		
-		int buildPriority = RobotType.TURRET.partCost;
-		
 		// need to build a shadow scout, top priority
-		if (roundsSince(RoboArchon.lastAdjacentScoutRound) > 20 && rc.getRoundNum() > SCOUT_SHADOW_ROUND)
+		else if (roundsSince(RoboArchon.lastAdjacentScoutRound) > 20 && rc.getRoundNum() > SCOUT_SHADOW_ROUND)
 		{
 			buildPriority += 0;
 			robotToBuild = RobotType.SCOUT;
 			buildStrat = Strategy.Type.SHADOW_ARCHON;
 		}
+		
 		else if (rand.nextInt() % 8 == 0 && rc.getRobotCount() > 40)
 		{
 			// build viper!

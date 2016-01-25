@@ -30,7 +30,14 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 		}
 		
 		// retreat to the archon?
-		if (rc.getHealth() < 20 && Micro.getFriendlyUnits().Archons == 0)
+		double healthleft = rc.getHealth() - 2*rc.getViperInfectedTurns();
+		if (healthleft < 0)
+		{
+			overrideStrategy = new StratUnitRush();
+			overrideStrategy.tryTurn();
+			return true;
+		}
+		if (healthleft < 15 && Micro.getFriendlyUnits().Archons == 0)
 		{
 			overrideStrategy = new StratUnitRetreat();
 			overrideStrategy.tryTurn();
@@ -65,11 +72,11 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 			myTask = "ally";
 			lastDest = Message.getClosestAllyUnderAttack();
 		}
-/*		if (lastDest == null)
+		if (lastDest == null)
 		{
 			myTask = "archon";
 			lastDest = MapInfo.getClosestNeutralArchon();
-		}*/
+		}
 		if (lastDest == null)
 		{
 			myTask = "den";
@@ -89,6 +96,10 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 		
 		DirectionSet bufferDirs = Micro.getBufferDirs();
 		bufferDirs = bufferDirs.and(Micro.getTurretSafeDirs());
+		
+		// if overpowered, kite back
+		//if (Micro.amOverpowered())
+		//	Action.tryRetreatOrShootIfStuck();
 		
 		// only shoot if we're safe here
 		if (bufferDirs.isValid(Direction.NONE) && Action.tryAttackSomeone())
@@ -114,7 +125,7 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 		else if (!Micro.getSafeMoveDirs().isValid(Direction.NONE))
 		{
 			// if we're not safe here, we should move
-			lastDest = Message.getClosestArchon();
+			lastDest = Waypoint.getClosestFriendlyWaypoint();
 			if (lastDest == null)
 				lastDest = MapInfo.farthestArchonLoc;
 			Action.tryGoToSafestOrRetreat(lastDest);

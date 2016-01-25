@@ -21,7 +21,10 @@ public class RobotPlayer
 	
 	public static double 	myHealth;
 	public static int		lastDamageRound = -100;
-	public static int		lastMovedRound = 0;
+	public static int		lastMovedRound = -100;
+	public static int 		lastFiredRound = -100;
+	public static int		lastDangerRound = -100;
+	public static int		lastSafeRound = -100;
 	
 	public static int		lastMicroTime = 0;
 	public static int		lastSurroundingsTime = 0;
@@ -114,9 +117,9 @@ public class RobotPlayer
 		}
 		
 		// doing it like this so we can add robot-wide behaviors easily
-		try
+		while (true)
 		{
-			while (true)
+			try
 			{
 				RobotPlayer.here = rc.getLocation();
 				
@@ -207,13 +210,12 @@ public class RobotPlayer
 
 				Clock.yield();
 			}
+			catch (Exception e)
+			{
+				System.out.println(e.getMessage());
+	            e.printStackTrace();
+			}
 		}
-		catch (Exception e)
-		{
-			System.out.println(e.getMessage());
-            e.printStackTrace();
-		}
-
     }
     
     public static int roundsSince(int start)
