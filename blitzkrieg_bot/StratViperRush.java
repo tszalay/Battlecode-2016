@@ -56,7 +56,7 @@ public class StratViperRush extends RobotPlayer implements Strategy
         // rush turrets to get so close they can't shoot
         UnitCounts count = Micro.getEnemyUnits();
         
-        if (count.TurrTTMs > 0)
+        if (rc.getRoundNum() < 200 && count.TurrTTMs > 0)
         {
         	MapLocation enemyturretloc = null;
         	for (RobotInfo ri : enemies)
@@ -79,7 +79,7 @@ public class StratViperRush extends RobotPlayer implements Strategy
         		Action.tryViperAttack();
         	else
         	{
-        		if (!Nav.tryGoTo(here.add(retreatDir), Micro.getCanMoveDirs()))
+        		if (!Nav.tryGoTo(here.add(retreatDir), Micro.getBestAnyDirs()))
         			Action.tryViperAttack();
         	}
         }
@@ -116,7 +116,10 @@ public class StratViperRush extends RobotPlayer implements Strategy
         }
         
         // try to go to enemy (will dig if necessary)
-        Nav.tryGoTo(enemyLoc, Micro.getBestAnyDirs());
+        if (rc.getRoundNum() < 200)
+        	Nav.tryGoTo(enemyLoc, Micro.getBestAnyDirs());
+        else
+        	Nav.tryGoTo(enemyLoc, Micro.getBestSafeDirs());
         
         return true;
 
