@@ -229,7 +229,7 @@ public class Action extends RobotPlayer
 	
 	public static boolean tryViperAttack() throws GameActionException
 	{
-		// attack someone in range if possible, low health first, prioritizing zombies
+		// attack someone in range if possible, low health first, prioritizing enemies
 
 		if (!rc.isWeaponReady())
 			return false;

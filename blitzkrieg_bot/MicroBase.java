@@ -876,10 +876,15 @@ public class MicroBase extends RobotPlayer
 		if (bots == null)
 			return null;
 		
+		boolean attackScouts = (rc.getRoundNum() < 1000);
+		
 		for (RobotInfo ri : bots)
 		{
 			// can't attack this dude
 			if (here.distanceSquaredTo(ri.location) > rc.getType().attackRadiusSquared)
+				continue;
+			
+			if (!attackScouts && ri.type == RobotType.SCOUT)
 				continue;
 			
 			// no target yet
@@ -896,6 +901,9 @@ public class MicroBase extends RobotPlayer
 		
 		if (target == null && bots.length > 0) // if there's only an archon, shoot it anyway
 			target = bots[0];
+		
+		if (!attackScouts && target != null && target.type == RobotType.SCOUT)
+			target = null;
 		
 		return target;
 	}
