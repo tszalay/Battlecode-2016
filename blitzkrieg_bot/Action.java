@@ -188,6 +188,7 @@ public class Action extends RobotPlayer
 			rc.move(d);
 			here = rc.getLocation();
 			lastMovedRound = rc.getRoundNum();
+			lastMovedDirection = d;
 			return true;
 		}
 //			else

@@ -39,6 +39,15 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (earlyDangerRisk && rc.getRoundNum() < 200)
 			Message.trySendSignal(120);
 		
+		// just took heavy mystery damage?
+		if (tookHeavyDamageLastRound && Micro.getRoundsUntilDanger() > 10)
+		{
+			MapLocation retreatDest = here.add(lastMovedDirection.opposite(),10);
+			overrideStrategy = new StratTempRetreat(retreatDest, 30);
+			overrideStrategy.tryTurn();
+			return true;
+		}
+		
 		// first priority, avoid stuff
 		if (Micro.getRoundsUntilDanger() < 3)
 		{

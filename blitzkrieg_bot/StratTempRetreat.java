@@ -15,7 +15,7 @@ public class StratTempRetreat extends RobotPlayer implements Strategy
 		if (overrideStrategy != null)
 			return overrideStrategy.getName();
 
-		return "Temp. retreat to " + retreatLocation
+		return "Temp retreat to " + retreatLocation
 				+ " until " + endRetreatRound;
 	}
 	

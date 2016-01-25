@@ -11,6 +11,7 @@ public class RobotPlayer
 	public static Team ourTeam;
 	public static Team theirTeam;
 	public static MapLocation here;
+	public static Direction lastMovedDirection = Direction.NORTH;
 	
 	public static MapLocation 	myBuilderLocation = null;
 	public static int			myBuilderID = -1; // dad?
@@ -20,6 +21,7 @@ public class RobotPlayer
 	public static Strategy myStrategy = null;
 	
 	public static double 	myHealth;
+	public static boolean	tookHeavyDamageLastRound = false;
 	public static int		lastDamageRound = -100;
 	public static int		lastMovedRound = -100;
 	public static int 		lastFiredRound = -100;
@@ -131,9 +133,12 @@ public class RobotPlayer
 				lastMicroTime = Debug.stopTiming();
 				
 				// update health
+				tookHeavyDamageLastRound = false;
 				double health = rc.getHealth();
 				if (health < myHealth)
 				{
+					if (myHealth-health > 10)
+						tookHeavyDamageLastRound = true;
 					lastDamageRound = rc.getRoundNum();
 					myHealth = health;
 				}
