@@ -36,7 +36,7 @@ public class StratUnitRetreat extends RobotPlayer implements Strategy
 		if (Micro.getFriendlyUnits().Archons > 0 && Micro.getRoundsUntilDanger() < 20)
 			return false;
 		
-		myDest = Message.getClosestArchon();
+		myDest = Waypoint.getClosestFriendlyWaypoint();
 		if (myDest == null)
 			myDest = myBuilderLocation;
 		

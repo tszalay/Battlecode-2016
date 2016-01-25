@@ -7,8 +7,10 @@ import battlecode.common.*;
 public class RoboArchon extends RobotPlayer
 {
 	public static int lastAdjacentScoutRound = 0;
-	public static final int SCOUT_SHADOW_ROUND = 200;
+	public static final int SCOUT_SHADOW_ROUND = 500;
 	public static RobotType[] buildOrder;
+	
+	public static boolean earlyDangerRisk = false;
 
 	public static void init() throws GameActionException
 	{
@@ -30,14 +32,14 @@ public class RoboArchon extends RobotPlayer
 				rc.setIndicatorLine(here, loc, 255,255,255);
 			for (MapLocation loc : MapInfo.neutralArchonLocations.elements())
 				rc.setIndicatorLine(here, loc, 255,0,255);
-			MapLocation loc = Message.getRecentFriendlyLocation();
-			if (loc != null)
-				rc.setIndicatorLine(here,loc,0,255,0);
-			
 			for (int i=0; i<5; i++)
 				if (Waypoint.enemyTargetStore.targets[i] != null
 				&& roundsSince(Waypoint.enemyTargetStore.targets[i].round) < 500)
-					rc.setIndicatorLine(here,Waypoint.enemyTargetStore.targets[i].location,0,0,255);
+					rc.setIndicatorLine(here,Waypoint.enemyTargetStore.targets[i].location,255,0,0);
+			for (int i=0; i<5; i++)
+				if (Waypoint.friendlyTargetStore.targets[i] != null
+				&& roundsSince(Waypoint.friendlyTargetStore.targets[i].round) < 500)
+					rc.setIndicatorLine(here,Waypoint.friendlyTargetStore.targets[i].location,0,255,0);
 		}
 
 		// for now, all archons just blitz all the time
@@ -100,12 +102,6 @@ public class RoboArchon extends RobotPlayer
 		return false;
 	}
 	
-	public static void doCallSoldierBackup() throws GameActionException
-	{
-		if (Micro.getFriendlyUnits().Soldiers < 5)
-			Message.sendSignal(120);
-	}
-
 	public static void setBuildOrder()
 	{
 		// look at our position and decide if we should build a viper, etc.
@@ -131,6 +127,7 @@ public class RoboArchon extends RobotPlayer
 							RobotType.SOLDIER,
 							RobotType.SCOUT
 						};
+			earlyDangerRisk = true;
 			return;
 		}
 
@@ -168,6 +165,7 @@ public class RoboArchon extends RobotPlayer
 					RobotType.SOLDIER,
 					RobotType.SCOUT
 				};
+			earlyDangerRisk = true;
 			return;
 		}
 
@@ -180,6 +178,7 @@ public class RoboArchon extends RobotPlayer
 					RobotType.SOLDIER,
 					RobotType.SCOUT
 				};
+			earlyDangerRisk = true;
 			return;
 		}
 		
@@ -193,6 +192,7 @@ public class RoboArchon extends RobotPlayer
 					RobotType.GUARD,
 					RobotType.SCOUT
 				};
+			earlyDangerRisk = true;
 			return;
 		}
 

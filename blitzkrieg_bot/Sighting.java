@@ -79,7 +79,10 @@ public class Sighting extends RobotPlayer
 		if (Micro.getNearbyAllies().length > 8 && roundsSince(lastFriendlyBroadcastRound) > FRIENDLY_DELAY)
 		{
 			lastFriendlyBroadcastRound = rc.getRoundNum();
-			Message.sendMessageSignal(FRIENDLY_MESSAGE_RADIUS, Message.Type.LOTSA_FRIENDLIES, Micro.getNearbyAllies().length);
+			int send_dist = FRIENDLY_MESSAGE_RADIUS;
+			if (Micro.getRoundsUntilDanger() > 15)
+				send_dist = MapInfo.fullMapDistanceSq();
+			Message.sendMessageSignal(send_dist, Message.Type.LOTSA_FRIENDLIES, Micro.getNearbyAllies().length);
 		}
 	}
 	

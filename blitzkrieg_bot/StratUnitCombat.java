@@ -125,7 +125,7 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 		else if (!Micro.getSafeMoveDirs().isValid(Direction.NONE))
 		{
 			// if we're not safe here, we should move
-			lastDest = Message.getClosestArchon();
+			lastDest = Waypoint.getClosestFriendlyWaypoint();
 			if (lastDest == null)
 				lastDest = MapInfo.farthestArchonLoc;
 			Action.tryGoToSafestOrRetreat(lastDest);

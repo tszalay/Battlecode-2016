@@ -116,7 +116,7 @@ public class Waypoint extends RobotPlayer
 	}
 	
 	public static TargetStore enemyTargetStore = new TargetStore(200);
-	//private static TargetStore friendlyTargetStore = new TargetStore(50);
+	public static TargetStore friendlyTargetStore = new TargetStore(200);
 	
 	private static MapLocation randomDest = null;
 	private static int randomDestRound = -10000;
@@ -147,15 +147,7 @@ public class Waypoint extends RobotPlayer
 	
 	public static MapLocation getClosestFriendlyWaypoint()
 	{
-		MapLocation loc1 = Message.getClosestArchon();
-		MapLocation loc2 = Message.getRecentFriendlyLocation();
-		
-		if (loc1 == null)
-			return loc2;
-		if (loc2 == null)
-			return loc1;
-		
-		return here.distanceSquaredTo(loc1) < here.distanceSquaredTo(loc2) ? loc1 : loc2;
+		return friendlyTargetStore.getClosestRecent();
 	}
 	
 	public static MapLocation getBestEnemyLocation()

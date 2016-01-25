@@ -36,8 +36,11 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 				overrideStrategy = null;
 		}
 		
+		if (earlyDangerRisk && rc.getRoundNum() < 200)
+			Message.trySendSignal(120);
+		
 		// first priority, avoid stuff
-		if (Micro.getRoundsUntilDanger() < 5)
+		if (Micro.getRoundsUntilDanger() < 3)
 		{
 			// broadcast a long-range "i need help" signal
 			if ((rc.getRoundNum()%5) == 0)
@@ -52,10 +55,10 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 			}
 		}
 		// if we're relatively safe , only retreat a bit
-		if (Micro.getRoundsUntilDanger() < 20 && (rc.getRoundNum() > 200 || Micro.getNearbyAllies().length > 5))
+		if (Micro.getRoundsUntilDanger() < 15 && Micro.getNearbyAllies().length < 5)
 		{
 			// send a normal, less-serious signal over a smaller range
-			Message.sendSignal(120);
+			Message.trySendSignal(120);
 
 			MapLocation dest = Waypoint.getBestRetreatLocation();	
 			Action.tryGoToSafestOrRetreat(dest);

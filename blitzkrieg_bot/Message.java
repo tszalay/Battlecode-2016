@@ -126,10 +126,6 @@ public class Message extends RobotPlayer
 	private static SignalRound	recentAllyAttacked = new SignalRound(15);
 	private static SignalRound	recentArchonAttacked = new SignalRound(50);
 	
-	private static Signal recentFriendlySignal;
-	private static int recentFriendlyRound = -100000;
-	private static int recentFriendlyVal = 0;
-	
 	private static ArrayList<ArchonLocation> recentArchonLocations = new ArrayList<ArchonLocation>();
 	private static SignalDelay archonLocationTimer = new SignalDelay(20);
 	
@@ -203,18 +199,15 @@ public class Message extends RobotPlayer
 				recentStrategySignal = Strategy.Type.values()[vals[1]];
 				break;
 			case LOTSA_FRIENDLIES:
-				if (vals[1] > recentFriendlyVal || roundsSince(recentFriendlyRound) > 50)
-				{
-					recentFriendlyVal = vals[1];
-					recentFriendlyRound = rc.getRoundNum();
-					recentFriendlySignal = sig;
-				}
+				Waypoint.friendlyTargetStore.add(new Waypoint.TargetInfo(sig.getLocation(),vals[1]));
 				break;
 			case NEUTRAL_ARCHON:
 				MapInfo.updateNeutralArchons(readLocation(vals[0]), readLocation(vals[1]), readByte(vals[1],3)==0);
 				break;
 			case ARCHON_LOCATION:
-				updateArchonLocations(readLocation(vals[0]),readShort(vals[1],0),readShort(vals[1],1));
+				MapLocation loc = readLocation(vals[0]);
+				updateArchonLocations(loc,readShort(vals[1],0),readShort(vals[1],1));
+				Waypoint.friendlyTargetStore.add(new Waypoint.TargetInfo(loc,readByte(vals[0],2)));
 				break;
 			default:
 				break;
@@ -246,7 +239,8 @@ public class Message extends RobotPlayer
 	{
 		int messageDist = (rc.getType() == RobotType.SCOUT) ? MapInfo.fullMapDistanceSq() : 500;
 		if (archonLocationTimer.canSend())
-			Message.sendMessageSignal(messageDist, Type.ARCHON_LOCATION, ri.location, rc.getRoundNum(), ri.ID);
+			Message.sendMessageSignal(messageDist, Type.ARCHON_LOCATION, ri.location, 
+					Micro.getNearbyAllies().length, rc.getRoundNum(), ri.ID);
 	}
 	
 	// who is the closest to meeeeeeee
@@ -301,14 +295,6 @@ public class Message extends RobotPlayer
 		if (recentAllyAttacked.isRecent())
 			return recentAllyAttacked.sig.getLocation();
 		
-		return null;
-	}
-	
-	// Have we heard from any friendly units close by recently?
-	public static MapLocation getRecentFriendlyLocation()
-	{
-		if (roundsSince(recentFriendlyRound) < 150)
-			return recentFriendlySignal.getLocation();
 		return null;
 	}
 	
@@ -374,6 +360,11 @@ public class Message extends RobotPlayer
 	public static void sendMessageSignal(int sq_distance, Message.Type type, MapLocation loc, int val1, int val2) throws GameActionException
 	{
 		sendMessageSignal(sq_distance, writeType(type) | writeLocation(loc), writeShort(val1,0) | writeShort(val2,1));
+	}
+	
+	public static void sendMessageSignal(int sq_distance, Message.Type type, MapLocation loc, int val0, int val1, int val2) throws GameActionException
+	{
+		sendMessageSignal(sq_distance, writeType(type) | writeByte(val0,2) | writeLocation(loc), writeShort(val1,0) | writeShort(val2,1));
 	}
 	
 	public static void sendMessageSignal(int sq_distance, Message.Type type, MapLocation loc1, MapLocation loc2, int val) throws GameActionException
