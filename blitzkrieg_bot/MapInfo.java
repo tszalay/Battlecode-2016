@@ -441,6 +441,8 @@ public class MapInfo extends RobotPlayer
 				mapSymmetry &= ~(SYM_VFLIP);
 			if (!archonLocs.contains(loc_rot))
 				mapSymmetry &= ~(SYM_ROT);
+			
+			Waypoint.enemyTargetStore.add(new Waypoint.TargetInfo(loc, 1));
 		}
 		
 		// ok, now let's get the min/max set up

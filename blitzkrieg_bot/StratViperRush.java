@@ -10,9 +10,6 @@ public class StratViperRush extends RobotPlayer implements Strategy
 	
 	private MapLocation lastDest = null;
 	private MapLocation startingLoc = null;
-	private MapLocation enemyLoc = null;
-	private MapLocation farArchon = null;
-	private MapLocation[] enemyArchonLocs = null;
 	
 	public String getName()
 	{
@@ -24,9 +21,6 @@ public class StratViperRush extends RobotPlayer implements Strategy
 	
 	public StratViperRush()
 	{
-		enemyArchonLocs = rc.getInitialArchonLocations(theirTeam);
-		enemyLoc = Micro.getClosestLocationTo(enemyArchonLocs,here);
-		farArchon = Micro.getFarthestLocationFrom(enemyArchonLocs,here);
 		startingLoc = here;
 	}
 	
@@ -48,10 +42,101 @@ public class StratViperRush extends RobotPlayer implements Strategy
 		
 		// attack
 		// (after round 200, rushing vipers will shoot anything)
-		if (rc.getRoundNum() > 200 || here.distanceSquaredTo(enemyLoc) < here.distanceSquaredTo(startingLoc))
-			Action.tryViperAttack();
-        
-        RobotInfo[] enemies = Micro.getNearbyEnemies();
+		Action.tryViperAttack();
+		
+		// do we have a strategy that takes precedence over this one?
+		if (overrideStrategy != null)
+		{
+			if (overrideStrategy.tryTurn())
+				return true;
+			else
+				overrideStrategy = null;
+		}
+		
+		// are we a viper and do we want to rush? answer: yes
+		if (rc.getType() == RobotType.VIPER && Zombie.isSpawnRound())
+		{
+			overrideStrategy = new StratViperRush();
+			overrideStrategy.tryTurn();
+			return true;
+		}
+		
+		// any vipers or turrets? rush 'em
+		if (Micro.getEnemyUnits().TurrTTMs > 0 || Micro.getEnemyUnits().Vipers > 0)
+		{
+			for (RobotInfo ri : Micro.getNearbyEnemies())
+			{
+				if (ri.type == RobotType.TURRET || ri.type == RobotType.TTM || (ri.type == RobotType.VIPER && rc.getViperInfectedTurns() > 0))
+				{
+					overrideStrategy = new StratTempRush(ri.ID);
+					overrideStrategy.tryTurn();
+					return true;
+				}
+			}
+		}
+		
+		// rush targets are visible enemies, then enemy locations, then random
+		lastDest = null;
+		RobotInfo closestUnit = Micro.getClosestUnitTo(Micro.getNearbyEnemies(), here);
+		if (closestUnit != null)
+			lastDest = closestUnit.location;
+
+		if (lastDest == null)
+			lastDest = Waypoint.getBestEnemyLocation();
+
+		if (lastDest == null)
+			lastDest = Waypoint.getRandomRetreatWaypoint();
+		
+		
+		// use buffer dirs (so we can shoot enemies) if there are uninfected enemies and not too many of them
+		DirectionSet bufferDirs = Micro.getBufferDirs();
+		bufferDirs = bufferDirs.and(Micro.getTurretSafeDirs());
+		
+		int numuninfected = 0;
+		int numcanattack = 0;
+		for (RobotInfo ri : Micro.getNearbyEnemies())
+		{
+			if (ri.viperInfectedTurns < 3)
+				numuninfected++;
+			if (ri.type.canAttack())
+				numcanattack++;
+		}
+		
+		// too many units or nobody to shoot
+		if (numuninfected == 0 || numcanattack > 2 || !bufferDirs.any())
+		{
+			// try to move safely
+			Action.tryGoToSafestOrRetreat(lastDest);
+		}
+
+		// otherwise shoot
+		Action.tryViperAttack();
+		
+		// and then buffer move
+		Nav.tryGoTo(lastDest, bufferDirs);
+		
+		// if overpowered, kite back
+		//if (Micro.amOverpowered())
+		//	Action.tryRetreatOrShootIfStuck();
+		
+		// shoot if we're safe here
+		/*
+		if (bufferDirs.isValid(Direction.NONE) && Action.tryAttackSomeone())
+			return true;
+		
+		// don't move if we're safe and just shot
+		if (bufferDirs.isValid(Direction.NONE) && !rc.isWeaponReady())
+		{
+			if (Micro.getRoundsUntilDanger() > 10)
+			{
+				Direction d = bufferDirs.getDirectionTowards(here,lastDest);
+				if (d != null)
+					Action.tryMove(d);
+			}
+			return true;
+		}
+		*/
+        /*RobotInfo[] enemies = Micro.getNearbyEnemies();
         
         // rush turrets to get so close they can't shoot
         UnitCounts count = Micro.getEnemyUnits();
@@ -121,7 +206,10 @@ public class StratViperRush extends RobotPlayer implements Strategy
         else
         	Nav.tryGoTo(enemyLoc, Micro.getBestSafeDirs());
         
-        return true;
+        return true;*/
+
+		
+		return true;
 
 	}
 }
