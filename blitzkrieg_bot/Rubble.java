@@ -133,10 +133,9 @@ public class Rubble extends RobotPlayer
 	
 	public static void doClearRubble(Direction dir) throws GameActionException
 	{
-		if (rc.isCoreReady() && dir != null && dir != Direction.NONE && dir != Direction.OMNI)
-		{
+		if (rc.isCoreReady() && dir != null && dir != Direction.NONE
+				&& dir != Direction.OMNI && rc.onTheMap(here.add(dir)))
 			rc.clearRubble(dir);
-		}
 	}
 	
 	public static MapLocation senseClosestPart() throws GameActionException
