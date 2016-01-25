@@ -94,8 +94,8 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (dest == null)
 			dest = senseClosestPart();
 		// if we've got nothing to grab and we've found ourselves far from friendlies
-		MapLocation closestFriendly = Waypoint.getClosestFriendlyWaypoint();
-		if (dest == null && closestFriendly != null && here.distanceSquaredTo(closestFriendly) > 250)
+		MapLocation closestFriendly = Waypoint.getClosestSafeWaypoint();
+		if (dest == null && closestFriendly != null && here.distanceSquaredTo(closestFriendly) > 200)
 			dest = closestFriendly;
 		// if we've still got nowhere to go, check for nearby archon
 		if (dest == null)

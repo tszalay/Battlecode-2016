@@ -143,6 +143,11 @@ public class Waypoint extends RobotPlayer
 		return loc;
 	}
 	
+	public static MapLocation getClosestSafeWaypoint()
+	{
+		return friendlyTargetStore.getClosestRecent(12);
+	}
+	
 	public static MapLocation getClosestFriendlyWaypoint()
 	{
 		return friendlyTargetStore.getClosestRecent(6);
