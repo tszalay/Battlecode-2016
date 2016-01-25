@@ -25,17 +25,9 @@ public class StratViperRush extends RobotPlayer implements Strategy
 	public StratViperRush()
 	{
 		enemyArchonLocs = rc.getInitialArchonLocations(theirTeam);
-		enemyLoc = enemyArchonLocs[0];
-		farArchon = enemyArchonLocs[0];
+		enemyLoc = Micro.getClosestLocationTo(enemyArchonLocs,here);
+		farArchon = Micro.getFarthestLocationFrom(enemyArchonLocs,here);
 		startingLoc = here;
-		for (MapLocation loc : enemyArchonLocs)
-		{
-			if (here.distanceSquaredTo(loc) < here.distanceSquaredTo(enemyLoc))
-				enemyLoc = loc;
-			if (here.distanceSquaredTo(loc) > here.distanceSquaredTo(farArchon))
-				farArchon = loc;
-		}
-		Debug.setStringSJF("target = " + enemyLoc.toString());
 	}
 	
 	public boolean tryTurn() throws GameActionException
@@ -50,19 +42,20 @@ public class StratViperRush extends RobotPlayer implements Strategy
 		}
 		
 		// shoot self if almost dead
-		if (rc.isWeaponReady() && rc.getHealth() <= Micro.getNearbyAllies().length * 13 * rc.getWeaponDelay() && rc.getInfectedTurns() < rc.getHealth()/(13*Micro.getNearbyAllies().length))
-		{
+		if (rc.isWeaponReady() && rc.getHealth() <= Micro.getNearbyAllies().length * 13 * rc.getWeaponDelay() 
+				&& rc.getInfectedTurns() < rc.getHealth()/(13*Micro.getNearbyAllies().length))
 			rc.attackLocation(here);
-		}
 		
 		// attack
-		if (here.distanceSquaredTo(enemyLoc) < here.distanceSquaredTo(startingLoc))
+		// (after round 200, rushing vipers will shoot anything)
+		if (rc.getRoundNum() > 200 || here.distanceSquaredTo(enemyLoc) < here.distanceSquaredTo(startingLoc))
 			Action.tryViperAttack();
         
         RobotInfo[] enemies = Micro.getNearbyEnemies();
         
         // rush turrets to get so close they can't shoot
-        UnitCounts count = new UnitCounts(enemies);
+        UnitCounts count = Micro.getEnemyUnits();
+        
         if (count.TurrTTMs > 0)
         {
         	MapLocation enemyturretloc = null;
@@ -81,11 +74,7 @@ public class StratViperRush extends RobotPlayer implements Strategy
         // try to have only one enemy in attack range at a time
         if (enemies != null && enemies.length > 1)
         {
-        	//Action.tryRetreatOrShootIfStuck();
-        	Debug.setStringRR("retreating");
-        	Direction retreatDir = Micro.getBestRetreatDir();
-        	if (retreatDir == null)
-        		retreatDir = Micro.getBestEscapeDir();
+    		Direction retreatDir = Micro.getBestEscapeDir();
         	if (retreatDir == null)
         		Action.tryViperAttack();
         	else
@@ -116,19 +105,17 @@ public class StratViperRush extends RobotPlayer implements Strategy
         	{
         		enemyLoc = farArchon;
         	}
-        	Debug.setStringSJF("target = " + enemyLoc.toString() + ", enemies = " + enemies.length);
         }
         
-        // if there are zombies, try to retreat towards enemy
-        if (Micro.getNearbyZombies() != null && Micro.getNearbyZombies().length > 0)
+        if (rc.getRoundNum() > 200)
         {
-        	Debug.setStringRR("zombie retreat toward enemy loc");
-        	Nav.tryGoTo(enemyLoc, Micro.getBestAnyDirs());
-        	return true;
+        	// go attack best enemy that we know about
+        	enemyLoc = Waypoint.getBestEnemyLocation();
+        	if (enemyLoc == null)
+        		enemyLoc = Waypoint.getRandomRetreatWaypoint();
         }
         
         // try to go to enemy (will dig if necessary)
-        Debug.setStringRR("naving toward enemy loc");
         Nav.tryGoTo(enemyLoc, Micro.getBestAnyDirs());
         
         return true;

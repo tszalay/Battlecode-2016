@@ -14,6 +14,21 @@ public class Zombie extends RobotPlayer
 	private int rangedZombieCount = -1;
 	private int stdZombieCount = -1;
 	
+	public static boolean isSpawnRound()
+	{
+		ZombieSpawnSchedule sched = rc.getZombieSpawnSchedule();
+		int[] rounds = sched.getRounds();
+		
+		int curround = rc.getRoundNum();
+		for (int r : rounds)
+		{
+			if (r == curround)
+				return true;
+		}
+		
+		return false;
+	}
+	
 	public Zombie(int rounds)
 	{
 		this.zSched = rc.getZombieSpawnSchedule();
