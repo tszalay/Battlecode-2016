@@ -71,7 +71,7 @@ public class StratDig extends RobotPlayer implements Strategy
 	
 	public static boolean shouldDigThroughSingleBlockage() throws GameActionException
 	{
-		if (Micro.getNearbyAllies() == null || Micro.getNearbyAllies().length < 2)
+		if (Micro.getNearbyAllies() == null || Micro.getNearbyAllies().length < 4)
 			return false;
 		
 		if (Nav.bugLastMoveDir != null && Nav.myDest != null)
@@ -86,5 +86,24 @@ public class StratDig extends RobotPlayer implements Strategy
 			}
 		}
 		return false;
+	}
+	
+	public static boolean shouldDigBecauseStuck() throws GameActionException
+	{
+		if (Micro.getNearbyAllies().length < 4)
+			return false;
+		
+		if (!Nav.isStuck())
+			return false;
+		
+		MapLocation oneahead = here.add(here.directionTo(Nav.myDest));
+		MapLocation twoahead = oneahead.add(oneahead.directionTo(Nav.myDest));
+		MapLocation threeahead = twoahead.add(twoahead.directionTo(Nav.myDest));
+		
+		boolean isBlockedAhead = rc.senseRubble(oneahead) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH;
+		boolean isBlockedTwoAhead = rc.senseRubble(twoahead) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH;
+		boolean isBlockedThreeAhead = rc.senseRubble(threeahead) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH;
+		
+		return (isBlockedAhead && (!isBlockedTwoAhead || !isBlockedThreeAhead));
 	}
 }

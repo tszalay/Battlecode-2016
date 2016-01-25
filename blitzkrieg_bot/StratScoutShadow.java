@@ -13,7 +13,7 @@ public class StratScoutShadow extends RobotPlayer implements Strategy
 	public int		 	lastShadowRound = -10000;
 	public Direction  	lastShadowMoveDir = null;
 
-	public static final int SHADOW_LOST_TIMEOUT = 100;
+	public static final int SHADOW_LOST_TIMEOUT = 40;
 	
 	
 	public String getName()
@@ -111,10 +111,7 @@ public class StratScoutShadow extends RobotPlayer implements Strategy
 		}
 		
 		// otherwise, go towards the target
-		if (Micro.getSafeMoveDirs().any())
-			Nav.tryGoTo(lastShadowLocation, Micro.getSafeMoveDirs());
-		else
-			Nav.tryGoTo(lastShadowLocation, Micro.getCanMoveDirs());
+		Action.tryGoToSafestOrRetreat(lastShadowLocation);
 
 		return true;
 	}

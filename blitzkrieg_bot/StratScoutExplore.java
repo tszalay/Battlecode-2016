@@ -161,6 +161,20 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 			else
 				overrideStrategy = null;
 		}
+		
+		if (Micro.getEnemyUnits().Archons > 0)
+		{
+			for (RobotInfo ri : Micro.getNearbyEnemies())
+			{
+				if (ri.type == RobotType.ARCHON)
+				{
+					// start shadowing enemy archons booyah
+					overrideStrategy = new StratScoutShadow(ri.ID);
+					overrideStrategy.tryTurn();
+					return true;
+				}
+			}
+		}
 
 		if (StratScoutTurrets.shouldScoutTurrets())
 		{

@@ -27,6 +27,15 @@ public class Nav extends RobotPlayer
     private static int bugRotationCount;
     private static int bugMovesSinceSeenObstacle = 0;
     
+    private static MapLocation bugStartLocation;
+    private static int bugStartRound;
+    private static boolean bugGettingStuck;
+    
+    private static int distToDest;
+    private static int prevDistToDest;
+    private static int prevPrevDistToDest;
+    private static int numDugHere;
+    
     private static final double RUBBLE_FAC = (100.0-GameConstants.RUBBLE_CLEAR_PERCENTAGE)/100;
 
     private static boolean tryMoveDirect() throws GameActionException
@@ -46,6 +55,15 @@ public class Nav extends RobotPlayer
         bugLookStartDir = here.directionTo(myDest);
         bugRotationCount = 0;
         bugMovesSinceSeenObstacle = 0;
+        
+        bugStartLocation = here;
+        bugStartRound = rc.getRoundNum();
+        bugGettingStuck = false;
+        
+        distToDest = here.distanceSquaredTo(myDest);
+        prevDistToDest = distToDest;
+        prevPrevDistToDest = distToDest;
+        numDugHere = 0;
 
         // try to intelligently choose on which side we will keep the wall
         Direction leftTryDir = bugLastMoveDir.rotateLeft();
@@ -119,6 +137,17 @@ public class Nav extends RobotPlayer
         	else 
         		bugLookStartDir = dir.rotateRight().rotateRight();
         	
+        	// check if we're stuck or something
+        	if (here.equals(bugStartLocation) && roundsSince(bugStartRound) > 50)
+        		bugGettingStuck = true;
+        	
+        	// just moved
+        	numDugHere = 0;
+        	// update dists
+        	prevPrevDistToDest = prevDistToDest;
+        	prevDistToDest = distToDest;
+        	distToDest = here.distanceSquaredTo(myDest);
+        	
         	return true;
         }
         else
@@ -166,6 +195,17 @@ public class Nav extends RobotPlayer
         	return true;
         
         return (bugRotationCount <= 0 || bugRotationCount >= 8) && here.distanceSquaredTo(myDest) <= bugStartDistSq;
+    }
+    
+    public static boolean isStuck()
+    {
+    	return (bugState == BugState.BUG && bugGettingStuck);
+    }
+    
+    public static boolean isGoodDigLocation()
+    {
+    	return (bugState == BugState.BUG && distToDest > prevDistToDest
+    			&& prevPrevDistToDest > prevDistToDest);
     }
     
     private static boolean isBlockedByObstacle()
@@ -281,9 +321,13 @@ public class Nav extends RobotPlayer
         }
         
         // TTMs cannot clear rubble apparently
-        if (rc.getType() != RobotType.TTM && rc.getType() != RobotType.SCOUT && 
-        		Rubble.tryClearRubbleInPathIfClearBeyondAndAlliesAround(myDest))
+        if (rc.getType() != RobotType.TTM && rc.getType() != RobotType.SCOUT
+        		&& numDugHere < Micro.getNearbyAllies().length 
+        		&& Rubble.tryRandomClearRubbleInPath(myDest))
+        {
+        	numDugHere++;
         	return true;
+        }
         
         // technically, can't move
         if (here.equals(dest))

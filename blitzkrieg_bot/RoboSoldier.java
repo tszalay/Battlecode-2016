@@ -15,9 +15,9 @@ public class RoboSoldier extends RobotPlayer
 	{
 		// check if we should dig out of rubble (one blocked square ahead, but clear two ahead)
 		if (overrideStrategy == null && StratDig.shouldDigThroughSingleBlockage())
-		{
 			overrideStrategy = new StratDig(Nav.myDest);
-		}
+		else if (overrideStrategy == null && StratDig.shouldDigBecauseStuck())
+			overrideStrategy = new StratDig(Nav.myDest);
 		
 		// do we have a strategy that takes precedence over this one?
 		if (overrideStrategy != null)
