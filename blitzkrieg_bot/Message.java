@@ -92,7 +92,7 @@ class SignalDelay extends RobotPlayer
 		return false;
 	}
 	
-	public boolean reset()
+	public void reset()
 	{
 		this.round = rc.getRoundNum();
 	}
@@ -123,7 +123,7 @@ public class Message extends RobotPlayer
 	public static int MAP_OFF_X = 0;
 	public static int MAP_OFF_Y = 0;
 	
-	private static SignalRound	recentAllyAttacked = new SignalRound(20);
+	private static SignalRound	recentAllyAttacked = new SignalRound(15);
 	private static SignalRound	recentArchonAttacked = new SignalRound(50);
 	
 	private static Signal recentFriendlySignal;

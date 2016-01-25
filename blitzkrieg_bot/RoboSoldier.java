@@ -32,7 +32,7 @@ public class RoboSoldier extends RobotPlayer
 		myStrategy.tryTurn();
 		
 		// did we fire? try to send a short ping
-		if (!rc.isWeaponReady())
+		if (roundsSince(lastFiredRound) == 0)
 			Message.trySendSignal(rc.getType().sensorRadiusSquared*2);
 	}
 }

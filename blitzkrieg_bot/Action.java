@@ -20,6 +20,7 @@ public class Action extends RobotPlayer
 		if (zombieTarget != null && rc.canAttackLocation(zombieTarget.location))
 		{
 			rc.attackLocation(zombieTarget.location);
+			lastFiredRound = rc.getRoundNum();
 			return true;
 		}
 		
@@ -28,6 +29,7 @@ public class Action extends RobotPlayer
 		if (enemyTarget != null && rc.canAttackLocation(enemyTarget.location))
 		{
 			rc.attackLocation(enemyTarget.location);
+			lastFiredRound = rc.getRoundNum();
 			return true;
 		}
 		
@@ -45,6 +47,7 @@ public class Action extends RobotPlayer
 		if (targetLoc != null && rc.canAttackLocation(targetLoc))
 		{
 			rc.attackLocation(targetLoc);
+			lastFiredRound = rc.getRoundNum();
 			return true;
 		}
 		
@@ -62,6 +65,7 @@ public class Action extends RobotPlayer
 		if (enemyTarget != null && rc.canAttackLocation(enemyTarget.location))
 		{
 			rc.attackLocation(enemyTarget.location);
+			lastFiredRound = rc.getRoundNum();
 			return true;
 		}
 		
@@ -234,6 +238,7 @@ public class Action extends RobotPlayer
 		if (enemyTarget != null && rc.canAttackLocation(enemyTarget.location))
 		{
 			rc.attackLocation(enemyTarget.location);
+			lastFiredRound = rc.getRoundNum();
 			return true;
 		}
 
@@ -252,6 +257,7 @@ public class Action extends RobotPlayer
 		if (enemyTarget != null && rc.canAttackLocation(enemyTarget.location))
 		{
 			rc.attackLocation(enemyTarget.location);
+			lastFiredRound = rc.getRoundNum();
 			return true;
 		}
 

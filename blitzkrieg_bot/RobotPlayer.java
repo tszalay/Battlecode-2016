@@ -22,6 +22,7 @@ public class RobotPlayer
 	public static double 	myHealth;
 	public static int		lastDamageRound = -100;
 	public static int		lastMovedRound = 0;
+	public static int 		lastFiredRound = 0;
 	
 	public static int		lastMicroTime = 0;
 	public static int		lastSurroundingsTime = 0;
