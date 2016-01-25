@@ -125,7 +125,12 @@ public class Waypoint extends RobotPlayer
 	{
 		// we haven't changed it in a while, or we're there
 		if (roundsSince(randomDestRound) > 300 || here.distanceSquaredTo(randomDest) < 24)
+		{
 			randomDest = MapInfo.getRandomLocation();
+			// make sure it's not too close to a corner...
+			while (MapInfo.closestCornerDistanceSq(randomDest) < 81)
+				randomDest = MapInfo.getRandomLocation();
+		}
 		
 		return randomDest;
 	}
