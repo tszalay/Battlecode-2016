@@ -338,6 +338,12 @@ public class MicroBase extends RobotPlayer
 		if (!Micro.getTurretSafeDirs().isValid(Direction.NONE))
 			roundsUntilDanger = 0;
 		
+		if (roundsUntilDanger < 5)
+			lastDangerRound = rc.getRoundNum();
+		if (roundsUntilDanger > 20)
+			lastSafeRound = rc.getRoundNum();
+			
+		
 		return roundsUntilDanger;
 	}
 	
