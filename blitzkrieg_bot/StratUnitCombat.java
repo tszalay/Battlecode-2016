@@ -98,8 +98,8 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 		bufferDirs = bufferDirs.and(Micro.getTurretSafeDirs());
 		
 		// if overpowered, kite back
-		if (Micro.amOverpowered())
-			Action.tryRetreatOrShootIfStuck();
+		//if (Micro.amOverpowered())
+		//	Action.tryRetreatOrShootIfStuck();
 		
 		// only shoot if we're safe here
 		if (bufferDirs.isValid(Direction.NONE) && Action.tryAttackSomeone())

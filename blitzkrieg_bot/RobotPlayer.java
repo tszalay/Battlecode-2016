@@ -117,9 +117,9 @@ public class RobotPlayer
 		}
 		
 		// doing it like this so we can add robot-wide behaviors easily
-		try
+		while (true)
 		{
-			while (true)
+			try
 			{
 				RobotPlayer.here = rc.getLocation();
 				
@@ -210,13 +210,12 @@ public class RobotPlayer
 
 				Clock.yield();
 			}
+			catch (Exception e)
+			{
+				System.out.println(e.getMessage());
+	            e.printStackTrace();
+			}
 		}
-		catch (Exception e)
-		{
-			System.out.println(e.getMessage());
-            e.printStackTrace();
-		}
-
     }
     
     public static int roundsSince(int start)
