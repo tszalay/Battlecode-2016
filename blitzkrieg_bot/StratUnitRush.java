@@ -30,13 +30,14 @@ public class StratUnitRush extends RobotPlayer implements Strategy
 		}
 		
 		// retreat to the archon?
+		/*
 		if (rc.getHealth() < 20)
 		{
 			overrideStrategy = new StratUnitRetreat();
 			overrideStrategy.tryTurn();
 			return true;
 		}
-		
+		*/
 		// target priority: nearby enemy > nearby ally > zombie den > our archon stuff
 		lastDest = null;
 		RobotInfo closestUnit = Micro.getClosestUnitTo(Micro.getNearbyHostiles(), here);

@@ -30,7 +30,14 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 		}
 		
 		// retreat to the archon?
-		if (rc.getHealth() < 20 && Micro.getFriendlyUnits().Archons == 0)
+		double healthleft = rc.getHealth() - 2*rc.getViperInfectedTurns();
+		if (healthleft < 0)
+		{
+			overrideStrategy = new StratUnitRush();
+			overrideStrategy.tryTurn();
+			return true;
+		}
+		if (healthleft < 15 && Micro.getFriendlyUnits().Archons == 0)
 		{
 			overrideStrategy = new StratUnitRetreat();
 			overrideStrategy.tryTurn();
