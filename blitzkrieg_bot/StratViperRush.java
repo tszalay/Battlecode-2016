@@ -84,6 +84,7 @@ public class StratViperRush extends RobotPlayer implements Strategy
 		DirectionSet bufferDirs = Micro.getBufferDirs();
 		bufferDirs = bufferDirs.and(Micro.getTurretSafeDirs());
 		
+		/*
 		int numuninfected = 0;
 		int numcanattack = 0;
 		for (RobotInfo ri : rc.senseNearbyRobots(rc.getType().attackRadiusSquared, theirTeam))
@@ -101,12 +102,16 @@ public class StratViperRush extends RobotPlayer implements Strategy
 			if (Action.tryGoToSafestOrRetreat(lastDest))
 				return true;
 		}
+		*/
 
 		// otherwise shoot
 		Action.tryViperAttack();
 		
 		// and then buffer move
-		Nav.tryGoTo(lastDest, bufferDirs);
+		if (Micro.getNearbyHostiles() != null && Micro.getNearbyHostiles().length > 0)
+			Nav.tryGoTo(lastDest, bufferDirs);
+		else
+			Nav.tryGoTo(lastDest, Micro.getCanMoveDirs()); // dig and move as fast as possible to enemy, don't bug like a jackass
 		
 		// if overpowered, kite back
 		//if (Micro.amOverpowered())
