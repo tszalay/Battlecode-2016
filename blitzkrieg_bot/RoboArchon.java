@@ -149,11 +149,13 @@ public class RoboArchon extends RobotPlayer
 		int rangedZombies = z.getNumEarlyRangedZombies();
 		int stdZombies = z.getNumEarlyStdZombies();
 
+		/*
 		System.out.println(bigZombies + " big zombies");
 		System.out.println(fastZombies + " fast zombies");
 		System.out.println(rangedZombies + " ranged zombies");
 		System.out.println(stdZombies + " std zombies");
-
+	 	*/
+		
 		if (rangedZombies > 3 || bigZombies > 1)
 		{
 			buildOrder = new RobotType[4];

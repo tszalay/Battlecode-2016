@@ -57,6 +57,10 @@ public class Rubble extends RobotPlayer
 		if (!rc.isCoreReady())
 			return false;
 		
+		// don't clear if we took damage recently
+		if (roundsSince(lastDamageRound) < 5)
+			return false;
+		
 		if (rc.canSense(target) && rc.senseRubble(here.add(here.directionTo(target))) < GameConstants.RUBBLE_SLOW_THRESH)
 			return false;
 		
@@ -129,6 +133,33 @@ public class Rubble extends RobotPlayer
 		}
 		
 		return null;
+	}
+	
+	// tries to clear lowest rubble on unoccupied squares
+	public static boolean tryClearEscapeRubble() throws GameActionException
+	{
+		double lowestval = 1e10;
+		Direction bestDir = null;
+		for (Direction d : Direction.values())
+		{
+			if (d == Direction.NONE || d == Direction.OMNI)
+				continue;
+			MapLocation testloc = here.add(d);
+			if (rc.onTheMap(testloc) && rc.senseRubble(testloc) < lowestval &&
+					!rc.isLocationOccupied(testloc))
+			{
+				lowestval = rc.senseRubble(testloc);
+				bestDir = d;
+			}
+		}
+		
+		if (bestDir != null)
+		{
+			doClearRubble(bestDir);
+			return true;
+		}
+		
+		return false;
 	}
 	
 	public static void doClearRubble(Direction dir) throws GameActionException

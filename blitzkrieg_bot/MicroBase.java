@@ -351,18 +351,16 @@ public class MicroBase extends RobotPlayer
 	// (trying to use safe squares first)
 	public Direction getBestEscapeDir()
 	{
-		DirectionSet dirs = getSafeMoveDirs();
+		DirectionSet dirs = getSafeMoveDirs().clone();
 		
 		// if there are no safe moves, just do something
 		if (!dirs.any())
-		{
-			// first, check if there are any turret safe moves
 			dirs = getCanMoveDirs().clone();
-			dirs.remove(Direction.NONE);
-		}
+		
+		dirs.remove(Direction.NONE);
 		
 		if (!dirs.any())
-			return Direction.NONE;
+			return null;
 		
 		Direction bestDir = null;
 		int distToClosest = 0;

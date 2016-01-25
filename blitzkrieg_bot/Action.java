@@ -74,7 +74,12 @@ public class Action extends RobotPlayer
 		Direction escapeDir = Micro.getBestEscapeDir();
 		// if we can't escape (we're stuck), try to shoot
 		if (escapeDir == null)
-			return tryAttackSomeone();
+		{
+			if (rc.getType().canAttack())
+				return tryAttackSomeone();
+			else
+				return Rubble.tryClearEscapeRubble();
+		}
 		else
 			return tryMove(escapeDir);
 	}
