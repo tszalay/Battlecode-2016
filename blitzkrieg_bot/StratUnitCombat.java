@@ -72,11 +72,11 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 			myTask = "ally";
 			lastDest = Message.getClosestAllyUnderAttack();
 		}
-/*		if (lastDest == null)
+		if (lastDest == null)
 		{
 			myTask = "archon";
 			lastDest = MapInfo.getClosestNeutralArchon();
-		}*/
+		}
 		if (lastDest == null)
 		{
 			myTask = "den";
@@ -96,6 +96,10 @@ public class StratUnitCombat extends RobotPlayer implements Strategy
 		
 		DirectionSet bufferDirs = Micro.getBufferDirs();
 		bufferDirs = bufferDirs.and(Micro.getTurretSafeDirs());
+		
+		// if overpowered, kite back
+		if (Micro.amOverpowered())
+			Action.tryRetreatOrShootIfStuck();
 		
 		// only shoot if we're safe here
 		if (bufferDirs.isValid(Direction.NONE) && Action.tryAttackSomeone())
