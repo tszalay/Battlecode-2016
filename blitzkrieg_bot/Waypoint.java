@@ -193,49 +193,46 @@ public class Waypoint extends RobotPlayer
     }
     
     static MapLocation ZDayDest = null;
+    static MapLocation closestToDest = null;
     static boolean reachedZDayDest = false;
+    
+    private static int turretDistTo(MapLocation loc)
+    {
+    	return Micro.getClosestLocationTo(Sighting.enemySightedTurrets.elements(), loc).distanceSquaredTo(loc);
+    }
+    
     public static MapLocation getBestZDayDest()
     {
-    	MapLocation closestTurret = Sighting.getClosestTurret();
-    	
-    	if (closestTurret == null)
-    		return null;
-    	
-    	// if we've made it, don't go there - look around us instead
-    	//if (reachedZDayDest)
-    	{
-    		DirectionSet dirs = Micro.getCanMoveDirs();
-    		Direction dir = closestTurret.directionTo(here);
-    		Direction bestdir = null;
-    		int bestdist = here.distanceSquaredTo(closestTurret);
-    		
-    		for (int i=0; i<8; i++)
-    		{
-    			if (!dirs.isValid(dir))
-    				continue;
-    			MapLocation testloc = here.add(dir);
-    			MapLocation newclosest = Micro.getClosestLocationTo(Sighting.enemySightedTurrets.elements(), testloc);
-    			if (testloc.distanceSquaredTo(newclosest) > bestdist)
-    			{
-    				bestdist = testloc.distanceSquaredTo(newclosest);
-    				bestdir = dir;
-    			}
-    			dir = (rc.getID() % 2 == 0) ? dir.rotateLeft() : dir.rotateRight();
-    		}
-    		
-    		if (bestdir != null)
-    			return here.add(bestdir);
-    		else
-    			return null;
-    	}
-    	/*
     	if (ZDayDest == null)
     	{
-	    	ArrayList<MapLocation> locs = getBunkerLocations();
-	    	ZDayDest = Micro.getFarthestLocationFrom(locs, closestTurret);
+    		MapLocation c1 = MapInfo.mapMin;
+    		MapLocation c2 = MapInfo.mapMax;
+    		MapLocation c3 = new MapLocation(c1.x,c2.y);
+    		MapLocation c4 = new MapLocation(c2.x,c1.y);
+    		int d1 = turretDistTo(c1);
+    		int d2 = turretDistTo(c2);
+    		int d3 = turretDistTo(c3);
+    		int d4 = turretDistTo(c4);
+    		
+    		ZDayDest = c1;
+    		int maxdist = d1;
+    		if (d2 > maxdist)
+    		{
+    			ZDayDest = c2;
+    			maxdist = d2;
+    		}
+    		if (d3 > maxdist)
+    		{
+    			ZDayDest = c3;
+    			maxdist = d3;
+    		}
+    		if (d4 > maxdist)
+    		{
+    			ZDayDest = c4;
+    			maxdist = d4;
+    		}
     	}
-    	//if (here.distanceSquaredTo(dest) < 36)
-    	//	reachedZDayDest = true;
-    	return ZDayDest;*/
+    	
+    	return ZDayDest;
     }
 }

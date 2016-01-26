@@ -74,6 +74,11 @@ public class RobotPlayer
 		{
 			// also initialize Micro
 			Micro = new MicroBase();
+			if (Micro.getRoundsUntilDanger() < 5)
+				lastDangerRound = rc.getRoundNum();
+			if (Micro.getRoundsUntilDanger() > 20)
+				lastSafeRound = rc.getRoundNum();
+			
 			// and try go get the map symmetry. everyone can do this
 			MapInfo.calculateSymmetry();
 			// and do this once, so init can see recent messages
