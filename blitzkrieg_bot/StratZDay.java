@@ -58,6 +58,8 @@ public class StratZDay extends RobotPlayer implements Strategy
 			if (here.distanceSquaredTo(Micro.getClosestLocationTo(archonLocations, here))
 					< here.distanceSquaredTo(closestTurret))
 				rc.disintegrate();
+			if (rc.getType() == RobotType.SCOUT && here.distanceSquaredTo(closestTurret) > 200)
+				rc.disintegrate();
 		}
 		
 		int maxinfected = Math.max(rc.getViperInfectedTurns(),rc.getZombieInfectedTurns());
