@@ -25,6 +25,8 @@ public class StratZDay extends RobotPlayer implements Strategy
 	{
 		if (rc.getRoundNum() != ZDAY_SIGNAL_ROUND)
 			return false;
+		if (Waypoint.ZDayDest == null)
+			return false;
 		if (rc.getRobotCount() < ZDAY_UNIT_THRESH)
 		{
 			System.out.println("No zday, insufficient units");

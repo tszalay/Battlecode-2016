@@ -201,38 +201,37 @@ public class Waypoint extends RobotPlayer
     	return Micro.getClosestLocationTo(Sighting.enemySightedTurrets.elements(), loc).distanceSquaredTo(loc);
     }
     
-    public static MapLocation getBestZDayDest()
+    public static void calcBestZDayDest()
     {
-    	if (ZDayDest == null)
-    	{
-    		MapLocation c1 = MapInfo.mapMin;
-    		MapLocation c2 = MapInfo.mapMax;
-    		MapLocation c3 = new MapLocation(c1.x,c2.y);
-    		MapLocation c4 = new MapLocation(c2.x,c1.y);
-    		int d1 = turretDistTo(c1);
-    		int d2 = turretDistTo(c2);
-    		int d3 = turretDistTo(c3);
-    		int d4 = turretDistTo(c4);
-    		
-    		ZDayDest = c1;
-    		int maxdist = d1;
-    		if (d2 > maxdist)
-    		{
-    			ZDayDest = c2;
-    			maxdist = d2;
-    		}
-    		if (d3 > maxdist)
-    		{
-    			ZDayDest = c3;
-    			maxdist = d3;
-    		}
-    		if (d4 > maxdist)
-    		{
-    			ZDayDest = c4;
-    			maxdist = d4;
-    		}
-    	}
-    	
-    	return ZDayDest;
+		// no turrets to sight, no dest
+		if (Sighting.enemySightedTurrets.elements().size() == 0)
+			return;
+		
+		MapLocation c1 = MapInfo.mapMin;
+		MapLocation c2 = MapInfo.mapMax;
+		MapLocation c3 = new MapLocation(c1.x,c2.y);
+		MapLocation c4 = new MapLocation(c2.x,c1.y);
+		int d1 = turretDistTo(c1);
+		int d2 = turretDistTo(c2);
+		int d3 = turretDistTo(c3);
+		int d4 = turretDistTo(c4);
+		
+		ZDayDest = c1;
+		int maxdist = d1;
+		if (d2 > maxdist)
+		{
+			ZDayDest = c2;
+			maxdist = d2;
+		}
+		if (d3 > maxdist)
+		{
+			ZDayDest = c3;
+			maxdist = d3;
+		}
+		if (d4 > maxdist)
+		{
+			ZDayDest = c4;
+			maxdist = d4;
+		}
     }
 }

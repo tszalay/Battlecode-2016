@@ -111,8 +111,9 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		// otherwise, just chill
 		
 		// destination override for post-zday logic
-		if (rc.getRoundNum() > StratZDay.ZDAY_ARCHON_ROUND)
-			dest = Waypoint.getBestZDayDest();
+		
+		if (rc.getRoundNum() > StratZDay.ZDAY_ARCHON_ROUND && Waypoint.ZDayDest != null)
+			dest = Waypoint.ZDayDest;
 		
 		if (dest != null && Debug.DISPLAY_DEBUG)
 		{

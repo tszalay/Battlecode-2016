@@ -48,6 +48,9 @@ public class RoboArchon extends RobotPlayer
 		// always do this, no reason not to
 		tryRepair();
 		
+		if (rc.getRoundNum() == StratZDay.ZDAY_ARCHON_ROUND)
+			Waypoint.calcBestZDayDest();
+		
 		// ZDay signal logic check, f the override
 		StratZDay.tryArchonSendZDay();
 	}
