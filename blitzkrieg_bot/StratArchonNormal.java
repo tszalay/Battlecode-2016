@@ -16,8 +16,7 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (overrideStrategy != null)
 			return overrideStrategy.getName();
 
-		MapLocation loc = Waypoint.getClosestFriendlyWaypoint();
-		return "Normal Archon " + (loc==null?"":here.distanceSquaredTo(loc));
+		return "Normal Archon";
 	}
 	
 	public StratArchonNormal()

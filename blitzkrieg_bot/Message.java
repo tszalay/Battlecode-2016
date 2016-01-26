@@ -180,7 +180,6 @@ public class Message extends RobotPlayer
 			case FREE_BEER:
 				StratZDay.receivedZDaySignal = true;
 				StratZDay.archonLocations.add(sig.getLocation());
-				System.out.println("Free beer at " + sig.getLocation());
 				break;
 			case SPAM:
 				break;

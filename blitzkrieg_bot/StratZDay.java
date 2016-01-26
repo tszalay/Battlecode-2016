@@ -26,11 +26,20 @@ public class StratZDay extends RobotPlayer implements Strategy
 		if (rc.getRoundNum() != ZDAY_SIGNAL_ROUND)
 			return false;
 		if (rc.getRobotCount() < ZDAY_UNIT_THRESH)
+		{
+			System.out.println("No zday, insufficient units");
 			return false;
+		}
 		if (Sighting.enemySightedTurrets.elements().size() < ZDAY_TURRET_THRESH)
+		{
+			System.out.println("No zday, insufficient turrets");
 			return false;
-		if (roundsSince(RobotPlayer.lastSafeRound) < ZDAY_MIN_SAFE_ROUNDS)
+		}
+		if (roundsSince(RobotPlayer.lastDangerRound) < ZDAY_MIN_SAFE_ROUNDS)
+		{
+			System.out.println("No zday, not safe enough");
 			return false;
+		}
 		
 		// welp, no turning back now. Z-day is here
 		Message.sendMessageSignal(MapInfo.fullMapDistanceSq(), Message.Type.FREE_BEER, 1);
@@ -46,7 +55,8 @@ public class StratZDay extends RobotPlayer implements Strategy
 		// insta-disintegrate if we're too close to our archon
 		if (rc.getRoundNum() == ZDAY_START_ROUND)
 		{
-			if (here.distanceSquaredTo(closestTurret) > here.distanceSquaredTo(Micro.getClosestLocationTo(archonLocations, here)))
+			if (here.distanceSquaredTo(Micro.getClosestLocationTo(archonLocations, here))
+					< here.distanceSquaredTo(closestTurret))
 				rc.disintegrate();
 		}
 		
@@ -67,7 +77,7 @@ public class StratZDay extends RobotPlayer implements Strategy
 			if (maxinfected > 0)
 				Action.tryAdjacentMoveToward(closestTurret);
 			// if we are about to not be infected, make sure we turn into a zombie
-			if (maxinfected < 5)
+			if (maxinfected < 5 && maxinfected > 0)
 				rc.disintegrate();
 			break;
 		}

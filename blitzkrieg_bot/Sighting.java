@@ -25,58 +25,57 @@ public class Sighting extends RobotPlayer
 	// to be called by scouts and archons
 	public static void doSendSightingMessage() throws GameActionException
 	{
-		if (!lastSightingDelay.canSend())
-			return;
-
-		RobotInfo bestHostile = null;
-		ArrayList<RobotInfo> nearbyTurrets = new ArrayList<RobotInfo>(5);
-		
-		// prioritize the target with the biggest attack radius
-		for (RobotInfo ri : Micro.getNearbyHostiles())
+		if (lastSightingDelay.canSend())
 		{
-			if (ri.type == RobotType.TURRET)
+			RobotInfo bestHostile = null;
+			ArrayList<RobotInfo> nearbyTurrets = new ArrayList<RobotInfo>(5);
+			
+			// prioritize the target with the biggest attack radius
+			for (RobotInfo ri : Micro.getNearbyHostiles())
 			{
-				nearbyTurrets.add(ri);
+				if (ri.type == RobotType.TURRET)
+				{
+					nearbyTurrets.add(ri);
+				}
+				else
+				{
+					if (bestHostile == null || ri.type.attackRadiusSquared > bestHostile.type.attackRadiusSquared)
+						bestHostile = ri;
+				}
 			}
-			else
+			
+			// leave off zombie dens because we already have a list
+			if (bestHostile != null || nearbyTurrets.size() > 0)
 			{
-				if (bestHostile == null || ri.type.attackRadiusSquared > bestHostile.type.attackRadiusSquared)
-					bestHostile = ri;
+				MapLocation targetloc = MapInfo.nullLocation;
+				if (bestHostile != null && bestHostile.type != RobotType.ZOMBIEDEN)
+					targetloc = bestHostile.location;
+				// get a random turret from our list
+				MapLocation turretloc = (nearbyTurrets.size() > 0) ? nearbyTurrets.get(rand.nextInt(nearbyTurrets.size())).location : MapInfo.nullLocation;
+	
+				// was this turret recently broadcast?
+				if (bestHostile == null && roundsSince(enemySightedTurrets.get(turretloc)) < 50)
+				{}
+				else
+				{
+					lastSightingBroadcastRound = rc.getRoundNum();
+					int broadcast_dist = 63;
+					if (Micro.getRoundsUntilDanger() < 5 && Micro.getRoundsUntilDanger() > 0)
+						broadcast_dist = 121;
+					else if (Micro.getRoundsUntilDanger() < 10)
+						broadcast_dist = 400;
+					// or if we're really safe, really blast it
+					if (Micro.getRoundsUntilDanger() > 9 && farBroadcastSignal.canSend())
+						broadcast_dist = MapInfo.fullMapDistanceSq();
+					
+					// also count up nearby combat units to set value
+					UnitCounts units = Micro.getEnemyUnits();
+					int val = 100*units.Archons + units.Guards + units.Soldiers + 3*units.TurrTTMs + units.Vipers;
+					
+					Message.sendMessageSignal(broadcast_dist,Message.Type.SIGHT_TARGET,targetloc,turretloc,val);
+				}
 			}
 		}
-		
-		// leave off zombie dens because we already have a list
-		if (bestHostile != null || nearbyTurrets.size() > 0)
-		{
-			MapLocation targetloc = MapInfo.nullLocation;
-			if (bestHostile != null && bestHostile.type != RobotType.ZOMBIEDEN)
-				targetloc = bestHostile.location;
-			// get a random turret from our list
-			MapLocation turretloc = (nearbyTurrets.size() > 0) ? nearbyTurrets.get(rand.nextInt(nearbyTurrets.size())).location : MapInfo.nullLocation;
-
-			// was this turret recently broadcast?
-			if (bestHostile == null && roundsSince(enemySightedTurrets.get(turretloc)) < 50)
-			{}
-			else
-			{
-			lastSightingBroadcastRound = rc.getRoundNum();
-			int broadcast_dist = 63;
-			if (Micro.getRoundsUntilDanger() < 5 && Micro.getRoundsUntilDanger() > 0)
-				broadcast_dist = 121;
-			else if (Micro.getRoundsUntilDanger() < 10)
-				broadcast_dist = 400;
-			// or if we're really safe, really blast it
-			if (Micro.getRoundsUntilDanger() > 9 && farBroadcastSignal.canSend())
-				broadcast_dist = MapInfo.fullMapDistanceSq();
-			
-			// also count up nearby combat units to set value
-			UnitCounts units = Micro.getEnemyUnits();
-			int val = 100*units.Archons + units.Guards + units.Soldiers + 3*units.TurrTTMs + units.Vipers;
-			
-			Message.sendMessageSignal(broadcast_dist,Message.Type.SIGHT_TARGET,targetloc,turretloc,val);
-			}
-		}
-		
 		trySendFriendlyMessage();
 	}
 
