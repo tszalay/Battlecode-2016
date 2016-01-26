@@ -176,7 +176,6 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		{
 			// build viper!
 			buildPriority += Math.min(0,50-roundsSince(lastBuiltRound));
-			//robotToBuild = rand.nextBoolean() ? RobotType.GUARD : RobotType.SOLDIER;
 			robotToBuild = RobotType.VIPER;
 			//robotToBuild = rand.nextBoolean() ? RobotType.TURRET : RobotType.VIPER;
 			buildStrat = Strategy.Type.MOB_MOVE;
