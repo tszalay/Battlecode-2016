@@ -119,12 +119,13 @@ public class RoboArchon extends RobotPlayer
 				shortestDist = us.distanceSquaredTo(MapInfo.theirArchonCenter);
 		}
 		
-		// if we are the only archon, and close to enemy
 		if (ourArchons.length == 1 && shortestDist < 1000)
 		{
 			buildOrder = new RobotType[]{
-							RobotType.SCOUT,
+							RobotType.SOLDIER,
 							RobotType.VIPER,
+							RobotType.SCOUT,
+							RobotType.GUARD,
 							RobotType.SOLDIER
 						};
 			earlyDangerRisk = true;
@@ -160,9 +161,10 @@ public class RoboArchon extends RobotPlayer
 		{
 			buildOrder = new RobotType[]{
 					RobotType.SCOUT,
-					RobotType.SOLDIER,
-					RobotType.SOLDIER,
-					RobotType.SCOUT
+					RobotType.GUARD,
+					RobotType.GUARD,
+					RobotType.GUARD,
+					RobotType.SOLDIER
 				};
 			earlyDangerRisk = true;
 			return;
@@ -173,6 +175,7 @@ public class RoboArchon extends RobotPlayer
 			buildOrder = new RobotType[]{
 					RobotType.SCOUT,
 					RobotType.SOLDIER,
+					RobotType.GUARD,
 					RobotType.SOLDIER,
 					RobotType.SOLDIER
 				};
@@ -185,9 +188,10 @@ public class RoboArchon extends RobotPlayer
 		{
 			buildOrder = new RobotType[]{
 					RobotType.VIPER,
+					RobotType.SCOUT,
 					RobotType.SOLDIER,
 					RobotType.SOLDIER,
-					RobotType.SCOUT
+					RobotType.GUARD
 				};
 			earlyDangerRisk = true;
 			return;
