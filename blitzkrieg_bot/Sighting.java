@@ -15,7 +15,7 @@ public class Sighting extends RobotPlayer
 	public static final int SIGHT_MESSAGE_RADIUS = 63;
 	public static final int TURRET_MESSAGE_RADIUS = 255;
 	public static final int FRIENDLY_MESSAGE_RADIUS = 2000;
-	public static final int TURRET_TIMEOUT_ROUNDS = 500;
+	public static final int TURRET_TIMEOUT_ROUNDS = 200;
 	public static final int FRIENDLY_DELAY = 50;
 	
 	// every 25 rounds we can send a signal really far
