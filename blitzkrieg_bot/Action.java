@@ -15,17 +15,17 @@ public class Action extends RobotPlayer
 		
 		//RobotInfo zombieTarget = Micro.getLowestHealthInMyRange(Micro.getNearbyZombies());
 		//RobotInfo enemyTarget = Micro.getLowestHealthInMyRange(Micro.getNearbyEnemies());
-		RobotInfo zombieTarget = Micro.getHighestPriorityTarget(Micro.getNearbyZombies());
+		//RobotInfo zombieTarget = Micro.getHighestPriorityTarget(Micro.getNearbyZombies());
+		//RobotInfo enemyTarget = Micro.getHighestPriorityTarget(Micro.getNearbyEnemies());
+		RobotInfo enemyTarget = Micro.getHighestPriorityTarget(Micro.getNearbyHostiles());
 		
-		if (zombieTarget != null && rc.canAttackLocation(zombieTarget.location))
+/*		if (zombieTarget != null && rc.canAttackLocation(zombieTarget.location))
 		{
 			rc.attackLocation(zombieTarget.location);
 			lastFiredRound = rc.getRoundNum();
 			return true;
 		}
-		
-		RobotInfo enemyTarget = Micro.getHighestPriorityTarget(Micro.getNearbyEnemies());
-		
+*/		
 		if (enemyTarget != null && rc.canAttackLocation(enemyTarget.location))
 		{
 			rc.attackLocation(enemyTarget.location);
