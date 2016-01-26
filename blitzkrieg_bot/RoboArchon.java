@@ -128,7 +128,6 @@ public class RoboArchon extends RobotPlayer
 							RobotType.SOLDIER,
 							RobotType.VIPER,
 							RobotType.SCOUT,
-							RobotType.GUARD,
 							RobotType.SOLDIER
 						};
 			earlyDangerRisk = true;
@@ -148,6 +147,19 @@ public class RoboArchon extends RobotPlayer
 		System.out.println(rangedZombies + " ranged zombies");
 		System.out.println(stdZombies + " std zombies");
 	 	*/
+		
+		// if we are the closest of multiple archons, rush
+		if (myDist == shortestDist)
+		{
+			buildOrder = new RobotType[]{
+					RobotType.VIPER,
+					RobotType.SCOUT,
+					RobotType.SOLDIER,
+					RobotType.SOLDIER
+				};
+			earlyDangerRisk = true;
+			return;
+		}
 		
 		if (rangedZombies > 3 || bigZombies > 1)
 		{
@@ -186,20 +198,6 @@ public class RoboArchon extends RobotPlayer
 			return;
 		}
 		
-		// if we are the closest of multiple archons, rush
-		if (myDist == shortestDist)
-		{
-			buildOrder = new RobotType[]{
-					RobotType.VIPER,
-					RobotType.SCOUT,
-					RobotType.SOLDIER,
-					RobotType.SOLDIER/*,
-					RobotType.GUARD*/
-				};
-			earlyDangerRisk = true;
-			return;
-		}
-
 		// otherwise, the default
 		buildOrder = new RobotType[]{
 				RobotType.SCOUT,
