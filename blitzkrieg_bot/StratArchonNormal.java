@@ -100,15 +100,15 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		MapLocation dest = null;
 		if (dest ==  null)
 			dest = senseClosestNeutral();
-		if (dest == null)
-			dest = senseClosestPart();
-		if (dest == null)
-			dest = MapInfo.getClosestNeutralArchon();
 		// if we've got nothing to grab and we've found ourselves far from friendlies
 		MapLocation closestFriendly = Waypoint.getClosestSafeWaypoint();
-		if (closestFriendly != null && here.distanceSquaredTo(closestFriendly) > 200)
+		if (dest == null && closestFriendly != null && here.distanceSquaredTo(closestFriendly) > 200)
 			dest = closestFriendly;
-		// otherwise, just chill
+		if (dest == null)
+			dest = senseClosestPart();
+		// otherwise, amble towards neutral archon
+		if (dest == null)
+			dest = MapInfo.getClosestNeutralArchon();
 		
 		// destination override for post-zday logic
 		
@@ -133,6 +133,9 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 	private boolean tryBuild() throws GameActionException
 	{
 		if (!rc.isCoreReady())
+			return false;
+		
+		if (StratZDay.receivedZDaySignal && rc.getRoundNum() > StratZDay.ZDAY_START_ROUND)
 			return false;
 		
 		RobotType robotToBuild = null;
