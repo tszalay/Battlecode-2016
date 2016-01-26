@@ -8,6 +8,7 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 {
 	private Strategy overrideStrategy = null;
 	private int numBuilds;
+	private boolean beingChasedByFastZombies = false;
 
 	static int lastBuiltRound = 0;
 	
@@ -46,6 +47,22 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 			overrideStrategy.tryTurn();
 			return true;
 		}
+		
+		// if we aren't in danger now, we can't be chased by fast zombies
+		beingChasedByFastZombies = (Micro.getRoundsUntilDanger() == 0)
+				&& (Micro.getNearbyHostiles().length > 0);
+
+		// check if any of the enemies chasing us are *not* fast zombies
+		for (RobotInfo ri : Micro.getNearbyHostiles())
+			if (ri.type != RobotType.FASTZOMBIE && ri.type.canAttack())
+				beingChasedByFastZombies = false;
+		// or if we don't already have any combat units
+		if (Micro.getFriendlyUnits().Soldiers > 0 || Micro.getFriendlyUnits().Guards > 0)
+			beingChasedByFastZombies = false;
+		
+		// ok, try to build an emergency guard if we need to
+		if (beingChasedByFastZombies)
+			tryBuildEmergencyGuard();
 		
 		// first priority, avoid stuff
 		if (Micro.getRoundsUntilDanger() < 3)
@@ -130,15 +147,6 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		
 		int buildPriority = RobotType.TURRET.partCost;
 		
-		// if we aren't in danger now, we can't be chased by fast zombies
-		boolean beingChasedByFastZombies = (Micro.getRoundsUntilDanger() == 0)
-				&& (Micro.getNearbyHostiles().length > 0);
-
-		// check if any of the enemies chasing us are *not* fast zombies
-		for (RobotInfo ri : Micro.getNearbyHostiles())
-			if (ri.type != RobotType.FASTZOMBIE)
-				beingChasedByFastZombies = false;
-
 		// gtfo emergency guard override
 		if (beingChasedByFastZombies || 
 				(roundsSince(lastSafeRound) > 200 && roundsSince(lastBuiltRound) > 40 && rc.getHealth() < 200))
@@ -197,6 +205,32 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (rc.getTeamParts() < buildPriority)
 			return false;
 
+		if (!rc.hasBuildRequirements(robotToBuild))
+			return false;
+
+		Direction buildDir = Micro.getCanBuildDirectionSet(robotToBuild).getRandomValid();
+		if (buildDir != null)
+		{
+			overrideStrategy = new StratBuilding(robotToBuild, buildDir, buildStrat);
+			numBuilds ++;
+			lastBuiltRound = rc.getRoundNum();
+			return true;
+		}
+		
+		return false;
+	}
+	
+	private boolean tryBuildEmergencyGuard() throws GameActionException
+	{
+		if (!rc.isCoreReady())
+			return false;
+		
+		RobotType robotToBuild = null;
+		Strategy.Type buildStrat = null;
+		
+		robotToBuild = RobotType.GUARD;
+		buildStrat = Strategy.Type.DEFAULT;
+		
 		if (!rc.hasBuildRequirements(robotToBuild))
 			return false;
 
