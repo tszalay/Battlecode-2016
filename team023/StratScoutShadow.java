@@ -49,7 +49,7 @@ public class StratScoutShadow extends RobotPlayer implements Strategy
 	
 	private boolean trySendArchonLocation(RobotInfo ri) throws GameActionException
 	{
-		if (ri.type != RobotType.ARCHON)
+		if (ri.type != RobotType.ARCHON || ri.team != ourTeam)
 			return false;
 		if (ri.coreDelay < 6)
 			return false;

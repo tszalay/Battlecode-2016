@@ -199,8 +199,12 @@ public class Message extends RobotPlayer
 				MapInfo.updateMapEdges(readLocation(vals[0]), readLocation(vals[1]));
 				break;
 			case NEW_STRATEGY:
-				recentStrategySignal = Strategy.Type.values()[vals[1]];
-				recentStrategySender = sig.getID();
+				// was this intended for me?
+				if (vals[1] == rc.getID())
+				{
+					recentStrategySignal = Strategy.Type.values()[readByte(vals[0],0)];
+					recentStrategySender = sig.getID();
+				}
 				break;
 			case LOTSA_FRIENDLIES:
 				Waypoint.friendlyTargetStore.add(new Waypoint.TargetInfo(sig.getLocation(),vals[1]));
@@ -274,12 +278,12 @@ public class Message extends RobotPlayer
 	
 	// to be called by Archon
 	// this takes about 1.5 core delay for 8 dens
-	public static void sendBuiltMessage(Strategy.Type strat) throws GameActionException
+	public static void sendBuiltMessage(Strategy.Type strat, int builtID) throws GameActionException
 	{
 		// send all four map edges in one go
 		Message.sendMessageSignal(9, Message.Type.MAP_EDGE, MapInfo.mapMin, MapInfo.mapMax);
 		// and a strategy to use
-		Message.sendMessageSignal(9, Message.Type.NEW_STRATEGY, strat.ordinal());
+		Message.sendMessageSignal(9, Message.Type.NEW_STRATEGY, strat.ordinal(), builtID);
 		// and then all of the zombie dens and archons, but signal
 		for (MapLocation loc : MapInfo.zombieDenLocations.elements())
 			Message.sendMessageSignal(9, Message.Type.ZOMBIE_DEN, loc, MapInfo.nullLocation, 
@@ -359,6 +363,11 @@ public class Message extends RobotPlayer
 	public static void sendMessageSignal(int sq_distance, Message.Type type, MapLocation loc1, MapLocation loc2) throws GameActionException
 	{
 		sendMessageSignal(sq_distance, writeType(type) | writeLocation(loc1), writeLocation(loc2));
+	}
+
+	public static void sendMessageSignal(int sq_distance, Message.Type type, int val1, int val2) throws GameActionException
+	{
+		sendMessageSignal(sq_distance, writeType(type) | writeByte(val1,0), val2);
 	}
 	
 	public static void sendMessageSignal(int sq_distance, Message.Type type, MapLocation loc, int val1, int val2) throws GameActionException

@@ -4,7 +4,7 @@ import battlecode.common.Clock;
 
 public class Debug extends RobotPlayer
 {
-	static final boolean DISPLAY_DEBUG = true;
+	static final boolean DISPLAY_DEBUG = false;
 	static String[] auStrings = new String[4];
 	static int timer_start;
 	

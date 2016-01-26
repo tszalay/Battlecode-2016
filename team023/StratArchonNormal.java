@@ -8,6 +8,7 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 {
 	private Strategy overrideStrategy = null;
 	private int numBuilds;
+	private boolean beingChasedByFastZombies = false;
 
 	static int lastBuiltRound = 0;
 	
@@ -47,6 +48,22 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 			return true;
 		}
 		
+		// if we aren't in danger now, we can't be chased by fast zombies
+		beingChasedByFastZombies = (Micro.getRoundsUntilDanger() == 0)
+				&& (Micro.getNearbyHostiles().length > 0);
+
+		// check if any of the enemies chasing us are *not* fast zombies
+		for (RobotInfo ri : Micro.getNearbyHostiles())
+			if (ri.type != RobotType.FASTZOMBIE && ri.type.canAttack())
+				beingChasedByFastZombies = false;
+		// or if we don't already have any combat units
+		if (Micro.getFriendlyUnits().Soldiers > 0 || Micro.getFriendlyUnits().Guards > 0)
+			beingChasedByFastZombies = false;
+		
+		// ok, try to build an emergency guard if we need to
+		if (beingChasedByFastZombies)
+			tryBuildEmergencyGuard();
+		
 		// first priority, avoid stuff
 		if (Micro.getRoundsUntilDanger() < 3)
 		{
@@ -72,13 +89,6 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 			Action.tryGoToSafestOrRetreat(dest);
 		}
 		
-		// go to neutral archons
-		MapLocation neutralArchonLoc = MapInfo.getClosestNeutralArchon();
-//		if (neutralArchonLoc != null)
-//		{
-//			overrideStrategy = new StratArchonBlitz(neutralArchonLoc);
-//		}
-		
 		if (rc.getRoundNum() < SCOUT_SHADOW_ROUND)
 			Message.sendArchonLocation(rc.senseRobot(rc.getID()));
 
@@ -87,23 +97,23 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 			return true;
 
 		// look for local waypoint
-		MapLocation dest = neutralArchonLoc;
+		MapLocation dest = null;
 		if (dest ==  null)
 			dest = senseClosestNeutral();
 		if (dest == null)
 			dest = senseClosestPart();
-		// if we've got nothing to grab and we've found ourselves far from friendlies
-		MapLocation closestFriendly = Waypoint.getClosestSafeWaypoint();
-		if (dest == null && closestFriendly != null && here.distanceSquaredTo(closestFriendly) > 200)
-			dest = closestFriendly;
-		// if we've still got nowhere to go, check for nearby archon
 		if (dest == null)
 			dest = MapInfo.getClosestNeutralArchon();
+		// if we've got nothing to grab and we've found ourselves far from friendlies
+		MapLocation closestFriendly = Waypoint.getClosestSafeWaypoint();
+		if (closestFriendly != null && here.distanceSquaredTo(closestFriendly) > 200)
+			dest = closestFriendly;
 		// otherwise, just chill
 		
 		// destination override for post-zday logic
-		if (rc.getRoundNum() > StratZDay.ZDAY_ARCHON_ROUND)
-			dest = Waypoint.getBestZDayDest();
+		
+		if (rc.getRoundNum() > StratZDay.ZDAY_ARCHON_ROUND && Waypoint.ZDayDest != null)
+			dest = Waypoint.ZDayDest;
 		
 		if (dest != null && Debug.DISPLAY_DEBUG)
 		{
@@ -130,25 +140,8 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		
 		int buildPriority = RobotType.TURRET.partCost;
 		
-		// if we aren't in danger now, we can't be chased by fast zombies
-		boolean beingChasedByFastZombies = (Micro.getRoundsUntilDanger() == 0)
-				&& (Micro.getNearbyHostiles().length > 0);
-
-		// check if any of the enemies chasing us are *not* fast zombies
-		for (RobotInfo ri : Micro.getNearbyHostiles())
-			if (ri.type != RobotType.FASTZOMBIE)
-				beingChasedByFastZombies = false;
-
-		// gtfo emergency guard override
-		if (beingChasedByFastZombies || 
-				(roundsSince(lastSafeRound) > 200 && roundsSince(lastBuiltRound) > 40 && rc.getHealth() < 200))
-		{
-			robotToBuild = RobotType.GUARD;
-			buildStrat = Strategy.Type.DEFAULT;
-			buildPriority = 0;
-		}
 		// the initial build order
-		else if (numBuilds < buildOrder.length)
+		if (numBuilds < buildOrder.length)
 		{
 			robotToBuild = buildOrder[numBuilds];
 			if (robotToBuild == RobotType.SCOUT)
@@ -164,15 +157,15 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 			robotToBuild = RobotType.SCOUT;
 			buildStrat = Strategy.Type.SHADOW_ARCHON;
 		}
-		else if (rand.nextInt(5) == 0 && rc.getRobotCount() > 20)
+		else if (rand.nextInt(5) == 0 && rc.getRobotCount() > 15)
 		{
 			// build viper!
 			buildPriority += Math.min(0,50-roundsSince(lastBuiltRound));
-			//robotToBuild = rand.nextBoolean() ? RobotType.GUARD : RobotType.SOLDIER;
 			robotToBuild = RobotType.VIPER;
+			//robotToBuild = rand.nextBoolean() ? RobotType.TURRET : RobotType.VIPER;
 			buildStrat = Strategy.Type.MOB_MOVE;
 		}
-		else if (rand.nextInt(8) < 6)
+		else if (rand.nextInt(8) != 0)
 		{
 			buildPriority += Math.min(0,50-roundsSince(lastBuiltRound));
 			//robotToBuild = rand.nextBoolean() ? RobotType.GUARD : RobotType.SOLDIER;
@@ -196,6 +189,32 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		if (rc.getTeamParts() < buildPriority)
 			return false;
 
+		if (!rc.hasBuildRequirements(robotToBuild))
+			return false;
+
+		Direction buildDir = Micro.getCanBuildDirectionSet(robotToBuild).getRandomValid();
+		if (buildDir != null)
+		{
+			overrideStrategy = new StratBuilding(robotToBuild, buildDir, buildStrat);
+			numBuilds ++;
+			lastBuiltRound = rc.getRoundNum();
+			return true;
+		}
+		
+		return false;
+	}
+	
+	private boolean tryBuildEmergencyGuard() throws GameActionException
+	{
+		if (!rc.isCoreReady())
+			return false;
+		
+		RobotType robotToBuild = null;
+		Strategy.Type buildStrat = null;
+		
+		robotToBuild = RobotType.GUARD;
+		buildStrat = Strategy.Type.DEFAULT;
+		
 		if (!rc.hasBuildRequirements(robotToBuild))
 			return false;
 

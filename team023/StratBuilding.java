@@ -9,6 +9,7 @@ public class StratBuilding extends RoboArchon implements Strategy
 	// which strategy to use
 	private Strategy.Type myStrat = null;
 	private RobotType buildType = null;
+	private int builtID = 0;
 	
 	public String getName()
 	{
@@ -21,6 +22,9 @@ public class StratBuilding extends RoboArchon implements Strategy
 		myStrat = strat;
 		buildType = robot;
 		rc.build(dir, robot);
+		RobotInfo ri = rc.senseRobotAtLocation(here.add(dir));
+		if (ri != null)
+			builtID = ri.ID;
 	}
 	
 	// takes over until we can move again, then sends a built signal
@@ -30,7 +34,7 @@ public class StratBuilding extends RoboArchon implements Strategy
 		if (!rc.isCoreReady())
 			return true;
 		
-		Message.sendBuiltMessage(myStrat);
+		Message.sendBuiltMessage(myStrat, builtID);
 		return false;
 	}
 }

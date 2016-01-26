@@ -48,6 +48,9 @@ public class RoboArchon extends RobotPlayer
 		// always do this, no reason not to
 		tryRepair();
 		
+		if (rc.getRoundNum() == StratZDay.ZDAY_ARCHON_ROUND)
+			Waypoint.calcBestZDayDest();
+		
 		// ZDay signal logic check, f the override
 		StratZDay.tryArchonSendZDay();
 	}
@@ -75,7 +78,7 @@ public class RoboArchon extends RobotPlayer
 		{
 			// activate just the first one
 			rc.activate(adjNeutrals[0].location);
-			Message.sendBuiltMessage(Strategy.Type.DEFAULT);
+			Message.sendBuiltMessage(Strategy.Type.DEFAULT,adjNeutrals[0].ID);
 			return true;
 		}
 
@@ -119,12 +122,12 @@ public class RoboArchon extends RobotPlayer
 				shortestDist = us.distanceSquaredTo(MapInfo.theirArchonCenter);
 		}
 		
-		// if we are the only archon, and close to enemy
 		if (ourArchons.length == 1 && shortestDist < 1000)
 		{
 			buildOrder = new RobotType[]{
-							RobotType.SCOUT,
+							RobotType.SOLDIER,
 							RobotType.VIPER,
+							RobotType.SCOUT,
 							RobotType.SOLDIER
 						};
 			earlyDangerRisk = true;
@@ -145,6 +148,19 @@ public class RoboArchon extends RobotPlayer
 		System.out.println(stdZombies + " std zombies");
 	 	*/
 		
+		// if we are the closest of multiple archons, rush
+		if (myDist == shortestDist)
+		{
+			buildOrder = new RobotType[]{
+					RobotType.VIPER,
+					RobotType.SCOUT,
+					RobotType.SOLDIER,
+					RobotType.SOLDIER
+				};
+			earlyDangerRisk = true;
+			return;
+		}
+		
 		if (rangedZombies > 3 || bigZombies > 1)
 		{
 			buildOrder = new RobotType[]{
@@ -160,9 +176,10 @@ public class RoboArchon extends RobotPlayer
 		{
 			buildOrder = new RobotType[]{
 					RobotType.SCOUT,
-					RobotType.SOLDIER,
-					RobotType.SOLDIER,
-					RobotType.SCOUT
+					RobotType.GUARD,
+					/*RobotType.GUARD,
+					RobotType.GUARD,*/
+					RobotType.SOLDIER
 				};
 			earlyDangerRisk = true;
 			return;
@@ -173,6 +190,7 @@ public class RoboArchon extends RobotPlayer
 			buildOrder = new RobotType[]{
 					RobotType.SCOUT,
 					RobotType.SOLDIER,
+					//RobotType.GUARD,
 					RobotType.SOLDIER,
 					RobotType.SOLDIER
 				};
@@ -180,19 +198,6 @@ public class RoboArchon extends RobotPlayer
 			return;
 		}
 		
-		// if we are the closest of multiple archons, rush
-		if (myDist == shortestDist)
-		{
-			buildOrder = new RobotType[]{
-					RobotType.VIPER,
-					RobotType.SOLDIER,
-					RobotType.SOLDIER,
-					RobotType.SCOUT
-				};
-			earlyDangerRisk = true;
-			return;
-		}
-
 		// otherwise, the default
 		buildOrder = new RobotType[]{
 				RobotType.SCOUT,

@@ -63,7 +63,9 @@ public class Rubble extends RobotPlayer
 		
 		Direction towards = here.directionTo(target);
 		
-		if (Nav.isGoodDigLocation())
+		if (Nav.isGoodDigLocation()
+        		&& Nav.numDugHere < Micro.getNearbyAllies().length
+        		&& here.distanceSquaredTo(Nav.myDest) < 49)
 			return tryClearLowestAdjacentRubble(towards);
 		
 		if (rc.canSense(target) && rc.senseRubble(here.add(towards)) < GameConstants.RUBBLE_SLOW_THRESH)

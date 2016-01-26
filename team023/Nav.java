@@ -34,7 +34,7 @@ public class Nav extends RobotPlayer
     private static int distToDest;
     private static int prevDistToDest;
     private static int prevPrevDistToDest;
-    private static int numDugHere;
+    public static int numDugHere;
     
     private static final double RUBBLE_FAC = (100.0-GameConstants.RUBBLE_CLEAR_PERCENTAGE)/100;
 
@@ -322,8 +322,6 @@ public class Nav extends RobotPlayer
         
         // Try to clear rubble at random or if we're at a local distance minimum
         if (rc.getType() != RobotType.TTM && rc.getType() != RobotType.SCOUT
-        		&& numDugHere < Micro.getNearbyAllies().length
-        		&& here.distanceSquaredTo(Nav.myDest) < 49
         		&& Rubble.tryRandomClearRubbleInPath(myDest))
         {
         	numDugHere++;
