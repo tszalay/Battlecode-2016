@@ -178,6 +178,8 @@ public class Message extends RobotPlayer
 					recentArchonAttacked.update(sig);
 				break;
 			case FREE_BEER:
+				StratZDay.receivedZDaySignal = true;
+				System.out.println("Free beer at " + sig.getLocation());
 				break;
 			case SPAM:
 				break;

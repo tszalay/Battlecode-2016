@@ -102,6 +102,18 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 			dest = MapInfo.getClosestNeutralArchon();
 		// otherwise, just chill
 		
+		// destination override for post-zday logic
+		if (rc.getRoundNum() > StratZDay.ZDAY_ARCHON_ROUND)
+			dest = Waypoint.getBestZDayDest();
+		
+		if (dest != null && Debug.DISPLAY_DEBUG)
+		{
+			rc.setIndicatorLine(here, dest, 255, 255, 0);
+			MapLocation closestTurr = Sighting.getClosestTurret();
+			if (closestTurr != null)
+				rc.setIndicatorLine(here, closestTurr, 0, 255, 255);
+		}
+		
 		// we don't always have to move...
 		if (dest != null)
 			Nav.tryGoTo(dest, Micro.getBestSafeDirs());

@@ -47,6 +47,9 @@ public class RoboArchon extends RobotPlayer
 
 		// always do this, no reason not to
 		tryRepair();
+		
+		// ZDay signal logic check, f the override
+		StratZDay.tryArchonSendZDay();
 	}
 
 	public static void checkAdjacentScout() throws GameActionException
@@ -105,7 +108,6 @@ public class RoboArchon extends RobotPlayer
 	public static void setBuildOrder()
 	{
 		// look at our position and decide if we should build a viper, etc.
-		MapLocation[] theirArchons = rc.getInitialArchonLocations(theirTeam);
 		MapLocation[] ourArchons = rc.getInitialArchonLocations(ourTeam);
 		
 		int myDist = here.distanceSquaredTo(MapInfo.theirArchonCenter);

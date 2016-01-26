@@ -89,12 +89,17 @@ public class Waypoint extends RobotPlayer
 		
 		public MapLocation getClosestRecent()
 		{
-			return getClosestRecent(0);
+			return getClosestRecent(0, here);
 		}
 
+		public MapLocation getClosestRecent(int min_thresh)
+		{
+			return getClosestRecent(min_thresh, here);
+		}
+		
 		// attempts to find one larger than min_thresh
 		// if it can't, returns closest one
-		public MapLocation getClosestRecent(int min_thresh)
+		public MapLocation getClosestRecent(int min_thresh, MapLocation loc)
 		{
 			TargetInfo ti = null;
 			TargetInfo ti_above = null;
@@ -107,12 +112,12 @@ public class Waypoint extends RobotPlayer
 				if (roundsSince(targets[i].round) > timeout)
 					continue;
 				
-				if (ti == null || here.distanceSquaredTo(targets[i].location) < here.distanceSquaredTo(ti.location))
+				if (ti == null || loc.distanceSquaredTo(targets[i].location) < loc.distanceSquaredTo(ti.location))
 					ti = targets[i];
 
 				if (targets[i].value >= min_thresh &&
 						(ti_above == null || 
-						here.distanceSquaredTo(targets[i].location) < here.distanceSquaredTo(ti_above.location)))
+						loc.distanceSquaredTo(targets[i].location) < loc.distanceSquaredTo(ti_above.location)))
 					ti_above = targets[i];
 			}
 			
@@ -172,4 +177,65 @@ public class Waypoint extends RobotPlayer
 			enemyTargetStore.remove(closest);
 		return closest;
 	}
+	
+    public static ArrayList<MapLocation> getBunkerLocations()
+    {
+    	ArrayList<MapLocation> locations = new ArrayList<MapLocation>();
+    	
+    	for (MapLocation loc : rc.getInitialArchonLocations(ourTeam))
+    		locations.add(loc);
+    	for (MapLocation loc : rc.getInitialArchonLocations(theirTeam))
+    		locations.add(loc);
+    	
+    	locations.addAll(MapInfo.formerDenLocations.elements());
+    	
+    	return locations;
+    }
+    
+    static MapLocation ZDayDest = null;
+    static boolean reachedZDayDest = false;
+    public static MapLocation getBestZDayDest()
+    {
+    	MapLocation closestTurret = Sighting.getClosestTurret();
+    	
+    	if (closestTurret == null)
+    		return null;
+    	
+    	// if we've made it, don't go there - look around us instead
+    	//if (reachedZDayDest)
+    	{
+    		DirectionSet dirs = Micro.getCanMoveDirs();
+    		Direction dir = closestTurret.directionTo(here);
+    		Direction bestdir = null;
+    		int bestdist = here.distanceSquaredTo(closestTurret);
+    		
+    		for (int i=0; i<8; i++)
+    		{
+    			if (!dirs.isValid(dir))
+    				continue;
+    			MapLocation testloc = here.add(dir);
+    			MapLocation newclosest = Micro.getClosestLocationTo(Sighting.enemySightedTurrets.elements(), testloc);
+    			if (testloc.distanceSquaredTo(newclosest) > bestdist)
+    			{
+    				bestdist = testloc.distanceSquaredTo(newclosest);
+    				bestdir = dir;
+    			}
+    			dir = (rc.getID() % 2 == 0) ? dir.rotateLeft() : dir.rotateRight();
+    		}
+    		
+    		if (bestdir != null)
+    			return here.add(bestdir);
+    		else
+    			return null;
+    	}
+    	/*
+    	if (ZDayDest == null)
+    	{
+	    	ArrayList<MapLocation> locs = getBunkerLocations();
+	    	ZDayDest = Micro.getFarthestLocationFrom(locs, closestTurret);
+    	}
+    	//if (here.distanceSquaredTo(dest) < 36)
+    	//	reachedZDayDest = true;
+    	return ZDayDest;*/
+    }
 }

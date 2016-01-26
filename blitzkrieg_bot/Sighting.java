@@ -42,7 +42,7 @@ public class Sighting extends RobotPlayer
 		}
 		
 		// leave off zombie dens because we already have a list
-		if (bestHostile != null)
+		if (bestHostile != null || nearbyTurrets.size() > 0)
 		{
 			MapLocation targetloc = MapInfo.nullLocation;
 			if (bestHostile != null && bestHostile.type != RobotType.ZOMBIEDEN)
@@ -121,6 +121,11 @@ public class Sighting extends RobotPlayer
 		return Micro.getClosestLocationTo(enemySightedTurrets.elements(), here);
 	}
 	
+	public static void pruneEnemyTurrets()
+	{
+		
+	}
+	
 	public static DirectionSet getTurretSafeDirs(int[] distToClosest)
 	{
 		// find out which directions are safe vis-a-vis enemy turrets
@@ -160,6 +165,11 @@ public class Sighting extends RobotPlayer
 						distToClosest[d.ordinal()] = dist_sq;
 					}
 				}
+				if (roundsSince(enemySightedTurrets.get(ml)) > TURRET_TIMEOUT_ROUNDS)
+					remove_turret = ml;
+			}
+			if (rc.getType() == RobotType.ARCHON)
+			{
 				if (roundsSince(enemySightedTurrets.get(ml)) > TURRET_TIMEOUT_ROUNDS)
 					remove_turret = ml;
 			}

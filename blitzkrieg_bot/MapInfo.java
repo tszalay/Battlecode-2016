@@ -507,18 +507,4 @@ public class MapInfo extends RobotPlayer
     	
     	return loc_sym;
     }
-    
-    
-    public static ArrayList<MapLocation> getBunkerLocations()
-    {
-    	ArrayList<MapLocation> locations = new ArrayList<MapLocation>();
-    	
-    	for (MapLocation loc : rc.getInitialArchonLocations(ourTeam))
-    		locations.add(loc);
-    	
-    	
-    	locations.addAll(formerDenLocations.elements());
-    	
-    	return locations;
-    }
 }
