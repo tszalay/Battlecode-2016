@@ -6,7 +6,7 @@ public class RoboViper extends RobotPlayer
 {
 	public static void init() throws GameActionException
 	{
-		if (rc.getRoundNum() < 200 || rand.nextInt(6) == 0)
+		if (rc.getRoundNum() < 200)
 			myStrategy = new StratViperRush();
 		else
 			myStrategy = new StratUnitCombat();

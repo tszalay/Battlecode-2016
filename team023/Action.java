@@ -41,8 +41,8 @@ public class Action extends RobotPlayer
 		MapLocation targetLoc = Sighting.getClosestSightedTarget();
 		
 		// disabled so that turrets only attack dens within sight range
-		//if (targetLoc == null)
-		//	targetLoc = MapInfo.getClosestDen();
+		if (targetLoc == null)
+			targetLoc = Sighting.getClosestTurret();
 		
 		if (targetLoc != null && rc.canAttackLocation(targetLoc))
 		{
@@ -166,6 +166,17 @@ public class Action extends RobotPlayer
     	Direction bestMoveDir = safeMoveDirs.getDirectionTowards(dir);
     	
     	// move if it's valid
+    	if (bestMoveDir != null)
+    		return tryMove(bestMoveDir);
+    	
+        return false;
+    }
+	
+	public static boolean tryAdjacentMoveToward(MapLocation dest) throws GameActionException
+    {
+    	if (!rc.isCoreReady() || dest == null)
+    		return false;
+    	Direction bestMoveDir = Micro.getCanMoveDirs().getDirectionTowards(here,dest);
     	if (bestMoveDir != null)
     		return tryMove(bestMoveDir);
     	

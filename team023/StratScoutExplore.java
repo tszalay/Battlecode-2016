@@ -15,7 +15,7 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 	private static int EXPLORE_VISIT_SQDIST = 8;
 	
 	private static final int FULL_MAP_ROUND = 1000;
-	private static final int EXPLORING_MIN_ROUNDS = 500;
+	private static final int EXPLORING_MIN_ROUNDS = 250;
 	
 	private int			myExploringQuadrant;
 	private FastLocSet 	myExploringTargets;
@@ -222,7 +222,8 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 			}
 		}
 
-		if (roundsSince(exploringStartRound) > EXPLORING_MIN_ROUNDS && StratScoutTurrets.shouldScoutTurrets())
+		if (roundsSince(exploringStartRound) > EXPLORING_MIN_ROUNDS 
+				&& StratScoutTurrets.shouldScoutTurrets())
 		{
 			overrideStrategy = new StratScoutTurrets();
 			overrideStrategy.tryTurn();

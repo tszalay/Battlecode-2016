@@ -7,25 +7,19 @@ public class StratTurretCombat extends RobotPlayer implements Strategy
 	// last round that a turret performed an action
 	// (unpacking or firing)
 	private int lastTurretRound = 0;
+	private MapLocation lastDest;
 
 	static final int PACK_DELAY = 50;
 	
-	public double myHealth = RobotType.TURRET.maxHealth;
 	
 	
 	public String getName()
 	{
-		return "Turtle turret";
+		return "Combat turret";
 	}
 	
 	public boolean tryTurn() throws GameActionException
 	{
-		if (rc.getHealth() < myHealth)
-		{
-			myHealth = rc.getHealth();
-			Message.sendSignal(RobotType.TURRET.sensorRadiusSquared*2);
-		}
-
 		switch (rc.getType())
 		{
 		case TURRET:
@@ -51,10 +45,7 @@ public class StratTurretCombat extends RobotPlayer implements Strategy
 		// if we fired recently, don't pack
 		if (rc.getRoundNum() - lastTurretRound < PACK_DELAY || !rc.isCoreReady())
 			return;
-		
-		if (MapUtil.isLocOdd(here))
-			return;
-		
+
 		rc.pack();
 		lastTurretRound = rc.getRoundNum();
 	}
@@ -71,23 +62,24 @@ public class StratTurretCombat extends RobotPlayer implements Strategy
 			lastTurretRound = rc.getRoundNum();
 			return;
 		}
-		// otherwise try moving towards the closest good turtle location
-		MapLocation loc = MapUtil.findClosestTurtle();
-		Nav.tryGoTo(loc, Micro.getSafeMoveDirs());
+
+		// target priority: nearby enemy > nearby ally > zombie den > our archon stuff
+		lastDest = Message.getClosestAllyUnderAttack();
+		if (lastDest == null)
+			lastDest = MapInfo.getClosestDen();
+		if (lastDest == null)
+			lastDest = Waypoint.getBestEnemyLocation();
+		if (lastDest == null)
+			lastDest = MapInfo.ourArchonCenter;
+		
+		Action.tryGoToSafestOrRetreat(lastDest);
 	}
 	
 	public boolean shouldUnpack() throws GameActionException
 	{
-		RobotInfo[] hostiles = Micro.getNearbyHostiles();
-		RobotInfo closestHostile = Micro.getClosestUnitTo(hostiles, here);
-		
-		if (MapUtil.isLocOdd(here))
+		if (Micro.getNearbyHostiles().length > 0 || roundsSince(lastDamageRound)==0)
 			return true;
-		
-		if (closestHostile != null)
-			return true;
-		else
-			return false;		
+		return false;
 	}
 }
 

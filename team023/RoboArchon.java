@@ -47,6 +47,9 @@ public class RoboArchon extends RobotPlayer
 
 		// always do this, no reason not to
 		tryRepair();
+		
+		// ZDay signal logic check, f the override
+		StratZDay.tryArchonSendZDay();
 	}
 
 	public static void checkAdjacentScout() throws GameActionException
@@ -105,7 +108,6 @@ public class RoboArchon extends RobotPlayer
 	public static void setBuildOrder()
 	{
 		// look at our position and decide if we should build a viper, etc.
-		MapLocation[] theirArchons = rc.getInitialArchonLocations(theirTeam);
 		MapLocation[] ourArchons = rc.getInitialArchonLocations(ourTeam);
 		
 		int myDist = here.distanceSquaredTo(MapInfo.theirArchonCenter);
@@ -121,11 +123,9 @@ public class RoboArchon extends RobotPlayer
 		if (ourArchons.length == 1 && shortestDist < 1000)
 		{
 			buildOrder = new RobotType[]{
-							RobotType.SOLDIER,
+							RobotType.SCOUT,
 							RobotType.VIPER,
-							RobotType.GUARD,
-							RobotType.SOLDIER,
-							RobotType.SCOUT
+							RobotType.SOLDIER
 						};
 			earlyDangerRisk = true;
 			return;
@@ -148,10 +148,10 @@ public class RoboArchon extends RobotPlayer
 		if (rangedZombies > 3 || bigZombies > 1)
 		{
 			buildOrder = new RobotType[]{
+					RobotType.SCOUT,
 					RobotType.SOLDIER,
 					RobotType.SOLDIER,
-					RobotType.SOLDIER,
-					RobotType.SCOUT
+					RobotType.SOLDIER
 				};
 			return;
 		}
@@ -159,9 +159,8 @@ public class RoboArchon extends RobotPlayer
 		if (fastZombies > 10)
 		{
 			buildOrder = new RobotType[]{
-					RobotType.GUARD,
-					RobotType.GUARD,
-					RobotType.GUARD,
+					RobotType.SCOUT,
+					RobotType.SOLDIER,
 					RobotType.SOLDIER,
 					RobotType.SCOUT
 				};
@@ -172,11 +171,10 @@ public class RoboArchon extends RobotPlayer
 		if (bigZombies + fastZombies + rangedZombies + stdZombies > 10)
 		{
 			buildOrder = new RobotType[]{
+					RobotType.SCOUT,
 					RobotType.SOLDIER,
-					RobotType.GUARD,
 					RobotType.SOLDIER,
-					RobotType.SOLDIER,
-					RobotType.SCOUT
+					RobotType.SOLDIER
 				};
 			earlyDangerRisk = true;
 			return;
@@ -189,7 +187,6 @@ public class RoboArchon extends RobotPlayer
 					RobotType.VIPER,
 					RobotType.SOLDIER,
 					RobotType.SOLDIER,
-					RobotType.GUARD,
 					RobotType.SCOUT
 				};
 			earlyDangerRisk = true;

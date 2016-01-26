@@ -138,6 +138,7 @@ public class Message extends RobotPlayer
 	
 	// and other things
 	public static Strategy.Type recentStrategySignal = null;
+	public static int recentStrategySender = -1;
 	
 	public static void readSignalQueue() throws GameActionException
 	{
@@ -177,6 +178,8 @@ public class Message extends RobotPlayer
 					recentArchonAttacked.update(sig);
 				break;
 			case FREE_BEER:
+				StratZDay.receivedZDaySignal = true;
+				StratZDay.archonLocations.add(sig.getLocation());
 				break;
 			case SPAM:
 				break;
@@ -197,6 +200,7 @@ public class Message extends RobotPlayer
 				break;
 			case NEW_STRATEGY:
 				recentStrategySignal = Strategy.Type.values()[vals[1]];
+				recentStrategySender = sig.getID();
 				break;
 			case LOTSA_FRIENDLIES:
 				Waypoint.friendlyTargetStore.add(new Waypoint.TargetInfo(sig.getLocation(),vals[1]));

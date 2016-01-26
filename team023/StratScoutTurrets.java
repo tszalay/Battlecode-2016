@@ -22,7 +22,9 @@ public class StratScoutTurrets extends RobotPlayer implements Strategy
 	// we oughta scout turrets if there are turrets to scout
 	public static boolean shouldScoutTurrets()
 	{
-		return Micro.getEnemyUnits().Turrets > 0 && Micro.getFriendlyUnits().Scouts < 2;
+		return Micro.getEnemyUnits().Turrets > 0 
+				&& Micro.getFriendlyUnits().Scouts < 2
+				&& Micro.getRoundsUntilDanger() > 5;
 	}
 	
 	public boolean tryTurn() throws GameActionException
@@ -87,6 +89,10 @@ public class StratScoutTurrets extends RobotPlayer implements Strategy
 		// otherwise go towards nearest turret
 		Direction dir = here.directionTo(loc);
 		DirectionSet dirs = Micro.getBestSafeDirs();
+		
+		// fall back to parent strategy if we're boned
+		if (Micro.getRoundsUntilDanger() < 2)
+			return false;
 		
 		MapLocation locleft = here.add(dir.rotateLeft().rotateLeft());
 		MapLocation locright = here.add(dir.rotateRight().rotateRight());

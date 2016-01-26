@@ -17,7 +17,7 @@ public class RoboScout extends RobotPlayer
 		switch (Message.recentStrategySignal)
 		{
 		case SHADOW_ARCHON:
-			myStrategy = new StratScoutShadow(myBuilderID);
+			myStrategy = new StratScoutShadow(Message.recentStrategySender);
 			break;
 		case SHADOW_SOLDIER:
 			myStrategy = new StratScoutSighting();
