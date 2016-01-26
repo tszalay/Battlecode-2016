@@ -28,6 +28,9 @@ public class Action extends RobotPlayer
 */		
 		if (enemyTarget != null && rc.canAttackLocation(enemyTarget.location))
 		{
+			// if we're a viper after round 1000, do not shoot scouts
+			if (rc.getType() == RobotType.VIPER && enemyTarget.type == RobotType.SCOUT)
+				return false;
 			rc.attackLocation(enemyTarget.location);
 			lastFiredRound = rc.getRoundNum();
 			return true;
