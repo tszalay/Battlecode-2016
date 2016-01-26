@@ -89,13 +89,6 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 			Action.tryGoToSafestOrRetreat(dest);
 		}
 		
-		// go to neutral archons
-		MapLocation neutralArchonLoc = MapInfo.getClosestNeutralArchon();
-//		if (neutralArchonLoc != null)
-//		{
-//			overrideStrategy = new StratArchonBlitz(neutralArchonLoc);
-//		}
-		
 		if (rc.getRoundNum() < SCOUT_SHADOW_ROUND)
 			Message.sendArchonLocation(rc.senseRobot(rc.getID()));
 
@@ -104,18 +97,17 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 			return true;
 
 		// look for local waypoint
-		MapLocation dest = neutralArchonLoc;
+		MapLocation dest = null;
 		if (dest ==  null)
 			dest = senseClosestNeutral();
 		if (dest == null)
 			dest = senseClosestPart();
-		// if we've got nothing to grab and we've found ourselves far from friendlies
-		MapLocation closestFriendly = Waypoint.getClosestSafeWaypoint();
-		if (dest == null && closestFriendly != null && here.distanceSquaredTo(closestFriendly) > 200)
-			dest = closestFriendly;
-		// if we've still got nowhere to go, check for nearby archon
 		if (dest == null)
 			dest = MapInfo.getClosestNeutralArchon();
+		// if we've got nothing to grab and we've found ourselves far from friendlies
+		MapLocation closestFriendly = Waypoint.getClosestSafeWaypoint();
+		if (closestFriendly != null && here.distanceSquaredTo(closestFriendly) > 200)
+			dest = closestFriendly;
 		// otherwise, just chill
 		
 		// destination override for post-zday logic
@@ -147,16 +139,8 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 		
 		int buildPriority = RobotType.TURRET.partCost;
 		
-		// gtfo emergency guard override
-		if (beingChasedByFastZombies || 
-				(roundsSince(lastSafeRound) > 200 && roundsSince(lastBuiltRound) > 40 && rc.getHealth() < 200))
-		{
-			robotToBuild = RobotType.GUARD;
-			buildStrat = Strategy.Type.DEFAULT;
-			buildPriority = 0;
-		}
 		// the initial build order
-		else if (numBuilds < buildOrder.length)
+		if (numBuilds < buildOrder.length)
 		{
 			robotToBuild = buildOrder[numBuilds];
 			if (robotToBuild == RobotType.SCOUT)
@@ -172,12 +156,12 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 			robotToBuild = RobotType.SCOUT;
 			buildStrat = Strategy.Type.SHADOW_ARCHON;
 		}
-		else if (rand.nextInt(5) == 0 && rc.getRobotCount() > 20)
+		else if (rand.nextInt(5) == 0 && rc.getRobotCount() > 15)
 		{
 			// build viper!
 			buildPriority += Math.min(0,50-roundsSince(lastBuiltRound));
-			robotToBuild = RobotType.VIPER;
-			//robotToBuild = rand.nextBoolean() ? RobotType.TURRET : RobotType.VIPER;
+			//robotToBuild = RobotType.VIPER;
+			robotToBuild = rand.nextBoolean() ? RobotType.TURRET : RobotType.VIPER;
 			buildStrat = Strategy.Type.MOB_MOVE;
 		}
 		else if (rand.nextInt(6) < 5)

@@ -162,8 +162,8 @@ public class RoboArchon extends RobotPlayer
 			buildOrder = new RobotType[]{
 					RobotType.SCOUT,
 					RobotType.GUARD,
-					RobotType.GUARD,
-					RobotType.GUARD,
+					/*RobotType.GUARD,
+					RobotType.GUARD,*/
 					RobotType.SOLDIER
 				};
 			earlyDangerRisk = true;
@@ -175,7 +175,7 @@ public class RoboArchon extends RobotPlayer
 			buildOrder = new RobotType[]{
 					RobotType.SCOUT,
 					RobotType.SOLDIER,
-					RobotType.GUARD,
+					//RobotType.GUARD,
 					RobotType.SOLDIER,
 					RobotType.SOLDIER
 				};
@@ -190,8 +190,8 @@ public class RoboArchon extends RobotPlayer
 					RobotType.VIPER,
 					RobotType.SCOUT,
 					RobotType.SOLDIER,
-					RobotType.SOLDIER,
-					RobotType.GUARD
+					RobotType.SOLDIER/*,
+					RobotType.GUARD*/
 				};
 			earlyDangerRisk = true;
 			return;
