@@ -66,9 +66,13 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 		{
 			MapLocation[] ourArchons = rc.getInitialArchonLocations(ourTeam);
 			int archonInd = 0;
+			// who built me, and where are they?
+			MapLocation myArchLoc = here;
+			if (rc.canSenseRobot(Message.recentStrategySender))
+				myArchLoc = rc.senseRobot(Message.recentStrategySender).location;
 			// find which archon we are closest to
 			for (int i=0; i<ourArchons.length; i++)
-				if (here.distanceSquaredTo(ourArchons[i]) < here.distanceSquaredTo(ourArchons[archonInd]))
+				if (myArchLoc.distanceSquaredTo(ourArchons[i]) < myArchLoc.distanceSquaredTo(ourArchons[archonInd]))
 					archonInd = i;
 			
 			switch (ourArchons.length)

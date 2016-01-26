@@ -75,7 +75,7 @@ public class RoboArchon extends RobotPlayer
 		{
 			// activate just the first one
 			rc.activate(adjNeutrals[0].location);
-			Message.sendBuiltMessage(Strategy.Type.DEFAULT);
+			Message.sendBuiltMessage(Strategy.Type.DEFAULT,adjNeutrals[0].ID);
 			return true;
 		}
 

@@ -9,7 +9,7 @@ public class StratTurretCombat extends RobotPlayer implements Strategy
 	private int lastTurretRound = 0;
 	private MapLocation lastDest;
 
-	static final int PACK_DELAY = 50;
+	static final int PACK_DELAY = 15;
 	
 	
 	
