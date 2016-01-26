@@ -147,7 +147,7 @@ public class StratArchonNormal extends RoboArchon implements Strategy
 			buildPriority += Math.min(0,50-roundsSince(lastBuiltRound));			
 		}
 		// need to build a shadow scout, top priority
-		else if (roundsSince(RoboArchon.lastAdjacentScoutRound) > 20 && rc.getRoundNum() > SCOUT_SHADOW_ROUND)
+		else if (roundsSince(RoboArchon.lastAdjacentScoutRound) > 100 && rc.getRoundNum() > SCOUT_SHADOW_ROUND)
 		{
 			buildPriority += 0;
 			robotToBuild = RobotType.SCOUT;

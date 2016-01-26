@@ -104,7 +104,7 @@ public class StratScoutShadow extends RobotPlayer implements Strategy
 			return true;
 		
 		// if we're close to the target, we shuffle around randomly
-		if (here.distanceSquaredTo(lastShadowLocation) <= 2)
+		if (here.distanceSquaredTo(lastShadowLocation) <= 2 && !Micro.isInDanger())
 		{
 			Action.tryAdjacentSafeMoveToward(lastShadowLocation);
 			return true;
