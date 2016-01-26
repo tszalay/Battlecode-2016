@@ -222,7 +222,8 @@ public class StratScoutExplore extends RobotPlayer implements Strategy
 			}
 		}
 
-		if (roundsSince(exploringStartRound) > EXPLORING_MIN_ROUNDS && StratScoutTurrets.shouldScoutTurrets())
+		if (roundsSince(exploringStartRound) > EXPLORING_MIN_ROUNDS 
+				&& StratScoutTurrets.shouldScoutTurrets())
 		{
 			overrideStrategy = new StratScoutTurrets();
 			overrideStrategy.tryTurn();
