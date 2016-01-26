@@ -43,6 +43,13 @@ public class StratZDay extends RobotPlayer implements Strategy
 		if (closestTurret == null)
 			return false;
 		
+		// insta-disintegrate if we're too close to our archon
+		if (rc.getRoundNum() == ZDAY_START_ROUND)
+		{
+			if (here.distanceSquaredTo(closestTurret) > here.distanceSquaredTo(Micro.getClosestLocationTo(archonLocations, here)))
+				rc.disintegrate();
+		}
+		
 		int maxinfected = Math.max(rc.getViperInfectedTurns(),rc.getZombieInfectedTurns());
 		
 		switch (rc.getType())
@@ -58,9 +65,9 @@ public class StratZDay extends RobotPlayer implements Strategy
 			
 			// if we are infected, rush with reckless abandon
 			if (maxinfected > 0)
-				Nav.tryGoTo(closestTurret, Micro.getCanMoveDirs());
+				Action.tryAdjacentMoveToward(closestTurret);
 			// if we are about to not be infected, make sure we turn into a zombie
-			if (maxinfected == 1)
+			if (maxinfected < 5)
 				rc.disintegrate();
 			break;
 		}

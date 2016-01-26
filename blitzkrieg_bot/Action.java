@@ -172,6 +172,17 @@ public class Action extends RobotPlayer
         return false;
     }
 	
+	public static boolean tryAdjacentMoveToward(MapLocation dest) throws GameActionException
+    {
+    	if (!rc.isCoreReady() || dest == null)
+    		return false;
+    	Direction bestMoveDir = Micro.getCanMoveDirs().getDirectionTowards(here,dest);
+    	if (bestMoveDir != null)
+    		return tryMove(bestMoveDir);
+    	
+        return false;
+    }
+	
 	// tryMove expects to be given a valid direction
 	public static boolean tryMove(Direction d) throws GameActionException
 	{

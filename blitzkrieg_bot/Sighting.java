@@ -19,11 +19,15 @@ public class Sighting extends RobotPlayer
 	public static final int FRIENDLY_DELAY = 50;
 	
 	// every 25 rounds we can send a signal really far
+	private static SignalDelay lastSightingDelay = new SignalDelay(5);
 	private static SignalDelay farBroadcastSignal = new SignalDelay(25);
 	
 	// to be called by scouts and archons
 	public static void doSendSightingMessage() throws GameActionException
 	{
+		if (!lastSightingDelay.canSend())
+			return;
+
 		RobotInfo bestHostile = null;
 		ArrayList<RobotInfo> nearbyTurrets = new ArrayList<RobotInfo>(5);
 		
@@ -49,7 +53,12 @@ public class Sighting extends RobotPlayer
 				targetloc = bestHostile.location;
 			// get a random turret from our list
 			MapLocation turretloc = (nearbyTurrets.size() > 0) ? nearbyTurrets.get(rand.nextInt(nearbyTurrets.size())).location : MapInfo.nullLocation;
-			
+
+			// was this turret recently broadcast?
+			if (bestHostile == null && roundsSince(enemySightedTurrets.get(turretloc)) < 50)
+			{}
+			else
+			{
 			lastSightingBroadcastRound = rc.getRoundNum();
 			int broadcast_dist = 63;
 			if (Micro.getRoundsUntilDanger() < 5 && Micro.getRoundsUntilDanger() > 0)
@@ -65,6 +74,7 @@ public class Sighting extends RobotPlayer
 			int val = 100*units.Archons + units.Guards + units.Soldiers + 3*units.TurrTTMs + units.Vipers;
 			
 			Message.sendMessageSignal(broadcast_dist,Message.Type.SIGHT_TARGET,targetloc,turretloc,val);
+			}
 		}
 		
 		trySendFriendlyMessage();
@@ -165,14 +175,9 @@ public class Sighting extends RobotPlayer
 						distToClosest[d.ordinal()] = dist_sq;
 					}
 				}
-				if (roundsSince(enemySightedTurrets.get(ml)) > TURRET_TIMEOUT_ROUNDS)
-					remove_turret = ml;
 			}
-			if (rc.getType() == RobotType.ARCHON)
-			{
-				if (roundsSince(enemySightedTurrets.get(ml)) > TURRET_TIMEOUT_ROUNDS)
-					remove_turret = ml;
-			}
+			if (roundsSince(enemySightedTurrets.get(ml)) > TURRET_TIMEOUT_ROUNDS)
+				remove_turret = ml;
 		}
 		
 		if (remove_turret != null)

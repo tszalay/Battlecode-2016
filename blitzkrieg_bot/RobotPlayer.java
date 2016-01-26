@@ -163,6 +163,11 @@ public class RobotPlayer
 				MapInfo.doAnalyzeSurroundings();
 				lastSurroundingsTime = Debug.stopTiming();
 				
+				// and Z-day!
+				if (rc.getType() != RobotType.ARCHON && rc.getRoundNum() == StratZDay.ZDAY_START_ROUND
+					&& StratZDay.receivedZDaySignal)
+					myStrategy = new StratZDay();
+				
 				Debug.startTiming();
 				
 				switch (robotc.getType())
