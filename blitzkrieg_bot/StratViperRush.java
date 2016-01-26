@@ -120,9 +120,9 @@ public class StratViperRush extends RobotPlayer implements Strategy
         
         // try to go to enemy (will dig if necessary)
         if (rc.getRoundNum() < 200)
-        	Nav.tryGoTo(enemyLoc, Micro.getBestAnyDirs());
+        	Nav.tryGoTo(enemyLoc, Micro.getCanMoveDirs());
         else
-        	Nav.tryGoTo(enemyLoc, Micro.getBestSafeDirs());
+        	Nav.tryGoTo(enemyLoc, Micro.getBestAnyDirs());
         
         return true;
 
