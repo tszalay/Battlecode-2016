@@ -3,10 +3,6 @@
 **what_thesis**: _Aaron, Stephen, Ryan, Tamas_
 
 
-## Master TODO
+## Results
 
-### For Final Tournament
-
-- Place in top 32 teams
-- Eat dinner at the Hyatt
-- Plant drugs on the duck so he forfeits and then win
+Our bot finished in 7th/8th place in the 2016 Battlecode tournament, also winning a strategy prize for our Z-day suicide strategy. See team023 for the final version; I really don't remember what all the other ones are. As of November 2016, both Aaron and Tamas graduated, Ryan found a job, and Stephen is sadly still in graduate school.
